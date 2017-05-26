@@ -38,7 +38,7 @@ type TCPRecord struct {
 	Retransmit        int64
 	UID               int
 	Timeout           int
-	Inode             int
+	Inode             uint64
 	RefCount          int
 	MemLocation       uint64
 	RetransmitTimeout int
@@ -48,7 +48,7 @@ type TCPRecord struct {
 	SlowStartSize     int
 }
 
-func GetTCPRecord() (tcpRecords map[int]*TCPRecord, err error) {
+func GetTCPRecord() (tcpRecords map[uint64]*TCPRecord, err error) {
 	var (
 		line        string
 		fields      []string
@@ -61,7 +61,7 @@ func GetTCPRecord() (tcpRecords map[int]*TCPRecord, err error) {
 		return
 	}
 	defer file.Close()
-	tcpRecords = make(map[int]*TCPRecord)
+	tcpRecords = make(map[uint64]*TCPRecord)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		tcpRecord := new(TCPRecord)
@@ -133,7 +133,7 @@ func GetTCPRecord() (tcpRecords map[int]*TCPRecord, err error) {
 		}
 		fieldsIndex++
 		// Inode
-		if tcpRecord.Inode, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+		if tcpRecord.Inode, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
 			continue
 		}
 		fieldsIndex++

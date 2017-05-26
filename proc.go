@@ -67,6 +67,9 @@ func GetProcInfo() (procs []*ProcInfo, err error) {
 		if proc.Fd, err = GetProcFiles(tempPid); err != nil {
 			continue
 		}
+		if err = proc.GetStatus(); err != nil {
+			continue
+		}
 		procs = append(procs, proc)
 	}
 	return procs, nil

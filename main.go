@@ -35,3 +35,35 @@ func main() {
 		return
 	}
 }
+
+func testfunc() {
+	var (
+		tcpRecord *TCPRecord
+		ok        bool
+	)
+	tcpRecords, err := GetTCPRecord()
+	if err != nil {
+		fmt.Println(err)
+	}
+	procs, err := GetProcInfo()
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, proc := range procs {
+		for _, fd := range proc.Fd {
+			if fd.SysStat.Dev != 6 {
+				continue
+			}
+			if tcpRecord, ok = tcpRecords[fd.SysStat.Ino]; !ok {
+				continue
+			}
+			proc.TCPSockets = append(proc.TCPSockets, tcpRecord)
+		}
+	}
+	for _, proc := range procs {
+		fmt.Println(proc.Name)
+		for _, socket := range proc.TCPSockets {
+			fmt.Println("\t", socket.LocalAddr, socket.RemoteAddr, TCPState[int(socket.Status)])
+		}
+	}
+}
