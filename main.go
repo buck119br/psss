@@ -132,16 +132,16 @@ func Show() {
 				sort.Slice(records, func(i, j int) bool { return records[i].LocalAddr < records[j].LocalAddr })
 				for _, v := range records {
 					if status == "ESTAB" {
-						if len(v.LocalAddr) < 16 {
-							showFormat = "\t\t\t %s\t\t %s\n"
-						} else {
+						if len(v.LocalAddr) >= 16 {
 							showFormat = "\t\t\t %s\t %s\n"
+						} else {
+							showFormat = "\t\t\t %s\t\t %s\n"
 						}
 					} else {
-						if len(v.LocalAddr) < 16 {
-							showFormat = "\t\t %s\t\t %s\n"
-						} else {
+						if len(v.LocalAddr) >= 16 {
 							showFormat = "\t\t %s\t %s\n"
+						} else {
+							showFormat = "\t\t %s\t\t %s\n"
 						}
 					}
 					fmt.Printf(showFormat, v.LocalAddr, v.RemoteAddr)
