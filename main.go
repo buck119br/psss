@@ -42,8 +42,9 @@ func ShowUsageSummary() (err error) {
 	summary := make(map[string]map[string]int)
 	for _, v := range Protocal {
 		summary[v] = make(map[string]int)
-		summary[v][IPv4String] = len(GlobalTCPv4Records)
+		summary[v][IPv4String] = 0
 	}
+	summary["TCP"][IPv4String] = len(GlobalTCPv4Records)
 	fmt.Println("Transport\t Total\t IPv4\t IPv6\t")
 	for _, protocal := range Protocal {
 		if len(protocal) >= 8 {
