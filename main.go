@@ -71,10 +71,16 @@ func Show() {
 		ok          bool
 		showFormat  string
 	)
-	localAddress, err := net.InterfaceAddrs()
+	localAddr, err := net.InterfaceAddrs()
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+	localIP := make([]string, 0, 0)
+	stringBuff := make([]string, 0, 0)
+	for _, v := range localAddr {
+		stringBuff = strings.Split(v.String(), "/")
+		localIP = append(localIP, stringBuff[0])
 	}
 	statusMap := make(map[string]map[string]map[bool][]*TCPRecord)
 	for _, record := range GlobalTCPv4Records {
@@ -93,8 +99,8 @@ func Show() {
 						lcOrRmt = make(map[bool][]*TCPRecord)
 					}
 					local = false
-					for _, v := range localAddress {
-						if strings.Contains(record.RemoteAddr, v.String()) {
+					for _, v := range localIP {
+						if strings.Contains(record.RemoteAddr, v) {
 							local = true
 						}
 					}
