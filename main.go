@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 )
 
@@ -128,6 +129,7 @@ func Show() {
 						fmt.Println("\t\tRemote")
 					}
 				}
+				sort.Slice(records, func(i, j int) bool { return records[i].LocalAddr < records[j].LocalAddr })
 				for _, v := range records {
 					if status == "ESTAB" {
 						if len(v.LocalAddr) < 16 {
