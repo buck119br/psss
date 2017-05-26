@@ -38,6 +38,7 @@ func SetUpRelation() {
 }
 
 func ShowUsageSummary() (err error) {
+	var format string
 	summary := make(map[string]map[string]int)
 	summary[IPv4String] = make(map[string]int)
 	for _, v := range TCPState {
@@ -48,7 +49,14 @@ func ShowUsageSummary() (err error) {
 	}
 	fmt.Println("Transport\t Total\t IPv4\t IPv6\t")
 	for _, status := range TCPState {
-		fmt.Printf("%s\t %d\t %d\t %d\t\n", status, summary[IPv4String][status]+0, summary[IPv4String][status], 0)
+		if summary[IPv4String][status]+0 != 0 {
+			if len(status) >= 8 {
+				format = "%s\t %d\t %d\t %d\t\n"
+			} else {
+				format = "%s\t\t %d\t %d\t %d\t\n"
+			}
+			fmt.Printf(format, status, summary[IPv4String][status]+0, summary[IPv4String][status], 0)
+		}
 	}
 	return nil
 }
