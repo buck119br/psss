@@ -75,13 +75,17 @@ func Show() {
 		fmt.Println(status)
 		for _, record := range records {
 			fmt.Printf("\t %s\t %s\t users:(", record.LocalAddr, record.RemoteAddr)
+			procSet := make(map[string]bool)
 			for _, v := range record.Procs {
 				for _, fd := range v.Fd {
 					if fd.SysStat.Ino == record.Inode {
-						fmt.Printf(`("%s",pid=%d,fd=%s)`, v.Name, v.Pid, fd.Name)
+						procSet[v.Name] = true
 						break
 					}
 				}
+			}
+			for k := range procSet {
+				fmt.Printf(`"%s"`, k)
 			}
 			fmt.Printf(")\n")
 		}
