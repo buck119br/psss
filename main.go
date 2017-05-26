@@ -28,6 +28,9 @@ func main() {
 		fmt.Println(version)
 		return
 	}
+	if *flagTCP && *flagProcess {
+		testfunc()
+	}
 	if *flagTCP {
 		if _, err := GetTCPRecord(); err != nil {
 			panic(err)
