@@ -133,15 +133,15 @@ func Show() {
 				for _, v := range records {
 					if status == "ESTAB" {
 						if len(v.LocalAddr) >= 16 {
-							showFormat = "\t\t\t %s\t %s\n"
+							showFormat = "\t\t\t%s\t %s\n"
 						} else {
-							showFormat = "\t\t\t %s\t\t %s\n"
+							showFormat = "\t\t\t%s\t\t %s\n"
 						}
 					} else {
 						if len(v.LocalAddr) >= 16 {
-							showFormat = "\t\t %s\t %s\n"
+							showFormat = "\t\t%s\t %s\n"
 						} else {
-							showFormat = "\t\t %s\t\t %s\n"
+							showFormat = "\t\t%s\t\t %s\n"
 						}
 					}
 					fmt.Printf(showFormat, v.LocalAddr, v.RemoteAddr)
