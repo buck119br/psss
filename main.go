@@ -121,16 +121,26 @@ func Show() {
 		for procName, lcOrRmt = range procRecords {
 			fmt.Println("\t", procName)
 			for local, records = range lcOrRmt {
-				if local && status == "ESTAB" {
-					fmt.Println("\t\tLocal")
-				} else {
-					fmt.Println("\t\tRemote")
+				if status == "ESTAB" {
+					if local {
+						fmt.Println("\t\tLocal")
+					} else {
+						fmt.Println("\t\tRemote")
+					}
 				}
 				for _, v := range records {
-					if len(v.LocalAddr) < 16 {
-						showFormat = "\t\t\t %s\t\t %s\n"
+					if status == "ESTAB" {
+						if len(v.LocalAddr) < 16 {
+							showFormat = "\t\t\t %s\t\t %s\n"
+						} else {
+							showFormat = "\t\t\t %s\t %s\n"
+						}
 					} else {
-						showFormat = "\t\t\t %s\t %s\n"
+						if len(v.LocalAddr) < 16 {
+							showFormat = "\t\t %s\t\t %s\n"
+						} else {
+							showFormat = "\t\t %s\t %s\n"
+						}
 					}
 					fmt.Printf(showFormat, v.LocalAddr, v.RemoteAddr)
 				}
