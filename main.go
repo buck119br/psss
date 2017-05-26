@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
+	"strings"
 )
 
 const (
@@ -60,23 +62,43 @@ func ShowUsageSummary() (err error) {
 
 func Show() {
 	var (
-		procRecords map[string][]*TCPRecord
+		procRecords map[string]map[bool][]*TCPRecord
+		lcOrRmt     map[bool][]*TCPRecord
 		records     []*TCPRecord
 		procName    string
+		local       bool
 		status      string
 		ok          bool
+		showFormat  string
 	)
-	statusMap := make(map[string]map[string][]*TCPRecord)
+	localAddress, err := net.InterfaceAddrs()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	statusMap := make(map[string]map[string]map[bool][]*TCPRecord)
 	for _, record := range GlobalTCPv4Records {
 		status = TCPState[int(record.Status)]
+		if status != "LISTEN" && status != "ESTAB" {
+			continue
+		}
 		if procRecords, ok = statusMap[status]; !ok {
-			procRecords = make(map[string][]*TCPRecord)
+			procRecords = make(map[string]map[bool][]*TCPRecord)
 		}
 		for _, proc := range record.Procs {
 			for _, fd := range proc.Fd {
 				if fd.SysStat.Ino == record.Inode {
 					procName = proc.Name
-					if records, ok = procRecords[procName]; !ok {
+					if lcOrRmt, ok = procRecords[procName]; !ok {
+						lcOrRmt = make(map[bool][]*TCPRecord)
+					}
+					local = false
+					for _, v := range localAddress {
+						if strings.Contains(record.RemoteAddr, v.String()) {
+							local = true
+						}
+					}
+					if records, ok = lcOrRmt[local]; !ok {
 						records = make([]*TCPRecord, 0, 0)
 					}
 					break
@@ -84,15 +106,28 @@ func Show() {
 			}
 		}
 		records = append(records, record)
-		procRecords[procName] = records
+		lcOrRmt[local] = records
+		procRecords[procName] = lcOrRmt
 		statusMap[status] = procRecords
 	}
 	for status, procRecords = range statusMap {
 		fmt.Println(status)
-		for procName, records = range procRecords {
+		for procName, lcOrRmt = range procRecords {
 			fmt.Println("\t", procName)
-			for _, v := range records {
-				fmt.Printf("\t\t %s\t %s\n", v.LocalAddr, v.RemoteAddr)
+			for local, records = range lcOrRmt {
+				if local {
+					fmt.Println("\t\tLocal")
+				} else {
+					fmt.Println("\t\tRemote")
+				}
+				for _, v := range records {
+					if len(v.LocalAddr) < 16 {
+						showFormat = "\t\t\t %s\t\t %s\n"
+					} else {
+						showFormat = "\t\t\t %s\t %s\n"
+					}
+					fmt.Printf(showFormat, v.LocalAddr, v.RemoteAddr)
+				}
 			}
 		}
 	}
@@ -126,7 +161,4 @@ func main() {
 		Show()
 	}
 
-}
-
-func testfunc() {
 }
