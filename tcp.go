@@ -19,6 +19,14 @@ var (
 	GlobalTCPv4Records map[uint64]*TCPRecord
 	GlobalTCPv6Records map[uint64]*TCPRecord
 
+	Protocal = []string{
+		"RAW",
+		"UDP",
+		"TCP",
+		"INET",
+		"FRAG",
+	}
+
 	TCPState = []string{
 		"UNKNOWN",
 		"ESTAB",
