@@ -121,7 +121,7 @@ func Show() {
 		for procName, lcOrRmt = range procRecords {
 			fmt.Println("\t", procName)
 			for local, records = range lcOrRmt {
-				if local {
+				if local && status == "ESTAB" {
 					fmt.Println("\t\tLocal")
 				} else {
 					fmt.Println("\t\tRemote")
