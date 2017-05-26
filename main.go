@@ -39,6 +39,7 @@ func SetUpRelation() {
 
 func ShowUsageSummary() (err error) {
 	summary := make(map[string]map[string]int)
+	summary[IPv4String] = make(map[string]int)
 	for _, v := range TCPState {
 		summary[IPv4String][v] = 0
 	}
