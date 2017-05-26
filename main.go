@@ -6,15 +6,15 @@ import (
 )
 
 const (
-	ProcRoot = "/proc"
-	version  = "ss utility, 0.0.1"
-	usage    = "Usage:\tss [ OPTIONS ]\n" +
+	version = "ss utility, 0.0.1"
+	usage   = "Usage:\tss [ OPTIONS ]\n" +
 		"\tss [ OPTIONS ] [ FILTER ]\n"
 )
 
 var (
-	flagTCP     = flag.Bool("t", false, "display only TCP sockets")
 	flagVersion = flag.Bool("v", false, "output version information")
+	flagTCP     = flag.Bool("t", false, "display only TCP sockets")
+	flagProcess = flag.Bool("p", false, "show process using socket")
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 		return
 	}
 	if *flagTCP {
-		if _, err := TCPRecordRead(); err != nil {
+		if _, err := GetTCPRecord(); err != nil {
 			panic(err)
 		}
 		return
