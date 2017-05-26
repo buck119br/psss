@@ -33,6 +33,7 @@ func SetUpRelation() {
 			}
 			tcpRecord.Procs = append(tcpRecord.Procs, proc)
 			GlobalTCPv4Records[fd.SysStat.Ino] = tcpRecord
+			proc.TCPRecords = append(proc.TCPRecords, tcpRecord)
 		}
 	}
 }
@@ -53,41 +54,46 @@ func ShowUsageSummary() (err error) {
 			format = "%s\t\t %d\t %d\t %d\t\n"
 		}
 		fmt.Printf(format, protocal, summary[protocal][IPv4String]+0, summary[protocal][IPv4String], 0)
-
 	}
 	return nil
 }
 
 func Show() {
 	var (
-		records []*TCPRecord
-		ok      bool
+		procRecords map[string][]*TCPRecord
+		records     []*TCPRecord
+		procName    string
+		status      string
+		ok          bool
 	)
-	statusMap := make(map[string][]*TCPRecord)
-	for _, v := range GlobalTCPv4Records {
-		if records, ok = statusMap[TCPState[int(v.Status)]]; !ok {
-			records = make([]*TCPRecord, 0, 0)
+	statusMap := make(map[string]map[string][]*TCPRecord)
+	for _, record := range GlobalTCPv4Records {
+		status = TCPState[int(record.Status)]
+		if procRecords, ok = statusMap[status]; !ok {
+			procRecords = make(map[string][]*TCPRecord)
 		}
-		records = append(records, v)
-		statusMap[TCPState[int(v.Status)]] = records
-	}
-	for status, records := range statusMap {
-		fmt.Println(status)
-		for _, record := range records {
-			fmt.Printf("\t %s\t %s\t users:(", record.LocalAddr, record.RemoteAddr)
-			procSet := make(map[string]bool)
-			for _, v := range record.Procs {
-				for _, fd := range v.Fd {
-					if fd.SysStat.Ino == record.Inode {
-						procSet[v.Name] = true
-						break
+		for _, proc := range record.Procs {
+			for _, fd := range proc.Fd {
+				if fd.SysStat.Ino == record.Inode {
+					procName = proc.Name
+					if records, ok = procRecords[procName]; !ok {
+						records = make([]*TCPRecord, 0, 0)
 					}
+					break
 				}
 			}
-			for k := range procSet {
-				fmt.Printf(`"%s"`, k)
+		}
+		records = append(records, record)
+		procRecords[procName] = records
+		statusMap[status] = procRecords
+	}
+	for status, procRecords = range statusMap {
+		fmt.Println(status)
+		for procName, records = range procRecords {
+			fmt.Println("\t", procName)
+			for _, v := range records {
+				fmt.Printf("\t\t %s\t %s\n", v.LocalAddr, v.RemoteAddr)
 			}
-			fmt.Printf(")\n")
 		}
 	}
 }
