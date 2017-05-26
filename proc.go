@@ -12,11 +12,12 @@ const (
 	ProcRoot = "/proc"
 )
 
+var GlobalProcInfo []*ProcInfo
+
 type ProcInfo struct {
-	Name       string
-	Pid        int
-	Fd         []*FileInfo
-	TCPSockets []*TCPRecord
+	Name string
+	Pid  int
+	Fd   []*FileInfo
 }
 
 func NewProcInfo() *ProcInfo {
@@ -46,18 +47,18 @@ func (p *ProcInfo) GetStatus() (err error) {
 	return nil
 }
 
-func GetProcInfo() (procs []*ProcInfo, err error) {
+func GetProcInfo() (err error) {
 	var tempPid int
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
-		return procs, err
+		return err
 	}
 	defer fd.Close()
 	names, err := fd.Readdirnames(0)
 	if err != nil {
-		return procs, err
+		return err
 	}
-	procs = make([]*ProcInfo, 0, 0)
+	GlobalProcInfo = make([]*ProcInfo, 0, 0)
 	for _, v := range names {
 		if tempPid, err = strconv.Atoi(v); err != nil {
 			continue
@@ -70,7 +71,7 @@ func GetProcInfo() (procs []*ProcInfo, err error) {
 		if err = proc.GetStatus(); err != nil {
 			continue
 		}
-		procs = append(procs, proc)
+		GlobalProcInfo = append(GlobalProcInfo, proc)
 	}
-	return procs, nil
+	return nil
 }

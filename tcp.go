@@ -10,22 +10,30 @@ import (
 
 const (
 	TCPPath = "/proc/net/tcp"
+
+	IPv4String = "IPv4"
+	IPv6String = "IPv6"
 )
 
-var TCPState = []string{
-	"UNKNOWN",
-	"ESTAB",
-	"SYN-SENT",
-	"SYN-RECV",
-	"FIN-WAIT-1",
-	"FIN-WAIT-2",
-	"TIME-WAIT",
-	"UNCONN",
-	"CLOSE-WAIT",
-	"LAST-ACK",
-	"LISTEN",
-	"CLOSING",
-}
+var (
+	GlobalTCPv4Records map[uint64]*TCPRecord
+	GlobalTCPv6Records map[uint64]*TCPRecord
+
+	TCPState = []string{
+		"UNKNOWN",
+		"ESTAB",
+		"SYN-SENT",
+		"SYN-RECV",
+		"FIN-WAIT-1",
+		"FIN-WAIT-2",
+		"TIME-WAIT",
+		"UNCONN",
+		"CLOSE-WAIT",
+		"LAST-ACK",
+		"LISTEN",
+		"CLOSING",
+	}
+)
 
 type TCPRecord struct {
 	LocalAddr         string
@@ -46,9 +54,16 @@ type TCPRecord struct {
 	ACK               int
 	CongestionWindow  int
 	SlowStartSize     int
+	Procs             []*ProcInfo
 }
 
-func GetTCPRecord() (tcpRecords map[uint64]*TCPRecord, err error) {
+func NewTCPRecord() *TCPRecord {
+	t := new(TCPRecord)
+	t.Procs = make([]*ProcInfo, 0, 0)
+	return t
+}
+
+func GetTCPv4Record() (err error) {
 	var (
 		line        string
 		fields      []string
@@ -61,10 +76,10 @@ func GetTCPRecord() (tcpRecords map[uint64]*TCPRecord, err error) {
 		return
 	}
 	defer file.Close()
-	tcpRecords = make(map[uint64]*TCPRecord)
+	GlobalTCPv4Records = make(map[uint64]*TCPRecord)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		tcpRecord := new(TCPRecord)
+		tcpRecord := NewTCPRecord()
 		if err = scanner.Err(); err != nil {
 			return
 		}
@@ -76,7 +91,7 @@ func GetTCPRecord() (tcpRecords map[uint64]*TCPRecord, err error) {
 		fieldsIndex = 1
 		// Local address
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if tcpRecord.LocalAddr, err = HexToIP(stringBuff[0]); err != nil {
+		if tcpRecord.LocalAddr, err = IPv4HexToString(stringBuff[0]); err != nil {
 			continue
 		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
@@ -86,7 +101,7 @@ func GetTCPRecord() (tcpRecords map[uint64]*TCPRecord, err error) {
 		fieldsIndex++
 		// Remote address
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if tcpRecord.RemoteAddr, err = HexToIP(stringBuff[0]); err != nil {
+		if tcpRecord.RemoteAddr, err = IPv4HexToString(stringBuff[0]); err != nil {
 			continue
 		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
@@ -174,12 +189,12 @@ func GetTCPRecord() (tcpRecords map[uint64]*TCPRecord, err error) {
 				continue
 			}
 		}
-		tcpRecords[tcpRecord.Inode] = tcpRecord
+		GlobalTCPv4Records[tcpRecord.Inode] = tcpRecord
 	}
-	return tcpRecords, nil
+	return nil
 }
 
-func HexToIP(ipHex string) (ip string, err error) {
+func IPv4HexToString(ipHex string) (ip string, err error) {
 	var tempInt int64
 	if len(ipHex) != 8 {
 		return ip, fmt.Errorf("invalid input:[%s]", ipHex)
