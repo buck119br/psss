@@ -156,9 +156,11 @@ func GetTCPRecord(versionFlag bool) (err error) {
 			tcpRecord.LocalAddr.Host, err = IPv4HexToString(stringBuff[0])
 		}
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		tcpRecord.LocalAddr.Port = fmt.Sprintf("%d", tempInt64)
@@ -171,58 +173,70 @@ func GetTCPRecord(versionFlag bool) (err error) {
 			tcpRecord.RemoteAddr.Host, err = IPv4HexToString(stringBuff[0])
 		}
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		tcpRecord.RemoteAddr.Port = fmt.Sprintf("%d", tempInt64)
 		fieldsIndex++
 		// Status
 		if tcpRecord.Status, err = strconv.ParseInt(fields[fieldsIndex], 16, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
 		// TxQueue:RxQueue
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
 		if tcpRecord.TxQueue, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		if tcpRecord.RxQueue, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
 		// Timer:TmWhen
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
 		if tcpRecord.Timer, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		if tcpRecord.TmWhen, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
 		// Retransmit
 		if tcpRecord.Retransmit, err = strconv.ParseInt(fields[fieldsIndex], 16, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
 		// UID
 		if tcpRecord.UID, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
 		// Timeout
 		if tcpRecord.Timeout, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
 		// Inode
 		if tcpRecord.Inode, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
 		// Socket reference count
 		if tcpRecord.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
@@ -235,26 +249,31 @@ func GetTCPRecord(versionFlag bool) (err error) {
 			fieldsIndex++
 			// Retransmit timeout
 			if tcpRecord.RetransmitTimeout, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				fmt.Println(err)
 				continue
 			}
 			fieldsIndex++
 			// Predicted tick of soft clock (delayed ACK control data)
 			if tcpRecord.PredictedTick, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				fmt.Println(err)
 				continue
 			}
 			fieldsIndex++
 			// 	(ack.quick<<1)|ack.pingpong
 			if tcpRecord.ACK, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				fmt.Println(err)
 				continue
 			}
 			fieldsIndex++
 			// 	sending congestion window
 			if tcpRecord.CongestionWindow, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				fmt.Println(err)
 				continue
 			}
 			fieldsIndex++
 			// 	slow start size threshold, or -1 if the threshold is >= 0xFFFF
 			if tcpRecord.SlowStartSize, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				fmt.Println(err)
 				continue
 			}
 		}
