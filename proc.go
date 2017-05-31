@@ -15,16 +15,14 @@ const (
 var GlobalProcInfo []*ProcInfo
 
 type ProcInfo struct {
-	Name       string
-	Pid        int
-	Fd         []*FileInfo
-	TCPRecords []*TCPRecord
+	Name string
+	Pid  int
+	Fd   []*FileInfo
 }
 
 func NewProcInfo() *ProcInfo {
 	pi := new(ProcInfo)
 	pi.Fd = make([]*FileInfo, 0, 0)
-	pi.TCPRecords = make([]*TCPRecord, 0, 0)
 	return pi
 }
 

@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	TCPPath = "/proc/net/tcp"
+	TCPv4Path = "/proc/net/tcp"
+	TCPv6Path = "/proc/net/tcp6"
 
 	IPv4String = "IPv4"
 	IPv6String = "IPv6"
@@ -43,9 +44,18 @@ var (
 	}
 )
 
+type IP struct {
+	Host string
+	Port string
+}
+
+func (i IP) String() (str string) {
+	return i.Host + ":" + i.Port
+}
+
 type TCPRecord struct {
-	LocalAddr         string
-	RemoteAddr        string
+	LocalAddr         IP
+	RemoteAddr        IP
 	Status            int64
 	TxQueue           int64
 	RxQueue           int64
@@ -71,20 +81,61 @@ func NewTCPRecord() *TCPRecord {
 	return t
 }
 
-func GetTCPv4Record() (err error) {
+func IPv4HexToString(ipHex string) (ip string, err error) {
+	var tempInt int64
+	if len(ipHex) != 8 {
+		return ip, fmt.Errorf("invalid input:[%s]", ipHex)
+	}
+	for i := 3; i > 0; i-- {
+		if tempInt, err = strconv.ParseInt(ipHex[i*2:(i+1)*2], 16, 64); err != nil {
+			return "", err
+		}
+		ip += fmt.Sprintf("%d", tempInt) + "."
+	}
+	if tempInt, err = strconv.ParseInt(ipHex[0:2], 16, 64); err != nil {
+		return "", err
+	}
+	ip += fmt.Sprintf("%d", tempInt)
+	return ip, nil
+}
+
+func IPv6HexToString(ipHex string) (ip string, err error) {
+	prefix := ipHex[:24]
+	suffix := ipHex[24:]
+	for i := 0; i < 6; i++ {
+		if prefix[i:i+4] == "0000" {
+			ip += ":"
+			continue
+		}
+		ip += prefix[i:i+4] + ":"
+	}
+	if suffix, err = IPv4HexToString(suffix); err != nil {
+		return "", err
+	}
+	ip += suffix
+	return ip, nil
+}
+
+// IPv6:versionFlag = true; IPv4:versionFlag = false
+func GetTCPRecord(versionFlag bool) (err error) {
 	var (
+		file        *os.File
 		line        string
 		fields      []string
 		fieldsIndex int
 		stringBuff  []string
 		tempInt64   int64
 	)
-	file, err := os.Open(TCPPath)
+	if versionFlag {
+		file, err = os.Open(TCPv4Path)
+	} else {
+		file, err = os.Open(TCPv6Path)
+	}
 	if err != nil {
 		return
 	}
 	defer file.Close()
-	GlobalTCPv4Records = make(map[uint64]*TCPRecord)
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		tcpRecord := NewTCPRecord()
@@ -99,23 +150,33 @@ func GetTCPv4Record() (err error) {
 		fieldsIndex = 1
 		// Local address
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if tcpRecord.LocalAddr, err = IPv4HexToString(stringBuff[0]); err != nil {
+		if versionFlag {
+			tcpRecord.LocalAddr.Host, err = IPv6HexToString(stringBuff[0])
+		} else {
+			tcpRecord.LocalAddr.Host, err = IPv4HexToString(stringBuff[0])
+		}
+		if err != nil {
 			continue
 		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		tcpRecord.LocalAddr += ":" + fmt.Sprintf("%d", tempInt64)
+		tcpRecord.LocalAddr.Port = fmt.Sprintf("%d", tempInt64)
 		fieldsIndex++
 		// Remote address
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if tcpRecord.RemoteAddr, err = IPv4HexToString(stringBuff[0]); err != nil {
+		if versionFlag {
+			tcpRecord.RemoteAddr.Host, err = IPv6HexToString(stringBuff[0])
+		} else {
+			tcpRecord.RemoteAddr.Host, err = IPv4HexToString(stringBuff[0])
+		}
+		if err != nil {
 			continue
 		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		tcpRecord.RemoteAddr += ":" + fmt.Sprintf("%d", tempInt64)
+		tcpRecord.RemoteAddr.Port = fmt.Sprintf("%d", tempInt64)
 		fieldsIndex++
 		// Status
 		if tcpRecord.Status, err = strconv.ParseInt(fields[fieldsIndex], 16, 64); err != nil {
@@ -197,25 +258,11 @@ func GetTCPv4Record() (err error) {
 				continue
 			}
 		}
+		if versionFlag {
+			GlobalTCPv6Records[tcpRecord.Inode] = tcpRecord
+			continue
+		}
 		GlobalTCPv4Records[tcpRecord.Inode] = tcpRecord
 	}
 	return nil
-}
-
-func IPv4HexToString(ipHex string) (ip string, err error) {
-	var tempInt int64
-	if len(ipHex) != 8 {
-		return ip, fmt.Errorf("invalid input:[%s]", ipHex)
-	}
-	for i := 3; i > 0; i-- {
-		if tempInt, err = strconv.ParseInt(ipHex[i*2:(i+1)*2], 16, 64); err != nil {
-			return "", err
-		}
-		ip += fmt.Sprintf("%d", tempInt) + "."
-	}
-	if tempInt, err = strconv.ParseInt(ipHex[0:2], 16, 64); err != nil {
-		return "", err
-	}
-	ip += fmt.Sprintf("%d", tempInt)
-	return ip, nil
 }

@@ -21,6 +21,11 @@ var (
 	flagSummary = flag.Bool("s", false, "show socket usage summary")
 )
 
+func init() {
+	GlobalTCPv4Records = make(map[uint64]*TCPRecord)
+	GlobalTCPv6Records = make(map[uint64]*TCPRecord)
+}
+
 func SetUpRelation() {
 	var (
 		tcpRecord *TCPRecord
@@ -36,7 +41,6 @@ func SetUpRelation() {
 			}
 			tcpRecord.Procs = append(tcpRecord.Procs, proc)
 			GlobalTCPv4Records[fd.SysStat.Ino] = tcpRecord
-			proc.TCPRecords = append(proc.TCPRecords, tcpRecord)
 		}
 	}
 }
@@ -46,9 +50,9 @@ func ShowUsageSummary() (err error) {
 	summary := make(map[string]map[string]int)
 	for _, v := range Protocal {
 		summary[v] = make(map[string]int)
-		summary[v][IPv4String] = 0
 	}
 	summary["TCP"][IPv4String] = len(GlobalTCPv4Records)
+	summary["TCP"][IPv6String] = len(GlobalTCPv6Records)
 	fmt.Println("Transport\t Total\t IPv4\t IPv6\t")
 	for _, protocal := range Protocal {
 		if len(protocal) >= 8 {
@@ -56,7 +60,7 @@ func ShowUsageSummary() (err error) {
 		} else {
 			format = "%s\t\t %d\t %d\t %d\t\n"
 		}
-		fmt.Printf(format, protocal, summary[protocal][IPv4String]+0, summary[protocal][IPv4String], 0)
+		fmt.Printf(format, protocal, summary[protocal][IPv4String]+summary[protocal][IPv6String], summary[protocal][IPv4String], summary[protocal][IPv6String])
 	}
 	return nil
 }
@@ -101,7 +105,7 @@ func Show() {
 					}
 					local = false
 					for _, v := range localIP {
-						if strings.Contains(record.RemoteAddr, v) {
+						if strings.Contains(record.RemoteAddr.String(), v) {
 							local = true
 						}
 					}
@@ -129,16 +133,16 @@ func Show() {
 						fmt.Println("\t\tRemote")
 					}
 				}
-				sort.Slice(records, func(i, j int) bool { return records[i].LocalAddr < records[j].LocalAddr })
+				sort.Slice(records, func(i, j int) bool { return records[i].LocalAddr.String() < records[j].LocalAddr.String() })
 				for _, v := range records {
 					if status == "ESTAB" {
-						if len(v.LocalAddr) >= 16 {
+						if len(v.LocalAddr.String()) >= 16 {
 							showFormat = "\t\t\t%s\t %s\n"
 						} else {
 							showFormat = "\t\t\t%s\t\t %s\n"
 						}
 					} else {
-						if len(v.LocalAddr) >= 16 {
+						if len(v.LocalAddr.String()) >= 16 {
 							showFormat = "\t\t%s\t %s\n"
 						} else {
 							showFormat = "\t\t%s\t\t %s\n"
@@ -163,7 +167,7 @@ func main() {
 		fmt.Println(version)
 		return
 	}
-	if err = GetTCPv4Record(); err != nil {
+	if err = GetTCPRecord(false); err != nil {
 		fmt.Println(err)
 		return
 	}
