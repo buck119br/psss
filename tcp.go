@@ -127,9 +127,9 @@ func GetTCPRecord(versionFlag bool) (err error) {
 		tempInt64   int64
 	)
 	if versionFlag {
-		file, err = os.Open(TCPv4Path)
-	} else {
 		file, err = os.Open(TCPv6Path)
+	} else {
+		file, err = os.Open(TCPv4Path)
 	}
 	if err != nil {
 		return
