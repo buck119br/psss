@@ -17,8 +17,8 @@ const (
 const ()
 
 var (
-	flagHelp    = flag.Bool("h", false, "this message")
-	flagVersion = flag.Bool("v", false, "output version information")
+	flagHelp    = flag.Bool("h", false, "this message")               // OK
+	flagVersion = flag.Bool("v", false, "output version information") // OK
 
 	flagAll        = flag.Bool("a", false, "display all sockets")
 	flagExtended   = flag.Bool("e", false, "show detailed socket information")
@@ -29,7 +29,7 @@ var (
 	flagOpetion    = flag.Bool("o", false, "show timer information")
 	flagProcess    = flag.Bool("p", false, "show process using socket")
 	flagResolve    = flag.Bool("r", false, "resolve host names")
-	flagSummary    = flag.Bool("s", false, "show socket usage summary")
+	flagSummary    = flag.Bool("s", false, "show socket usage summary") // OK
 
 	flagIPv4   = flag.Bool("4", false, "display only IP version 4 sockets")
 	flagIPv6   = flag.Bool("6", false, "display only IP version 6 sockets")
@@ -78,6 +78,16 @@ func main() {
 		*flagUDP = true
 		*flagRAW = true
 		*flagUNIX = true
+	}
+	if *flagTCP {
+		if err = GenericReadTCP(false); err != nil {
+			fmt.Println(err)
+			return
+		}
+		if err = GenericReadTCP(true); err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 	if *flagProcess {
 		if err = GetProcInfo(); err != nil {

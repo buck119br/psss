@@ -140,7 +140,7 @@ func GenericReadTCP(versionFlag bool) (err error) {
 	for scanner.Scan() {
 		tcpRecord := NewTCPRecord()
 		if err = scanner.Err(); err != nil {
-			return
+			return err
 		}
 		line = scanner.Text()
 		fields = strings.Fields(line)

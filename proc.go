@@ -89,12 +89,10 @@ func SetUpRelation() {
 			if tcpRecord, ok = GlobalTCPv4Records[fd.SysStat.Ino]; ok {
 				tcpRecord.Procs = append(tcpRecord.Procs, proc)
 				GlobalTCPv4Records[fd.SysStat.Ino] = tcpRecord
-				continue
 			}
 			if tcpRecord, ok = GlobalTCPv6Records[fd.SysStat.Ino]; ok {
 				tcpRecord.Procs = append(tcpRecord.Procs, proc)
 				GlobalTCPv6Records[fd.SysStat.Ino] = tcpRecord
-				continue
 			}
 		}
 	}

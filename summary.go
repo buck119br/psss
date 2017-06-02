@@ -50,6 +50,9 @@ func GenericReadSockstat(versionFlag bool) (err error) {
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
+		if err = scanner.Err(); err != nil {
+			return err
+		}
 		line = scanner.Text()
 		fields = strings.Fields(line)
 		switch fields[0] {
