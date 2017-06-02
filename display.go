@@ -8,13 +8,15 @@ import (
 )
 
 func ShowUsageSummary() (err error) {
-	var format string
-	summary := make(map[string]map[string]int)
-	for _, v := range Protocal {
-		summary[v] = make(map[string]int)
+	// Read
+	if err = GenericReadSockstat(false); err != nil {
+		return err
 	}
-	summary["TCP"][IPv4String] = len(GlobalTCPv4Records)
-	summary["TCP"][IPv6String] = len(GlobalTCPv6Records)
+	if err = GenericReadSockstat(true); err != nil {
+		return err
+	}
+	// Display
+	var format string
 	fmt.Println("Transport\t Total\t IPv4\t IPv6\t")
 	for _, protocal := range Protocal {
 		if len(protocal) >= 8 {
@@ -22,7 +24,7 @@ func ShowUsageSummary() (err error) {
 		} else {
 			format = "%s\t\t %d\t %d\t %d\t\n"
 		}
-		fmt.Printf(format, protocal, summary[protocal][IPv4String]+summary[protocal][IPv6String], summary[protocal][IPv4String], summary[protocal][IPv6String])
+		fmt.Printf(format, protocal, Summary[protocal][IPv4String]+Summary[protocal][IPv6String], Summary[protocal][IPv4String], Summary[protocal][IPv6String])
 	}
 	return nil
 }

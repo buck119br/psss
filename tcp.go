@@ -11,22 +11,11 @@ import (
 const (
 	TCPv4Path = "/proc/net/tcp"
 	TCPv6Path = "/proc/net/tcp6"
-
-	IPv4String = "IPv4"
-	IPv6String = "IPv6"
 )
 
 var (
 	GlobalTCPv4Records map[uint64]*TCPRecord
 	GlobalTCPv6Records map[uint64]*TCPRecord
-
-	Protocal = []string{
-		"RAW",
-		"UDP",
-		"TCP",
-		"INET",
-		"FRAG",
-	}
 
 	TCPState = []string{
 		"UNKNOWN",
@@ -41,6 +30,14 @@ var (
 		"LAST-ACK",
 		"LISTEN",
 		"CLOSING",
+	}
+
+	Colons = []string{
+		":::::::",
+		"::::::",
+		":::::",
+		"::::",
+		":::",
 	}
 )
 
@@ -109,6 +106,9 @@ func IPv6HexToString(ipHex string) (ip string, err error) {
 		}
 		ip += prefix[i:i+4] + ":"
 	}
+	for _, v := range Colons {
+		ip = strings.Replace(ip, v, "::", -1)
+	}
 	if suffix, err = IPv4HexToString(suffix); err != nil {
 		return "", err
 	}
@@ -117,7 +117,7 @@ func IPv6HexToString(ipHex string) (ip string, err error) {
 }
 
 // IPv6:versionFlag = true; IPv4:versionFlag = false
-func GetTCPRecord(versionFlag bool) (err error) {
+func GenericReadTCP(versionFlag bool) (err error) {
 	var (
 		file        *os.File
 		line        string
