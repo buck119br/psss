@@ -66,7 +66,10 @@ func main() {
 		return
 	}
 	if *flagSummary {
-		ShowUsageSummary()
+		if err = ShowUsageSummary(); err != nil {
+			fmt.Println(err)
+		}
+		return
 	}
 	if *flagAll {
 		*flagPacket = true
