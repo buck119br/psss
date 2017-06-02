@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ShowUsageSummary() (err error) {
+func ShowSummary() (err error) {
 	// Read
 	if err = GenericReadSockstat(false); err != nil {
 		return err
@@ -26,6 +26,15 @@ func ShowUsageSummary() (err error) {
 		}
 		fmt.Printf(format, protocal, Summary[protocal][IPv4String]+Summary[protocal][IPv6String], Summary[protocal][IPv4String], Summary[protocal][IPv6String])
 	}
+	return nil
+}
+
+func ShowTCP() {
+	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
+	fmt.Printf("%-*s\t%-*s", MaxLocalAddrLength, "LocalAddress:Port", MaxRemoteAddrLength, "RemoteAddress:Port")
+}
+
+func SocketShow() (err error) {
 	return nil
 }
 

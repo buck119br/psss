@@ -164,6 +164,9 @@ func GenericReadTCP(versionFlag bool) (err error) {
 			continue
 		}
 		tcpRecord.LocalAddr.Port = fmt.Sprintf("%d", tempInt64)
+		if MaxLocalAddrLength < len(tcpRecord.LocalAddr.String()) {
+			MaxLocalAddrLength = len(tcpRecord.LocalAddr.String())
+		}
 		fieldsIndex++
 		// Remote address
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
@@ -181,6 +184,9 @@ func GenericReadTCP(versionFlag bool) (err error) {
 			continue
 		}
 		tcpRecord.RemoteAddr.Port = fmt.Sprintf("%d", tempInt64)
+		if MaxRemoteAddrLength < len(tcpRecord.RemoteAddr.String()) {
+			MaxRemoteAddrLength = len(tcpRecord.RemoteAddr.String())
+		}
 		fieldsIndex++
 		// Status
 		if tcpRecord.Status, err = strconv.ParseInt(fields[fieldsIndex], 16, 64); err != nil {
