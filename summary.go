@@ -24,9 +24,9 @@ var (
 )
 
 func GetSocketCount(fields []string) (int, error) {
-	for _, v := range fields {
-		if v == "inuse" {
-			return strconv.Atoi(v)
+	for i := range fields {
+		if fields[i] == "inuse" {
+			return strconv.Atoi(fields[i+1])
 		}
 	}
 	return 0, nil
@@ -35,9 +35,10 @@ func GetSocketCount(fields []string) (int, error) {
 // IPv6:versionFlag = true; IPv4:versionFlag = false
 func GenericReadSockstat(versionFlag bool) (err error) {
 	var (
-		file   *os.File
-		line   string
-		fields []string
+		file      *os.File
+		line      string
+		fields    []string
+		tempCount int
 	)
 	if versionFlag {
 		file, err = os.Open(Sockstat6Path)
@@ -53,45 +54,47 @@ func GenericReadSockstat(versionFlag bool) (err error) {
 		line = scanner.Text()
 		fields = strings.Fields(line)
 		switch fields[0] {
-		case "sockets":
+		case "sockets:":
 			continue
-		case "TCP":
+		case "TCP:":
 			if Summary["TCP"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "TCP6":
+		case "TCP6:":
 			if Summary["TCP"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "UDP":
+		case "UDP:":
 			if Summary["UDP"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "UDP6":
+		case "UDP6:":
 			if Summary["UDP"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "UDPLITE":
-			if Summary["UDP"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
+		case "UDPLITE:":
+			if tempCount, err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "UDPLITE6":
-			if Summary["UDP"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
+			Summary["UDP"][IPv4String] += tempCount
+		case "UDPLITE6:":
+			if tempCount, err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "RAW":
+			Summary["UDP"][IPv6String] += tempCount
+		case "RAW:":
 			if Summary["RAW"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "RAW6":
+		case "RAW6:":
 			if Summary["RAW"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "FRAG":
+		case "FRAG:":
 			if Summary["FRAG"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
-		case "FRAG6":
+		case "FRAG6:":
 			if Summary["FRAG"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
 				return err
 			}
