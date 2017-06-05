@@ -47,6 +47,28 @@ func (p *ProcInfo) GetStatus() (err error) {
 	return nil
 }
 
+func GetProcFiles(pid int) (files []*FileInfo, err error) {
+	var file *FileInfo
+	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", pid)
+	fd, err := os.Open(fdPath)
+	if err != nil {
+		return files, err
+	}
+	defer fd.Close()
+	names, err := fd.Readdirnames(0)
+	if err != nil {
+		return files, err
+	}
+	files = make([]*FileInfo, 0, 0)
+	for _, v := range names {
+		if file, err = GetFileStat(fdPath + "/" + v); err != nil {
+			continue
+		}
+		files = append(files, file)
+	}
+	return files, nil
+}
+
 func GetProcInfo() (err error) {
 	var tempPid int
 	fd, err := os.Open(ProcRoot)
@@ -78,21 +100,29 @@ func GetProcInfo() (err error) {
 
 func SetUpRelation() {
 	var (
-		tcpRecord *TCPRecord
-		ok        bool
+		record *GenericRecord
+		ok     bool
 	)
 	for _, proc := range GlobalProcInfo {
 		for _, fd := range proc.Fd {
 			if fd.SysStat.Dev != 6 {
 				continue
 			}
-			if tcpRecord, ok = GlobalTCPv4Records[fd.SysStat.Ino]; ok {
-				tcpRecord.Procs = append(tcpRecord.Procs, proc)
-				GlobalTCPv4Records[fd.SysStat.Ino] = tcpRecord
+			if record, ok = GlobalTCPv4Records[fd.SysStat.Ino]; ok {
+				record.Procs = append(record.Procs, proc)
+				GlobalTCPv4Records[fd.SysStat.Ino] = record
 			}
-			if tcpRecord, ok = GlobalTCPv6Records[fd.SysStat.Ino]; ok {
-				tcpRecord.Procs = append(tcpRecord.Procs, proc)
-				GlobalTCPv6Records[fd.SysStat.Ino] = tcpRecord
+			if record, ok = GlobalTCPv6Records[fd.SysStat.Ino]; ok {
+				record.Procs = append(record.Procs, proc)
+				GlobalTCPv6Records[fd.SysStat.Ino] = record
+			}
+			if record, ok = GlobalUDPv4Records[fd.SysStat.Ino]; ok {
+				record.Procs = append(record.Procs, proc)
+				GlobalUDPv4Records[fd.SysStat.Ino] = record
+			}
+			if record, ok = GlobalUDPv6Records[fd.SysStat.Ino]; ok {
+				record.Procs = append(record.Procs, proc)
+				GlobalUDPv6Records[fd.SysStat.Ino] = record
 			}
 		}
 	}

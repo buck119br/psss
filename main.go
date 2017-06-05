@@ -9,9 +9,6 @@ const (
 	version = "ss utility, 0.0.1"
 	usage   = "Usage:\tss [ OPTIONS ]\n" +
 		"\tss [ OPTIONS ] [ FILTER ]\n"
-
-	IPv4String = "IPv4"
-	IPv6String = "IPv6"
 )
 
 const (
@@ -64,19 +61,33 @@ func init() {
 		Summary[v] = make(map[string]int)
 	}
 
-	GlobalTCPv4Records = make(map[uint64]*TCPRecord)
-	GlobalTCPv6Records = make(map[uint64]*TCPRecord)
+	GlobalTCPv4Records = make(map[uint64]*GenericRecord)
+	GlobalTCPv6Records = make(map[uint64]*GenericRecord)
+	GlobalUDPv4Records = make(map[uint64]*GenericRecord)
+	GlobalUDPv6Records = make(map[uint64]*GenericRecord)
 }
 
 func dataReader() (err error) {
 	if Family|FbTCPv4 != 0 {
-		if err = GenericReadTCP(false); err != nil {
+		if err = GenericRecordRead(TCPv4Str); err != nil {
 			fmt.Println(err)
 			return
 		}
 	}
 	if Family|FbTCPv6 != 0 {
-		if err = GenericReadTCP(true); err != nil {
+		if err = GenericRecordRead(TCPv6Str); err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+	if Family|FbUDPv4 != 0 {
+		if err = GenericRecordRead(UDPv4Str); err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+	if Family|FbUDPv6 != 0 {
+		if err = GenericRecordRead(UDPv6Str); err != nil {
 			fmt.Println(err)
 			return
 		}

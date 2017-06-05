@@ -2,6 +2,9 @@ package main
 
 import (
 	"bufio"
+	"fmt"
+	"os"
+	"syscall"
 )
 
 func ReadLine(reader *bufio.Reader) (line []byte, err error) {
@@ -15,4 +18,31 @@ func ReadLine(reader *bufio.Reader) (line []byte, err error) {
 		line = append(line, buffer...)
 	}
 	return line, nil
+}
+
+type FileInfo struct {
+	Name    string
+	SysStat *syscall.Stat_t
+}
+
+func NewFileInfo() *FileInfo {
+	fi := new(FileInfo)
+	fi.SysStat = new(syscall.Stat_t)
+	return fi
+}
+
+func GetFileStat(path string) (fi *FileInfo, err error) {
+	var (
+		stat os.FileInfo
+		ok   bool
+	)
+	if stat, err = os.Stat(path); err != nil {
+		return nil, err
+	}
+	fi = NewFileInfo()
+	fi.Name = path
+	if fi.SysStat, ok = stat.Sys().(*syscall.Stat_t); !ok {
+		return nil, fmt.Errorf("FileInfo.Sys:[%v] assertion failure", stat)
+	}
+	return fi, nil
 }

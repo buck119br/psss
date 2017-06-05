@@ -34,13 +34,13 @@ func ShowSummary() (err error) {
 	return nil
 }
 
-func ShowTCP(records map[uint64]*TCPRecord) {
+func GenericShow(records map[uint64]*GenericRecord) {
 	for _, record := range records {
 		fmt.Printf("tcp\t")
-		if len(TCPState[record.Status]) > 8 {
-			fmt.Printf("%s\t", TCPState[record.Status])
+		if len(Sstate[record.Status]) > 8 {
+			fmt.Printf("%s\t", Sstate[record.Status])
 		} else {
-			fmt.Printf("%s\t\t", TCPState[record.Status])
+			fmt.Printf("%s\t\t", Sstate[record.Status])
 		}
 		fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
 		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
@@ -67,18 +67,24 @@ func SocketShow() {
 	}
 	fmt.Printf("\n")
 	if Family|FbTCPv4 != 0 {
-		ShowTCP(GlobalTCPv4Records)
+		GenericShow(GlobalTCPv4Records)
 	}
 	if Family|FbTCPv6 != 0 {
-		ShowTCP(GlobalTCPv6Records)
+		GenericShow(GlobalTCPv6Records)
+	}
+	if Family|FbUDPv4 != 0 {
+		GenericShow(GlobalUDPv4Records)
+	}
+	if Family|FbUDPv6 != 0 {
+		GenericShow(GlobalUDPv6Records)
 	}
 }
 
 func Show() {
 	var (
-		procRecords map[string]map[bool][]*TCPRecord
-		lcOrRmt     map[bool][]*TCPRecord
-		records     []*TCPRecord
+		procRecords map[string]map[bool][]*GenericRecord
+		lcOrRmt     map[bool][]*GenericRecord
+		records     []*GenericRecord
 		procName    string
 		local       bool
 		status      string
@@ -96,21 +102,21 @@ func Show() {
 		stringBuff = strings.Split(v.String(), "/")
 		localIP = append(localIP, stringBuff[0])
 	}
-	statusMap := make(map[string]map[string]map[bool][]*TCPRecord)
+	statusMap := make(map[string]map[string]map[bool][]*GenericRecord)
 	for _, record := range GlobalTCPv4Records {
-		status = TCPState[int(record.Status)]
+		status = Sstate[int(record.Status)]
 		if status != "LISTEN" && status != "ESTAB" {
 			continue
 		}
 		if procRecords, ok = statusMap[status]; !ok {
-			procRecords = make(map[string]map[bool][]*TCPRecord)
+			procRecords = make(map[string]map[bool][]*GenericRecord)
 		}
 		for _, proc := range record.Procs {
 			for _, fd := range proc.Fd {
 				if fd.SysStat.Ino == record.Inode {
 					procName = proc.Name
 					if lcOrRmt, ok = procRecords[procName]; !ok {
-						lcOrRmt = make(map[bool][]*TCPRecord)
+						lcOrRmt = make(map[bool][]*GenericRecord)
 					}
 					local = false
 					for _, v := range localIP {
@@ -119,7 +125,7 @@ func Show() {
 						}
 					}
 					if records, ok = lcOrRmt[local]; !ok {
-						records = make([]*TCPRecord, 0, 0)
+						records = make([]*GenericRecord, 0, 0)
 					}
 					break
 				}
