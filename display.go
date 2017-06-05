@@ -164,7 +164,9 @@ func demandRecordHandler(family string, r *GenericRecord) {
 					}
 				}
 			}
-			remoteServiceMap[remoteServiceName] = true
+			if len(remoteServiceName) > 0 {
+				remoteServiceMap[remoteServiceName] = true
+			}
 		} else {
 			remoteServiceMap[r.RemoteAddr.String()] = true
 		}
@@ -210,9 +212,6 @@ func DemandShow() {
 		for procName, locOrRmtMap := range localServiceMap {
 			fmt.Println("\t" + procName)
 			for local, remoteServiceMap := range locOrRmtMap {
-				if len(remoteServiceMap) == 0 {
-					continue
-				}
 				if status == "ESTAB" {
 					if local {
 						fmt.Println("\t\tLocal")
