@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -46,12 +47,14 @@ func GenericReadSockstat(versionFlag bool) (err error) {
 		file, err = os.Open(Sockstat4Path)
 	}
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if err = scanner.Err(); err != nil {
+			fmt.Println(err)
 			return err
 		}
 		line = scanner.Text()
@@ -61,44 +64,54 @@ func GenericReadSockstat(versionFlag bool) (err error) {
 			continue
 		case "TCP:":
 			if Summary["TCP"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 		case "TCP6:":
 			if Summary["TCP"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 		case "UDP:":
 			if Summary["UDP"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 		case "UDP6:":
 			if Summary["UDP"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 		case "UDPLITE:":
 			if tempCount, err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 			Summary["UDP"][IPv4String] += tempCount
 		case "UDPLITE6:":
 			if tempCount, err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 			Summary["UDP"][IPv6String] += tempCount
 		case "RAW:":
 			if Summary["RAW"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 		case "RAW6:":
 			if Summary["RAW"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 		case "FRAG:":
 			if Summary["FRAG"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 		case "FRAG6:":
 			if Summary["FRAG"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
+				fmt.Println(err)
 				return err
 			}
 		default:

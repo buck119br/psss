@@ -80,15 +80,18 @@ func (i IP) String() (str string) {
 func IPv4HexToString(ipHex string) (ip string, err error) {
 	var tempInt int64
 	if len(ipHex) != 8 {
+		fmt.Printf("invalid input:[%s]\n", ipHex)
 		return ip, fmt.Errorf("invalid input:[%s]", ipHex)
 	}
 	for i := 3; i > 0; i-- {
 		if tempInt, err = strconv.ParseInt(ipHex[i*2:(i+1)*2], 16, 64); err != nil {
+			fmt.Println(err)
 			return "", err
 		}
 		ip += fmt.Sprintf("%d", tempInt) + "."
 	}
 	if tempInt, err = strconv.ParseInt(ipHex[0:2], 16, 64); err != nil {
+		fmt.Println(err)
 		return "", err
 	}
 	ip += fmt.Sprintf("%d", tempInt)
@@ -109,6 +112,7 @@ func IPv6HexToString(ipHex string) (ip string, err error) {
 		ip = strings.Replace(ip, v, "::", -1)
 	}
 	if suffix, err = IPv4HexToString(suffix); err != nil {
+		fmt.Println(err)
 		return "", err
 	}
 	ip += suffix
@@ -138,13 +142,13 @@ type GenericRecord struct {
 	// Generic like UDP, RAW
 	Drops int
 	// Related processes
-	Procs []*ProcInfo
+	Procs map[*ProcInfo]bool
 	User  string
 }
 
 func NewGenericRecord() *GenericRecord {
 	t := new(GenericRecord)
-	t.Procs = make([]*ProcInfo, 0, 0)
+	t.Procs = make(map[*ProcInfo]bool)
 	return t
 }
 
@@ -167,9 +171,10 @@ func GenericRecordRead(family string) (err error) {
 	case UDPv6Str:
 		file, err = os.Open(UDPv6Path)
 	default:
-		return fmt.Errorf("invalid family string.")
+		err = fmt.Errorf("invalid family string.")
 	}
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	defer file.Close()
@@ -177,6 +182,7 @@ func GenericRecordRead(family string) (err error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if err = scanner.Err(); err != nil {
+			fmt.Println(err)
 			return err
 		}
 		line = scanner.Text()
@@ -195,7 +201,6 @@ func GenericRecordRead(family string) (err error) {
 			record.LocalAddr.Host, err = IPv6HexToString(stringBuff[0])
 		}
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
@@ -216,7 +221,6 @@ func GenericRecordRead(family string) (err error) {
 			record.RemoteAddr.Host, err = IPv6HexToString(stringBuff[0])
 		}
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {

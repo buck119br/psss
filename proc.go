@@ -33,12 +33,14 @@ func (p *ProcInfo) GetStatus() (err error) {
 	)
 	fd, err := os.Open(ProcRoot + fmt.Sprintf("/%d/status", p.Pid))
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 	defer fd.Close()
 	reader := bufio.NewReader(fd)
 	// Name
 	if line, err = ReadLine(reader); err != nil {
+		fmt.Println(err)
 		return err
 	}
 	fields = strings.Fields(string(line))
@@ -52,11 +54,13 @@ func GetProcFiles(pid int) (files []*FileInfo, err error) {
 	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", pid)
 	fd, err := os.Open(fdPath)
 	if err != nil {
+		fmt.Println(err)
 		return files, err
 	}
 	defer fd.Close()
 	names, err := fd.Readdirnames(0)
 	if err != nil {
+		fmt.Println(err)
 		return files, err
 	}
 	files = make([]*FileInfo, 0, 0)
@@ -69,16 +73,18 @@ func GetProcFiles(pid int) (files []*FileInfo, err error) {
 	return files, nil
 }
 
-func GetProcInfo() (err error) {
+func GetProcInfo() {
 	var tempPid int
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
-		return err
+		fmt.Println(err)
+		return
 	}
 	defer fd.Close()
 	names, err := fd.Readdirnames(0)
 	if err != nil {
-		return err
+		fmt.Println(err)
+		return
 	}
 	GlobalProcInfo = make([]*ProcInfo, 0, 0)
 	for _, v := range names {
@@ -95,14 +101,13 @@ func GetProcInfo() (err error) {
 		}
 		GlobalProcInfo = append(GlobalProcInfo, proc)
 	}
-	return nil
 }
 
 func findRecordUser(records map[uint64]*GenericRecord) {
 	for _, record := range records {
-		for _, proc := range record.Procs {
+		for proc := range record.Procs {
 			for _, fd := range proc.Fd {
-				if record.Inode == fd.SysStat.Ino {
+				if (Sstate[record.Status] == "LISTEN" || Sstate[record.Status] == "ESTAB") && record.Inode == fd.SysStat.Ino {
 					record.User = proc.Name
 					goto found
 				}
@@ -119,23 +124,20 @@ func SetUpRelation() {
 	)
 	for _, proc := range GlobalProcInfo {
 		for _, fd := range proc.Fd {
-			if fd.SysStat.Dev != 6 {
-				continue
-			}
 			if record, ok = GlobalTCPv4Records[fd.SysStat.Ino]; ok {
-				record.Procs = append(record.Procs, proc)
+				record.Procs[proc] = true
 				GlobalTCPv4Records[fd.SysStat.Ino] = record
 			}
 			if record, ok = GlobalTCPv6Records[fd.SysStat.Ino]; ok {
-				record.Procs = append(record.Procs, proc)
+				record.Procs[proc] = true
 				GlobalTCPv6Records[fd.SysStat.Ino] = record
 			}
 			if record, ok = GlobalUDPv4Records[fd.SysStat.Ino]; ok {
-				record.Procs = append(record.Procs, proc)
+				record.Procs[proc] = true
 				GlobalUDPv4Records[fd.SysStat.Ino] = record
 			}
 			if record, ok = GlobalUDPv6Records[fd.SysStat.Ino]; ok {
-				record.Procs = append(record.Procs, proc)
+				record.Procs[proc] = true
 				GlobalUDPv6Records[fd.SysStat.Ino] = record
 			}
 		}

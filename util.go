@@ -13,6 +13,7 @@ func ReadLine(reader *bufio.Reader) (line []byte, err error) {
 	line = make([]byte, 0, 0)
 	for isPrefix {
 		if buffer, isPrefix, err = reader.ReadLine(); err != nil {
+			fmt.Println(err)
 			return nil, err
 		}
 		line = append(line, buffer...)
@@ -37,11 +38,13 @@ func GetFileStat(path string) (fi *FileInfo, err error) {
 		ok   bool
 	)
 	if stat, err = os.Stat(path); err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 	fi = NewFileInfo()
 	fi.Name = path
 	if fi.SysStat, ok = stat.Sys().(*syscall.Stat_t); !ok {
+		fmt.Printf("FileInfo.Sys:[%v] assertion failure\n", stat)
 		return nil, fmt.Errorf("FileInfo.Sys:[%v] assertion failure", stat)
 	}
 	return fi, nil

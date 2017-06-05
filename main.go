@@ -67,36 +67,22 @@ func init() {
 	GlobalUDPv6Records = make(map[uint64]*GenericRecord)
 }
 
-func dataReader() (err error) {
+func dataReader() {
 	if Family&FbTCPv4 != 0 {
-		if err = GenericRecordRead(TCPv4Str); err != nil {
-			fmt.Println(err)
-			return
-		}
+		GenericRecordRead(TCPv4Str)
 	}
 	if Family&FbTCPv6 != 0 {
-		if err = GenericRecordRead(TCPv6Str); err != nil {
-			fmt.Println(err)
-			return
-		}
+		GenericRecordRead(TCPv6Str)
 	}
 	if Family&FbUDPv4 != 0 {
-		if err = GenericRecordRead(UDPv4Str); err != nil {
-			fmt.Println(err)
-			return
-		}
+		GenericRecordRead(UDPv4Str)
 	}
 	if Family&FbUDPv6 != 0 {
-		if err = GenericRecordRead(UDPv6Str); err != nil {
-			fmt.Println(err)
-			return
-		}
+		GenericRecordRead(UDPv6Str)
 	}
-	return nil
 }
 
 func main() {
-	var err error
 	flag.Parse()
 	if flag.NFlag() == 0 || *flagHelp {
 		fmt.Println(usage)
@@ -108,9 +94,7 @@ func main() {
 		return
 	}
 	if *flagSummary {
-		if err = ShowSummary(); err != nil {
-			fmt.Println(err)
-		}
+		ShowSummary()
 		return
 	}
 	if *flagIPv4 {
@@ -128,14 +112,9 @@ func main() {
 	if Family == 0 && *flagAll {
 		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6
 	}
-	if err = dataReader(); err != nil {
-		return
-	}
+	dataReader()
 	if *flagProcess {
-		if err = GetProcInfo(); err != nil {
-			fmt.Println(err)
-			return
-		}
+		GetProcInfo()
 		SetUpRelation()
 	}
 	if *flagDemand {

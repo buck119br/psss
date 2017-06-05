@@ -11,13 +11,13 @@ var (
 	MaxRemoteAddrLength = 18
 )
 
-func ShowSummary() (err error) {
+func ShowSummary() {
 	// Read
-	if err = GenericReadSockstat(false); err != nil {
-		return err
+	if err := GenericReadSockstat(false); err != nil {
+		return
 	}
-	if err = GenericReadSockstat(true); err != nil {
-		return err
+	if err := GenericReadSockstat(true); err != nil {
+		return
 	}
 	// Display
 	var format string
@@ -30,7 +30,6 @@ func ShowSummary() (err error) {
 		}
 		fmt.Printf(format, protocal, Summary[protocal][IPv4String]+Summary[protocal][IPv6String], Summary[protocal][IPv4String], Summary[protocal][IPv6String])
 	}
-	return nil
 }
 
 func GenericShow(family string, records map[uint64]*GenericRecord) {
@@ -53,7 +52,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
 		if *flagProcess && len(record.User) > 0 {
 			fmt.Printf(`["%s"`, record.User)
-			for _, proc := range record.Procs {
+			for proc := range record.Procs {
 				for _, fd := range proc.Fd {
 					if fd.SysStat.Ino == record.Inode {
 						fmt.Printf(`(pid=%d,fd=%s)`, proc.Pid, fd.Name)
