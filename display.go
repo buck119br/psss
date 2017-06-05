@@ -41,9 +41,9 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 		}
 		switch family {
 		case TCPv4Str, TCPv6Str:
-			fmt.Printf("tcp")
+			fmt.Printf("tcp\t")
 		case UDPv4Str, UDPv6Str:
-			fmt.Printf("udp")
+			fmt.Printf("udp\t")
 		}
 		if len(Sstate[record.Status]) > 8 {
 			fmt.Printf("%s\t", Sstate[record.Status])
