@@ -95,7 +95,6 @@ var (
 func demandRecordHandler(family string, r *GenericRecord) {
 	var (
 		status            = Sstate[r.Status]
-		procName          string
 		procMap           map[string]map[bool]map[string]bool
 		local             bool
 		locOrRmtMap       map[bool]map[string]bool
@@ -103,86 +102,75 @@ func demandRecordHandler(family string, r *GenericRecord) {
 		remoteServiceName string
 		remoteServiceMap  map[string]bool
 		ok                bool
-		isFind            bool
 	)
 	if status != "LISTEN" && status != "ESTAB" {
+		return
+	}
+	if len(r.User) == 0 {
 		return
 	}
 	if procMap, ok = demandData[status]; !ok {
 		procMap = make(map[string]map[bool]map[string]bool)
 	}
-	for _, proc := range r.Procs {
-		for _, fd := range proc.Fd {
-			if r.Inode == fd.SysStat.Ino {
-				procName = proc.Name
-				if locOrRmtMap, ok = procMap[procName]; !ok {
-					locOrRmtMap = make(map[bool]map[string]bool)
-				}
-				switch status {
-				case "LISTEN":
-					local = true
-					if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
-						remoteServiceMap = make(map[string]bool)
-					}
-					remoteServiceMap[r.LocalAddr.String()] = true
-				case "ESTAB":
-					local = false
-					for _, ip := range localIP {
-						if strings.Contains(r.RemoteAddr.Host, ip) {
-							local = true
-							break
-						}
-					}
-					if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
-						remoteServiceMap = make(map[string]bool)
-					}
-					if local {
-						switch family {
-						case TCPv4Str:
-							for _, remoteRecord = range GlobalTCPv4Records {
-								if remoteRecord.LocalAddr == r.RemoteAddr {
-									remoteServiceName = remoteRecord.User
-									break
-								}
-							}
-						case TCPv6Str:
-							for _, remoteRecord = range GlobalTCPv6Records {
-								if remoteRecord.LocalAddr == r.RemoteAddr {
-									remoteServiceName = remoteRecord.User
-									break
-								}
-							}
-						case UDPv4Str:
-							for _, remoteRecord = range GlobalUDPv4Records {
-								if remoteRecord.LocalAddr == r.RemoteAddr {
-									remoteServiceName = remoteRecord.User
-									break
-								}
-							}
-						case UDPv6Str:
-							for _, remoteRecord = range GlobalUDPv6Records {
-								if remoteRecord.LocalAddr == r.RemoteAddr {
-									remoteServiceName = remoteRecord.User
-									break
-								}
-							}
-						}
-						remoteServiceMap[remoteServiceName] = true
-					} else {
-						remoteServiceMap[r.RemoteAddr.String()] = true
-					}
-				}
-				isFind = true
-				goto end
+	if locOrRmtMap, ok = procMap[r.User]; !ok {
+		locOrRmtMap = make(map[bool]map[string]bool)
+	}
+	switch status {
+	case "LISTEN":
+		local = true
+		if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
+			remoteServiceMap = make(map[string]bool)
+		}
+		remoteServiceMap[r.LocalAddr.String()] = true
+	case "ESTAB":
+		local = false
+		for _, ip := range localIP {
+			if strings.Contains(r.RemoteAddr.Host, ip) {
+				local = true
+				break
 			}
 		}
-	}
-end:
-	if !isFind {
-		return
+		if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
+			remoteServiceMap = make(map[string]bool)
+		}
+		if local {
+			switch family {
+			case TCPv4Str:
+				for _, remoteRecord = range GlobalTCPv4Records {
+					if remoteRecord.LocalAddr == r.RemoteAddr {
+						remoteServiceName = remoteRecord.User
+						break
+					}
+				}
+			case TCPv6Str:
+				for _, remoteRecord = range GlobalTCPv6Records {
+					if remoteRecord.LocalAddr == r.RemoteAddr {
+						remoteServiceName = remoteRecord.User
+						break
+					}
+				}
+			case UDPv4Str:
+				for _, remoteRecord = range GlobalUDPv4Records {
+					if remoteRecord.LocalAddr == r.RemoteAddr {
+						remoteServiceName = remoteRecord.User
+						break
+					}
+				}
+			case UDPv6Str:
+				for _, remoteRecord = range GlobalUDPv6Records {
+					if remoteRecord.LocalAddr == r.RemoteAddr {
+						remoteServiceName = remoteRecord.User
+						break
+					}
+				}
+			}
+			remoteServiceMap[remoteServiceName] = true
+		} else {
+			remoteServiceMap[r.RemoteAddr.String()] = true
+		}
 	}
 	locOrRmtMap[local] = remoteServiceMap
-	procMap[procName] = locOrRmtMap
+	procMap[r.User] = locOrRmtMap
 	demandData[status] = procMap
 }
 
