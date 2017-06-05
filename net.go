@@ -139,6 +139,7 @@ type GenericRecord struct {
 	Drops int
 	// Related processes
 	Procs []*ProcInfo
+	User  string
 }
 
 func NewGenericRecord() *GenericRecord {

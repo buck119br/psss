@@ -98,6 +98,20 @@ func GetProcInfo() (err error) {
 	return nil
 }
 
+func findRecordUser(records map[uint64]*GenericRecord) {
+	for _, record := range records {
+		for _, proc := range record.Procs {
+			for _, fd := range proc.Fd {
+				if record.Inode == fd.SysStat.Ino {
+					record.User = proc.Name
+					goto found
+				}
+			}
+		}
+	found:
+	}
+}
+
 func SetUpRelation() {
 	var (
 		record *GenericRecord
@@ -126,4 +140,8 @@ func SetUpRelation() {
 			}
 		}
 	}
+	findRecordUser(GlobalTCPv4Records)
+	findRecordUser(GlobalTCPv6Records)
+	findRecordUser(GlobalUDPv4Records)
+	findRecordUser(GlobalUDPv6Records)
 }

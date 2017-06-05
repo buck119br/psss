@@ -52,11 +52,11 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 		fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
 		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
 		if *flagProcess {
-			fmt.Printf("[")
+			fmt.Printf(`["%s"`, record.User)
 			for _, proc := range record.Procs {
 				for _, fd := range proc.Fd {
 					if fd.SysStat.Ino == record.Inode {
-						fmt.Printf(`("%s",pid=%d,fd=%s)`, proc.Name, proc.Pid, fd.Name)
+						fmt.Printf(`(pid=%d,fd=%s)`, proc.Pid, fd.Name)
 					}
 				}
 			}
@@ -88,41 +88,42 @@ func SocketShow() {
 }
 
 var (
-	demandData = make(map[string]map[string]map[bool]map[string]string)
+	demandData = make(map[string]map[string]map[bool]map[string]bool)
 	localIP    = make([]string, 0, 0)
 )
 
 func demandRecordHandler(family string, r *GenericRecord) {
 	var (
-		status           = Sstate[r.Status]
-		procName         string
-		procMap          map[string]map[bool]map[string]string
-		local            bool
-		locOrRmtMap      map[bool]map[string]string
-		remoteServiceMap map[string]string
-		ok               bool
-		isFind           bool
+		status            = Sstate[r.Status]
+		procName          string
+		procMap           map[string]map[bool]map[string]bool
+		local             bool
+		locOrRmtMap       map[bool]map[string]bool
+		remoteServiceName string
+		remoteServiceMap  map[string]bool
+		ok                bool
+		isFind            bool
 	)
 	if status != "LISTEN" && status != "ESTAB" {
 		return
 	}
 	if procMap, ok = demandData[status]; !ok {
-		procMap = make(map[string]map[bool]map[string]string)
+		procMap = make(map[string]map[bool]map[string]bool)
 	}
 	for _, proc := range r.Procs {
 		for _, fd := range proc.Fd {
 			if r.Inode == fd.SysStat.Ino {
 				procName = proc.Name
 				if locOrRmtMap, ok = procMap[procName]; !ok {
-					locOrRmtMap = make(map[bool]map[string]string)
+					locOrRmtMap = make(map[bool]map[string]bool)
 				}
 				switch status {
 				case "LISTEN":
 					local = true
 					if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
-						remoteServiceMap = make(map[string]string)
+						remoteServiceMap = make(map[string]bool)
 					}
-					remoteServiceMap[r.LocalAddr.String()] = family
+					remoteServiceMap[r.LocalAddr.String()] = true
 				case "ESTAB":
 					local = false
 					for _, ip := range localIP {
@@ -132,12 +133,39 @@ func demandRecordHandler(family string, r *GenericRecord) {
 						}
 					}
 					if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
-						remoteServiceMap = make(map[string]string)
+						remoteServiceMap = make(map[string]bool)
 					}
 					if local {
-
+						switch family {
+						case TCPv4Str:
+							for _, remoteRecord := range GlobalTCPv4Records {
+								if remoteRecord.LocalAddr == r.RemoteAddr {
+									remoteServiceName = remoteRecord.User
+								}
+							}
+						case TCPv6Str:
+							for _, remoteRecord := range GlobalTCPv6Records {
+								if remoteRecord.LocalAddr == r.RemoteAddr {
+									remoteServiceName = remoteRecord.User
+								}
+							}
+						case UDPv4Str:
+							for _, remoteRecord := range GlobalUDPv4Records {
+								if remoteRecord.LocalAddr == r.RemoteAddr {
+									remoteServiceName = remoteRecord.User
+								}
+							}
+						case UDPv6Str:
+							for _, remoteRecord := range GlobalUDPv6Records {
+								if remoteRecord.LocalAddr == r.RemoteAddr {
+									remoteServiceName = remoteRecord.User
+								}
+							}
+						}
+						remoteServiceMap[remoteServiceName] = true
+					} else {
+						remoteServiceMap[r.RemoteAddr.String()] = true
 					}
-					remoteServiceMap[r.RemoteAddr.String()] = family
 				}
 				isFind = true
 				goto end
@@ -166,22 +194,22 @@ func DemandShow() {
 	}
 	if Family&FbTCPv4 != 0 {
 		for _, record := range GlobalTCPv4Records {
-			demandRecordHandler("tcp", record)
+			demandRecordHandler(TCPv4Str, record)
 		}
 	}
 	if Family&FbTCPv6 != 0 {
 		for _, record := range GlobalTCPv6Records {
-			demandRecordHandler("tcp", record)
+			demandRecordHandler(TCPv6Str, record)
 		}
 	}
 	if Family&FbUDPv4 != 0 {
 		for _, record := range GlobalUDPv4Records {
-			demandRecordHandler("udp", record)
+			demandRecordHandler(UDPv4Str, record)
 		}
 	}
 	if Family&FbUDPv6 != 0 {
 		for _, record := range GlobalUDPv6Records {
-			demandRecordHandler("udp", record)
+			demandRecordHandler(UDPv6Str, record)
 		}
 	}
 	for status, localServiceMap := range demandData {
@@ -192,20 +220,15 @@ func DemandShow() {
 		for procName, locOrRmtMap := range localServiceMap {
 			fmt.Println("\t" + procName)
 			for local, remoteServiceMap := range locOrRmtMap {
-				switch status {
-				case "LISTEN":
-					for addr, family := range remoteServiceMap {
-						fmt.Println("\t\t" + family + "\t" + addr)
-					}
-				case "ESTAB":
+				if status == "ESTAB" {
 					if local {
 						fmt.Println("\t\tLocal")
 					} else {
 						fmt.Println("\t\tRemote")
 					}
-					for addr, family := range remoteServiceMap {
-						fmt.Println("\t\t\t" + family + "\t" + addr)
-					}
+				}
+				for addr := range remoteServiceMap {
+					fmt.Println("\t\t\t" + addr)
 				}
 			}
 		}
