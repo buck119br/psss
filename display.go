@@ -38,16 +38,20 @@ func ShowTCP(records map[uint64]*TCPRecord) {
 	for _, record := range records {
 		fmt.Printf("tcp\t")
 		if len(TCPState[record.Status]) > 8 {
-			fmt.Printf("%s\t", record.Status)
+			fmt.Printf("%s\t", TCPState[record.Status])
 		} else {
-			fmt.Printf("%s\t\t", record.Status)
+			fmt.Printf("%s\t\t", TCPState[record.Status])
 		}
 		fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
 		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
 		if *flagProcess {
 			fmt.Printf("[")
 			for _, proc := range record.Procs {
-				fmt.Printf(`("%s",pid=%d,fd=%d)`, proc.Name, proc.Pid, proc.Fd)
+				for _, fd := range proc.Fd {
+					if fd.SysStat.Ino == record.Inode {
+						fmt.Printf(`("%s",pid=%d,fd=%d)`, proc.Name, proc.Pid, proc.Fd)
+					}
+				}
 			}
 			fmt.Printf("]")
 		}
