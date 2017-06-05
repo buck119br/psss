@@ -34,10 +34,16 @@ func ShowSummary() (err error) {
 	return nil
 }
 
-func GenericShow(records map[uint64]*GenericRecord) {
+func GenericShow(family string, records map[uint64]*GenericRecord) {
 	for _, record := range records {
 		if !*flagAll && !SstateActive[record.Status] {
 			continue
+		}
+		switch family {
+		case TCPv4Str, TCPv6Str:
+			fmt.Printf("tcp")
+		case UDPv4Str, UDPv6Str:
+			fmt.Printf("udp")
 		}
 		if len(Sstate[record.Status]) > 8 {
 			fmt.Printf("%s\t", Sstate[record.Status])
@@ -69,16 +75,16 @@ func SocketShow() {
 	}
 	fmt.Printf("\n")
 	if Family&FbTCPv4 != 0 {
-		GenericShow(GlobalTCPv4Records)
+		GenericShow(TCPv4Str, GlobalTCPv4Records)
 	}
 	if Family&FbTCPv6 != 0 {
-		GenericShow(GlobalTCPv6Records)
+		GenericShow(TCPv6Str, GlobalTCPv6Records)
 	}
 	if Family&FbUDPv4 != 0 {
-		GenericShow(GlobalUDPv4Records)
+		GenericShow(UDPv4Str, GlobalUDPv4Records)
 	}
 	if Family&FbUDPv6 != 0 {
-		GenericShow(GlobalUDPv6Records)
+		GenericShow(UDPv6Str, GlobalUDPv6Records)
 	}
 }
 
