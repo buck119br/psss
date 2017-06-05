@@ -126,11 +126,9 @@ func demandRecordHandler(r *GenericRecord) {
 					remoteServiceMap = make(map[string]bool)
 				}
 				remoteServiceMap[r.RemoteAddr.String()] = true
-				goto end
 			}
 		}
 	}
-end:
 	locOrRmtMap[local] = remoteServiceMap
 	localServiceMap[procName] = locOrRmtMap
 	demandData[status] = localServiceMap
