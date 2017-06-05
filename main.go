@@ -113,9 +113,6 @@ func main() {
 		}
 		return
 	}
-	if *flagAll {
-		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6
-	}
 	if *flagIPv4 {
 		Family |= FbTCPv4 | FbUDPv4
 	}
@@ -127,6 +124,9 @@ func main() {
 	}
 	if *flagUDP {
 		Family |= FbUDPv4 | FbUDPv6
+	}
+	if Family == 0 && *flagAll {
+		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6
 	}
 	// if *flagDemand {
 	// 	*flagTCP = true
