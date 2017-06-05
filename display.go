@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+var (
+	MaxLocalAddrLength  = 17
+	MaxRemoteAddrLength = 18
+)
+
 func ShowSummary() (err error) {
 	// Read
 	if err = GenericReadSockstat(false); err != nil {
@@ -29,13 +34,40 @@ func ShowSummary() (err error) {
 	return nil
 }
 
-func ShowTCP() {
-	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
-	fmt.Printf("%-*s\t%-*s", MaxLocalAddrLength, "LocalAddress:Port", MaxRemoteAddrLength, "RemoteAddress:Port")
+func ShowTCP(records map[uint64]*TCPRecord) {
+	for _, record := range records {
+		fmt.Printf("tcp\t")
+		if len(TCPState[record.Status]) > 8 {
+			fmt.Printf("%s\t", record.Status)
+		} else {
+			fmt.Printf("%s\t\t", record.Status)
+		}
+		fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
+		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
+		if *flagProcess {
+			fmt.Printf("[")
+			for _, proc := range record.Procs {
+				fmt.Printf(`("%s",pid=%d,fd=%d)`, proc.Name, proc.Pid, proc.Fd)
+			}
+			fmt.Printf("]")
+		}
+		fmt.Printf("\n")
+	}
 }
 
-func SocketShow() (err error) {
-	return nil
+func SocketShow() {
+	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
+	fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, "LocalAddress:Port", MaxRemoteAddrLength, "RemoteAddress:Port")
+	if *flagProcess {
+		fmt.Printf("Users")
+	}
+	fmt.Printf("\n")
+	if Family|FbTCPv4 != 0 {
+		ShowTCP(GlobalTCPv4Records)
+	}
+	if Family|FbTCPv6 != 0 {
+		ShowTCP(GlobalTCPv6Records)
+	}
 }
 
 func Show() {
