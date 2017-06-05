@@ -51,7 +51,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 		}
 		fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
 		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
-		if *flagProcess {
+		if *flagProcess && len(record.User) > 0 {
 			fmt.Printf(`["%s"`, record.User)
 			for _, proc := range record.Procs {
 				for _, fd := range proc.Fd {
@@ -99,6 +99,7 @@ func demandRecordHandler(family string, r *GenericRecord) {
 		procMap           map[string]map[bool]map[string]bool
 		local             bool
 		locOrRmtMap       map[bool]map[string]bool
+		remoteRecord      *GenericRecord
 		remoteServiceName string
 		remoteServiceMap  map[string]bool
 		ok                bool
@@ -138,31 +139,35 @@ func demandRecordHandler(family string, r *GenericRecord) {
 					if local {
 						switch family {
 						case TCPv4Str:
-							for _, remoteRecord := range GlobalTCPv4Records {
+							for _, remoteRecord = range GlobalTCPv4Records {
 								if remoteRecord.LocalAddr == r.RemoteAddr {
 									remoteServiceName = remoteRecord.User
+									break
 								}
 							}
 						case TCPv6Str:
-							for _, remoteRecord := range GlobalTCPv6Records {
+							for _, remoteRecord = range GlobalTCPv6Records {
 								if remoteRecord.LocalAddr == r.RemoteAddr {
 									remoteServiceName = remoteRecord.User
+									break
 								}
 							}
 						case UDPv4Str:
-							for _, remoteRecord := range GlobalUDPv4Records {
+							for _, remoteRecord = range GlobalUDPv4Records {
 								if remoteRecord.LocalAddr == r.RemoteAddr {
 									remoteServiceName = remoteRecord.User
+									break
 								}
 							}
 						case UDPv6Str:
-							for _, remoteRecord := range GlobalUDPv6Records {
+							for _, remoteRecord = range GlobalUDPv6Records {
 								if remoteRecord.LocalAddr == r.RemoteAddr {
 									remoteServiceName = remoteRecord.User
+									break
 								}
 							}
 						}
-						remoteServiceMap[remoteServiceName] = true
+						remoteServiceMap[remoteServiceName+" "+remoteRecord.LocalAddr.String()] = true
 					} else {
 						remoteServiceMap[r.RemoteAddr.String()] = true
 					}
