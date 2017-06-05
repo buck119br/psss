@@ -121,6 +121,9 @@ func main() {
 	// 	*flagTCP = true
 	// 	*flagProcess = true
 	// }
+	if err = dataReader(); err != nil {
+		return
+	}
 	if *flagProcess {
 		if err = GetProcInfo(); err != nil {
 			fmt.Println(err)
