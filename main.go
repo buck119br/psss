@@ -128,10 +128,6 @@ func main() {
 	if Family == 0 && *flagAll {
 		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6
 	}
-	// if *flagDemand {
-	// 	*flagTCP = true
-	// 	*flagProcess = true
-	// }
 	if err = dataReader(); err != nil {
 		return
 	}
@@ -142,9 +138,9 @@ func main() {
 		}
 		SetUpRelation()
 	}
-	SocketShow()
 	if *flagDemand {
 		Show()
 		return
 	}
+	SocketShow()
 }
