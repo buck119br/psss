@@ -166,6 +166,8 @@ func demandRecordHandler(family string, r *GenericRecord) {
 			}
 			if len(remoteServiceName) > 0 {
 				remoteServiceMap[remoteServiceName] = true
+			} else {
+				remoteServiceMap[r.RemoteAddr.String()] = true
 			}
 		} else {
 			remoteServiceMap[r.RemoteAddr.String()] = true
