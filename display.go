@@ -49,7 +49,7 @@ func ShowTCP(records map[uint64]*TCPRecord) {
 			for _, proc := range record.Procs {
 				for _, fd := range proc.Fd {
 					if fd.SysStat.Ino == record.Inode {
-						fmt.Printf(`("%s",pid=%d,fd=%d)`, proc.Name, proc.Pid, proc.Fd)
+						fmt.Printf(`("%s",pid=%d,fd=%d)`, proc.Name, proc.Pid, fd.Name)
 					}
 				}
 			}
