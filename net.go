@@ -149,7 +149,7 @@ func GenericRecordRead(family string) (err error) {
 	case UDPv4Str:
 		file, err = os.Open(UDPv4Path)
 	case UDPv6Str:
-		file, err = os.Open(UDPv4Path)
+		file, err = os.Open(UDPv6Path)
 	default:
 		return fmt.Errorf("invalid family string.")
 	}
