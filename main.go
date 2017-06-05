@@ -139,7 +139,7 @@ func main() {
 		SetUpRelation()
 	}
 	if *flagDemand {
-		Show()
+		DemandShow()
 		return
 	}
 	SocketShow()

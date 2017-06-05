@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"sort"
 	"strings"
 )
 
@@ -88,90 +87,89 @@ func SocketShow() {
 	}
 }
 
-func Show() {
+var (
+	demandData = make(map[string]map[string]map[bool]map[string]bool)
+	localIP    = make([]string, 0, 0)
+)
+
+func demandRecordHandler(r *GenericRecord) {
 	var (
-		procRecords map[string]map[bool][]*GenericRecord
-		lcOrRmt     map[bool][]*GenericRecord
-		records     []*GenericRecord
-		procName    string
-		local       bool
-		status      string
-		ok          bool
-		showFormat  string
+		status           = Sstate[r.Status]
+		procName         string
+		localServiceMap  map[string]map[bool]map[string]bool
+		local            bool
+		locOrRmtMap      map[bool]map[string]bool
+		remoteServiceMap map[string]bool
+		ok               bool
 	)
+	if status != "LISTEN" && status != "ESTAB" {
+		return
+	}
+	if localServiceMap, ok = demandData[status]; !ok {
+		localServiceMap = make(map[string]map[bool]map[string]bool)
+	}
+	for _, proc := range r.Procs {
+		for _, fd := range proc.Fd {
+			if r.Inode == fd.SysStat.Ino {
+				procName = proc.Name
+				if locOrRmtMap, ok = localServiceMap[procName]; !ok {
+					locOrRmtMap = make(map[bool]map[string]bool)
+				}
+				local = false
+				for _, ip := range localIP {
+					if strings.Contains(r.RemoteAddr.Host, ip) {
+						local = true
+						break
+					}
+				}
+				if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
+					remoteServiceMap = make(map[string]bool)
+				}
+				remoteServiceMap[r.RemoteAddr.String()] = true
+				goto end
+			}
+		}
+	}
+end:
+	locOrRmtMap[local] = remoteServiceMap
+	localServiceMap[procName] = locOrRmtMap
+	demandData[status] = localServiceMap
+}
+func DemandShow() {
+	var stringBuff []string
 	localAddr, err := net.InterfaceAddrs()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	localIP := make([]string, 0, 0)
-	stringBuff := make([]string, 0, 0)
 	for _, v := range localAddr {
 		stringBuff = strings.Split(v.String(), "/")
 		localIP = append(localIP, stringBuff[0])
 	}
-	statusMap := make(map[string]map[string]map[bool][]*GenericRecord)
 	for _, record := range GlobalTCPv4Records {
-		status = Sstate[int(record.Status)]
-		if status != "LISTEN" && status != "ESTAB" {
-			continue
-		}
-		if procRecords, ok = statusMap[status]; !ok {
-			procRecords = make(map[string]map[bool][]*GenericRecord)
-		}
-		for _, proc := range record.Procs {
-			for _, fd := range proc.Fd {
-				if fd.SysStat.Ino == record.Inode {
-					procName = proc.Name
-					if lcOrRmt, ok = procRecords[procName]; !ok {
-						lcOrRmt = make(map[bool][]*GenericRecord)
-					}
-					local = false
-					for _, v := range localIP {
-						if strings.Contains(record.RemoteAddr.String(), v) {
-							local = true
-						}
-					}
-					if records, ok = lcOrRmt[local]; !ok {
-						records = make([]*GenericRecord, 0, 0)
-					}
-					break
-				}
-			}
-		}
-		records = append(records, record)
-		lcOrRmt[local] = records
-		procRecords[procName] = lcOrRmt
-		statusMap[status] = procRecords
+		demandRecordHandler(record)
 	}
-	for status, procRecords = range statusMap {
+	for _, record := range GlobalTCPv6Records {
+		demandRecordHandler(record)
+	}
+	for _, record := range GlobalUDPv4Records {
+		demandRecordHandler(record)
+	}
+	for _, record := range GlobalUDPv4Records {
+		demandRecordHandler(record)
+	}
+	for status, localServiceMap := range demandData {
 		fmt.Println(status)
-		for procName, lcOrRmt = range procRecords {
-			fmt.Println("\t", procName)
-			for local, records = range lcOrRmt {
-				if status == "ESTAB" {
-					if local {
-						fmt.Println("\t\tLocal")
-					} else {
-						fmt.Println("\t\tRemote")
-					}
+		for procName, locOrRmtMap := range localServiceMap {
+			fmt.Println("\t" + procName)
+			for local, remoteServiceMap := range locOrRmtMap {
+				if local {
+					fmt.Println("\t\tLocal")
+				} else {
+					fmt.Println("\t\tRemote")
 				}
-				sort.Slice(records, func(i, j int) bool { return records[i].LocalAddr.String() < records[j].LocalAddr.String() })
-				for _, v := range records {
-					if status == "ESTAB" {
-						if len(v.LocalAddr.String()) >= 16 {
-							showFormat = "\t\t\t%s\t %s\n"
-						} else {
-							showFormat = "\t\t\t%s\t\t %s\n"
-						}
-					} else {
-						if len(v.LocalAddr.String()) >= 16 {
-							showFormat = "\t\t%s\t %s\n"
-						} else {
-							showFormat = "\t\t%s\t\t %s\n"
-						}
-					}
-					fmt.Printf(showFormat, v.LocalAddr, v.RemoteAddr)
+				for remoteAddr := range remoteServiceMap {
+					fmt.Println("\t\t\t" + remoteAddr)
 				}
 			}
 		}
