@@ -36,7 +36,6 @@ func ShowSummary() (err error) {
 
 func GenericShow(records map[uint64]*GenericRecord) {
 	for _, record := range records {
-		fmt.Printf("tcp\t")
 		if !*flagAll && !SstateActive[record.Status] {
 			continue
 		}
