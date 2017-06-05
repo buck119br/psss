@@ -44,6 +44,21 @@ var (
 		"CLOSING",
 	}
 
+	SstateActive = map[int]bool{
+		0:  false,
+		1:  true,
+		2:  false,
+		3:  false,
+		4:  false,
+		5:  false,
+		6:  false,
+		7:  false,
+		8:  false,
+		9:  false,
+		10: true,
+		11: false,
+	}
+
 	Colons = []string{
 		":::::::",
 		"::::::",
