@@ -66,16 +66,16 @@ func SocketShow() {
 		fmt.Printf("Users")
 	}
 	fmt.Printf("\n")
-	if Family|FbTCPv4 != 0 {
+	if Family&FbTCPv4 != 0 {
 		GenericShow(GlobalTCPv4Records)
 	}
-	if Family|FbTCPv6 != 0 {
+	if Family&FbTCPv6 != 0 {
 		GenericShow(GlobalTCPv6Records)
 	}
-	if Family|FbUDPv4 != 0 {
+	if Family&FbUDPv4 != 0 {
 		GenericShow(GlobalUDPv4Records)
 	}
-	if Family|FbUDPv6 != 0 {
+	if Family&FbUDPv6 != 0 {
 		GenericShow(GlobalUDPv6Records)
 	}
 }

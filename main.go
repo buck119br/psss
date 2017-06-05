@@ -68,25 +68,25 @@ func init() {
 }
 
 func dataReader() (err error) {
-	if Family|FbTCPv4 != 0 {
+	if Family&FbTCPv4 != 0 {
 		if err = GenericRecordRead(TCPv4Str); err != nil {
 			fmt.Println(err)
 			return
 		}
 	}
-	if Family|FbTCPv6 != 0 {
+	if Family&FbTCPv6 != 0 {
 		if err = GenericRecordRead(TCPv6Str); err != nil {
 			fmt.Println(err)
 			return
 		}
 	}
-	if Family|FbUDPv4 != 0 {
+	if Family&FbUDPv4 != 0 {
 		if err = GenericRecordRead(UDPv4Str); err != nil {
 			fmt.Println(err)
 			return
 		}
 	}
-	if Family|FbUDPv6 != 0 {
+	if Family&FbUDPv6 != 0 {
 		if err = GenericRecordRead(UDPv6Str); err != nil {
 			fmt.Println(err)
 			return
