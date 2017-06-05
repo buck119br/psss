@@ -137,28 +137,28 @@ func demandRecordHandler(family string, r *GenericRecord) {
 			switch family {
 			case TCPv4Str:
 				for _, remoteRecord = range GlobalTCPv4Records {
-					if remoteRecord.LocalAddr == r.RemoteAddr {
+					if remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 						remoteServiceName = remoteRecord.User
 						break
 					}
 				}
 			case TCPv6Str:
 				for _, remoteRecord = range GlobalTCPv6Records {
-					if remoteRecord.LocalAddr == r.RemoteAddr {
+					if remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 						remoteServiceName = remoteRecord.User
 						break
 					}
 				}
 			case UDPv4Str:
 				for _, remoteRecord = range GlobalUDPv4Records {
-					if remoteRecord.LocalAddr == r.RemoteAddr {
+					if remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 						remoteServiceName = remoteRecord.User
 						break
 					}
 				}
 			case UDPv6Str:
 				for _, remoteRecord = range GlobalUDPv6Records {
-					if remoteRecord.LocalAddr == r.RemoteAddr {
+					if remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 						remoteServiceName = remoteRecord.User
 						break
 					}
