@@ -167,7 +167,7 @@ func demandRecordHandler(family string, r *GenericRecord) {
 								}
 							}
 						}
-						remoteServiceMap[remoteServiceName+" "+remoteRecord.LocalAddr.String()] = true
+						remoteServiceMap[remoteServiceName] = true
 					} else {
 						remoteServiceMap[r.RemoteAddr.String()] = true
 					}
