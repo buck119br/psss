@@ -116,17 +116,29 @@ func demandRecordHandler(family string, r *GenericRecord) {
 				if locOrRmtMap, ok = procMap[procName]; !ok {
 					locOrRmtMap = make(map[bool]map[string]string)
 				}
-				local = false
-				for _, ip := range localIP {
-					if strings.Contains(r.RemoteAddr.Host, ip) {
-						local = true
-						break
+				switch status {
+				case "LISTEN":
+					local = true
+					if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
+						remoteServiceMap = make(map[string]string)
 					}
+					remoteServiceMap[r.LocalAddr.String()] = family
+				case "ESTAB":
+					local = false
+					for _, ip := range localIP {
+						if strings.Contains(r.RemoteAddr.Host, ip) {
+							local = true
+							break
+						}
+					}
+					if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
+						remoteServiceMap = make(map[string]string)
+					}
+					if local {
+
+					}
+					remoteServiceMap[r.RemoteAddr.String()] = family
 				}
-				if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
-					remoteServiceMap = make(map[string]string)
-				}
-				remoteServiceMap[r.RemoteAddr.String()] = family
 				isFind = true
 				goto end
 			}
@@ -140,6 +152,7 @@ end:
 	procMap[procName] = locOrRmtMap
 	demandData[status] = procMap
 }
+
 func DemandShow() {
 	var stringBuff []string
 	localAddr, err := net.InterfaceAddrs()
@@ -172,17 +185,27 @@ func DemandShow() {
 		}
 	}
 	for status, localServiceMap := range demandData {
+		if status != "LISTEN" && status != "ESTAB" {
+			continue
+		}
 		fmt.Println(status)
 		for procName, locOrRmtMap := range localServiceMap {
 			fmt.Println("\t" + procName)
 			for local, remoteServiceMap := range locOrRmtMap {
-				if local {
-					fmt.Println("\t\tLocal")
-				} else {
-					fmt.Println("\t\tRemote")
-				}
-				for remoteAddr, family := range remoteServiceMap {
-					fmt.Println("\t\t\t" + family + "\t" + remoteAddr)
+				switch status {
+				case "LISTEN":
+					for addr, family := range remoteServiceMap {
+						fmt.Println("\t\t" + family + "\t" + addr)
+					}
+				case "ESTAB":
+					if local {
+						fmt.Println("\t\tLocal")
+					} else {
+						fmt.Println("\t\tRemote")
+					}
+					for addr, family := range remoteServiceMap {
+						fmt.Println("\t\t\t" + family + "\t" + addr)
+					}
 				}
 			}
 		}
