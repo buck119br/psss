@@ -135,30 +135,28 @@ func demandRecordHandler(family string, r *GenericRecord) {
 		}
 		if local {
 			switch family {
-			case TCPv4Str:
+			case TCPv4Str, TCPv6Str:
 				for _, remoteRecord = range GlobalTCPv4Records {
-					if Sstate[remoteRecord.Status] == "LISTEN" && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
+					if remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 						remoteServiceName = remoteRecord.User
 						break
 					}
 				}
-			case TCPv6Str:
 				for _, remoteRecord = range GlobalTCPv6Records {
-					if Sstate[remoteRecord.Status] == "LISTEN" && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
+					if remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 						remoteServiceName = remoteRecord.User
 						break
 					}
 				}
-			case UDPv4Str:
+			case UDPv4Str, UDPv6Str:
 				for _, remoteRecord = range GlobalUDPv4Records {
-					if Sstate[remoteRecord.Status] == "LISTEN" && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
+					if remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 						remoteServiceName = remoteRecord.User
 						break
 					}
 				}
-			case UDPv6Str:
 				for _, remoteRecord = range GlobalUDPv6Records {
-					if Sstate[remoteRecord.Status] == "LISTEN" && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
+					if remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 						remoteServiceName = remoteRecord.User
 						break
 					}
