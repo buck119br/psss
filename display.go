@@ -206,13 +206,13 @@ func DemandShow() {
 		}
 	}
 	for status, localServiceMap := range demandData {
-		if status != "LISTEN" && status != "ESTAB" {
-			continue
-		}
 		fmt.Println(status)
 		for procName, locOrRmtMap := range localServiceMap {
 			fmt.Println("\t" + procName)
 			for local, remoteServiceMap := range locOrRmtMap {
+				if len(remoteServiceMap) == 0 {
+					continue
+				}
 				if status == "ESTAB" {
 					if local {
 						fmt.Println("\t\tLocal")
