@@ -23,12 +23,12 @@ var (
 	flagVersion = flag.Bool("v", false, "output version information") // OK
 
 	flagAll        = flag.Bool("a", false, "display all sockets")              // ok
-	flagExtended   = flag.Bool("e", false, "show detailed socket information") //
+	flagExtended   = flag.Bool("e", false, "show detailed socket information") // ok
 	flagInfo       = flag.Bool("i", false, "show internal TCP information")    //
 	flagListen     = flag.Bool("l", false, "display listening sockets")        //
 	flagMemory     = flag.Bool("m", false, "show socket memory usage")         //
 	flagNotResolve = flag.Bool("n", false, "don't resolve service names")      //
-	flagTimer      = flag.Bool("o", false, "show timer information")           // ok
+	flagOption     = flag.Bool("o", false, "show timer information")           // ok
 	flagProcess    = flag.Bool("p", false, "show process using socket")        // ok
 	flagResolve    = flag.Bool("r", false, "resolve host names")               //
 	flagSummary    = flag.Bool("s", false, "show socket usage summary")        // OK
@@ -116,6 +116,9 @@ func main() {
 	if *flagProcess {
 		GetProcInfo()
 		SetUpRelation()
+	}
+	if *flagExtended || *flagOption {
+		NewlineFlag = true
 	}
 	if *flagDemand {
 		DemandShow()

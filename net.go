@@ -44,15 +44,6 @@ var (
 		"CLOSING",
 	}
 
-	TimerName = []string{
-		"OFF",
-		"ON",
-		"KEEPALIVE",
-		"TIMEWAIT",
-		"PERSIST",
-		"UNKNOWN",
-	}
-
 	SstateActive = map[int]bool{
 		0:  false,
 		1:  true,
@@ -66,6 +57,15 @@ var (
 		9:  false,
 		10: true,
 		11: false,
+	}
+
+	TimerName = []string{
+		"OFF",
+		"ON",
+		"KEEPALIVE",
+		"TIMEWAIT",
+		"PERSIST",
+		"UNKNOWN",
 	}
 
 	Colons = []string{
