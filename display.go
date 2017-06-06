@@ -82,7 +82,11 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			if record.UID != 0 {
 				fmt.Printf("uid:%d,", record.UID)
 			}
-			fmt.Printf("ino:%d,sk:%x)]\t", record.Inode, record.SK)
+			fmt.Printf("ino:%d,sk:%x", record.Inode, record.SK)
+			if len(record.Opt) > 0 {
+				fmt.Printf(",opt:%v", record.Opt)
+			}
+			fmt.Printf(")]\t")
 		}
 		fmt.Printf("\n")
 	}
