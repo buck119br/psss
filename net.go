@@ -284,25 +284,21 @@ func GenericRecordRead(family string) (err error) {
 		}
 		record.Retransmit = int(tempInt64)
 		fieldsIndex++
-		// UID
 		if record.UID, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
-		// Timeout
 		if record.Probes, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
-		// Inode
 		if record.Inode, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
-		// Socket reference count
 		if record.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			fmt.Println(err)
 			continue

@@ -65,7 +65,7 @@ func GetProcFiles(pid int) (files []*FileInfo, err error) {
 	}
 	files = make([]*FileInfo, 0, 0)
 	for _, v := range names {
-		if file, err = GetFileStat(fdPath + "/" + v); err != nil {
+		if file, err = GetFileStat(fdPath, v); err != nil {
 			continue
 		}
 		files = append(files, file)

@@ -22,27 +22,27 @@ var (
 	flagHelp    = flag.Bool("h", false, "this message")               // OK
 	flagVersion = flag.Bool("v", false, "output version information") // OK
 
-	flagAll        = flag.Bool("a", false, "display all sockets")
-	flagExtended   = flag.Bool("e", false, "show detailed socket information")
-	flagInfo       = flag.Bool("i", false, "show internal TCP information")
-	flagListen     = flag.Bool("l", false, "display listening sockets")
-	flagMemory     = flag.Bool("m", false, "show socket memory usage")
-	flagNotResolve = flag.Bool("n", false, "don't resolve service names")
-	flagOpetion    = flag.Bool("o", false, "show timer information")
-	flagProcess    = flag.Bool("p", false, "show process using socket")
-	flagResolve    = flag.Bool("r", false, "resolve host names")
-	flagSummary    = flag.Bool("s", false, "show socket usage summary") // OK
+	flagAll        = flag.Bool("a", false, "display all sockets")              // ok
+	flagExtended   = flag.Bool("e", false, "show detailed socket information") //
+	flagInfo       = flag.Bool("i", false, "show internal TCP information")    //
+	flagListen     = flag.Bool("l", false, "display listening sockets")        //
+	flagMemory     = flag.Bool("m", false, "show socket memory usage")         //
+	flagNotResolve = flag.Bool("n", false, "don't resolve service names")      //
+	flagTimer      = flag.Bool("o", false, "show timer information")           // ok
+	flagProcess    = flag.Bool("p", false, "show process using socket")        // ok
+	flagResolve    = flag.Bool("r", false, "resolve host names")               //
+	flagSummary    = flag.Bool("s", false, "show socket usage summary")        // OK
 
-	flagIPv4   = flag.Bool("4", false, "display only IP version 4 sockets")
-	flagIPv6   = flag.Bool("6", false, "display only IP version 6 sockets")
-	flagPacket = flag.Bool("0", false, "display PACKET sockets")
-	flagDCCP   = flag.Bool("d", false, "display only DCCP sockets")
-	flagTCP    = flag.Bool("t", false, "display only TCP sockets")
-	flagUDP    = flag.Bool("u", false, "display only UDP sockets")
-	flagRAW    = flag.Bool("w", false, "display only RAW sockets")
-	flagUNIX   = flag.Bool("x", false, "display only Unix domain sockets")
+	flagIPv4   = flag.Bool("4", false, "display only IP version 4 sockets") // ok
+	flagIPv6   = flag.Bool("6", false, "display only IP version 6 sockets") // ok
+	flagPacket = flag.Bool("0", false, "display PACKET sockets")            //
+	flagDCCP   = flag.Bool("d", false, "display only DCCP sockets")         //
+	flagTCP    = flag.Bool("t", false, "display only TCP sockets")          // ok
+	flagUDP    = flag.Bool("u", false, "display only UDP sockets")          // ok
+	flagRAW    = flag.Bool("w", false, "display only RAW sockets")          //
+	flagUNIX   = flag.Bool("x", false, "display only Unix domain sockets")  //
 
-	flagDemand = flag.Bool("demand", false, "my boss' demand")
+	flagDemand = flag.Bool("demand", false, "my boss' demand") // ok
 
 	/* Family bitmap
 	31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00

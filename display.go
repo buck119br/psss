@@ -63,12 +63,12 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			fmt.Printf("]")
 		}
 		// Timer Info
-		if *flagOpetion && record.Timer != 0 {
+		if *flagTimer && record.Timer != 0 {
 			fmt.Printf("\n[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
 			if record.Timer != 1 {
-				fmt.Printf("%d)", record.Probes)
+				fmt.Printf("%d)]", record.Probes)
 			} else {
-				fmt.Printf("%d)", record.Retransmit)
+				fmt.Printf("%d)]", record.Retransmit)
 			}
 		}
 		fmt.Printf("\n")
