@@ -150,6 +150,8 @@ type GenericRecord struct {
 	SlowStartThreshold int // slow start size threshold, or -1 if the threshold is >= 0xFFFF
 	// Generic like UDP, RAW
 	Drops int
+	// Option Info
+	Opt []string
 	// Related processes
 	Procs    map[*ProcInfo]bool
 	UserName string
@@ -310,7 +312,7 @@ func GenericRecordRead(family string) (err error) {
 		}
 		switch family {
 		case TCPv4Str, TCPv6Str:
-			if record.Inode != 0 {
+			if len(fields) > 12 {
 				fieldsIndex++
 				if record.RTO, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					fmt.Println(err)
@@ -349,6 +351,9 @@ func GenericRecordRead(family string) (err error) {
 				fmt.Println(err)
 				continue
 			}
+		}
+		if len(fields) > 17 {
+			record.Opt = fields[17:]
 		}
 		switch family {
 		case TCPv4Str:

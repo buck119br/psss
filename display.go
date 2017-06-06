@@ -65,7 +65,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			fmt.Printf("]")
 		}
 		if NewlineFlag {
-			fmt.Printf("\n")
+			fmt.Printf("\n\t")
 		}
 		// Timer Info
 		if *flagOption && record.Timer != 0 {
