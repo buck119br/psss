@@ -108,7 +108,7 @@ func findRecordUser(records map[uint64]*GenericRecord) {
 		for proc := range record.Procs {
 			for _, fd := range proc.Fd {
 				if (Sstate[record.Status] == "LISTEN" || Sstate[record.Status] == "ESTAB") && record.Inode == fd.SysStat.Ino {
-					record.User = proc.Name
+					record.UserName = proc.Name
 					goto found
 				}
 			}

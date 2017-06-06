@@ -44,6 +44,15 @@ var (
 		"CLOSING",
 	}
 
+	TimerName = []string{
+		"OFF",
+		"ON",
+		"KEEPALIVE",
+		"TIMEWAIT",
+		"PERSIST",
+		"UNKNOWN",
+	}
+
 	SstateActive = map[int]bool{
 		0:  false,
 		1:  true,
@@ -120,30 +129,30 @@ func IPv6HexToString(ipHex string) (ip string, err error) {
 }
 
 type GenericRecord struct {
-	LocalAddr   IP
-	RemoteAddr  IP
-	Status      int
-	TxQueue     int
-	RxQueue     int
-	Timer       int
-	TmWhen      int
-	Retransmit  int
-	UID         int
-	Timeout     int
-	Inode       uint64
-	RefCount    int
-	MemLocation uint64
+	LocalAddr  IP
+	RemoteAddr IP
+	Status     int
+	TxQueue    int
+	RxQueue    int
+	Timer      int
+	Timeout    int
+	Retransmit int
+	UID        uint64
+	Probes     int // unanswered 0-window probes
+	Inode      uint64
+	RefCount   int
+	SK         uint64
 	// TCP Specific
-	RetransmitTimeout int
-	PredictedTick     int
-	ACK               int
-	CongestionWindow  int
-	SlowStartSize     int
+	RTO                int // RetransmitTimeout
+	ATO                int // Predicted tick of soft clock (delayed ACK control data)
+	QACK               int // (ack.quick<<1)|ack.pingpong
+	CongestionWindow   int // sending congestion window
+	SlowStartThreshold int // slow start size threshold, or -1 if the threshold is >= 0xFFFF
 	// Generic like UDP, RAW
 	Drops int
 	// Related processes
-	Procs map[*ProcInfo]bool
-	User  string
+	Procs    map[*ProcInfo]bool
+	UserName string
 }
 
 func NewGenericRecord() *GenericRecord {
@@ -259,11 +268,14 @@ func GenericRecordRead(family string) (err error) {
 			continue
 		}
 		record.Timer = int(tempInt64)
+		if record.Timer > 4 {
+			record.Timer = 5
+		}
 		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 32); err != nil {
 			fmt.Println(err)
 			continue
 		}
-		record.TmWhen = int(tempInt64)
+		record.Timeout = int(tempInt64)
 		fieldsIndex++
 		// Retransmit
 		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
@@ -273,13 +285,13 @@ func GenericRecordRead(family string) (err error) {
 		record.Retransmit = int(tempInt64)
 		fieldsIndex++
 		// UID
-		if record.UID, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+		if record.UID, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
 		fieldsIndex++
 		// Timeout
-		if record.Timeout, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+		if record.Probes, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			fmt.Println(err)
 			continue
 		}
@@ -296,8 +308,7 @@ func GenericRecordRead(family string) (err error) {
 			continue
 		}
 		fieldsIndex++
-		// Socket memory location
-		if record.MemLocation, err = strconv.ParseUint(fields[fieldsIndex], 16, 64); err != nil {
+		if record.SK, err = strconv.ParseUint(fields[fieldsIndex], 16, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
@@ -305,35 +316,36 @@ func GenericRecordRead(family string) (err error) {
 		case TCPv4Str, TCPv6Str:
 			if record.Inode != 0 {
 				fieldsIndex++
-				// Retransmit timeout
-				if record.RetransmitTimeout, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				if record.RTO, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					fmt.Println(err)
 					continue
 				}
 				fieldsIndex++
-				// Predicted tick of soft clock (delayed ACK control data)
-				if record.PredictedTick, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				if record.ATO, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					fmt.Println(err)
 					continue
 				}
 				fieldsIndex++
-				// 	(ack.quick<<1)|ack.pingpong
-				if record.ACK, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				if record.QACK, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					fmt.Println(err)
 					continue
 				}
 				fieldsIndex++
-				// 	sending congestion window
 				if record.CongestionWindow, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					fmt.Println(err)
 					continue
 				}
 				fieldsIndex++
-				// 	slow start size threshold, or -1 if the threshold is >= 0xFFFF
-				if record.SlowStartSize, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				if record.SlowStartThreshold, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					fmt.Println(err)
 					continue
 				}
+			} else {
+				record.RTO = 0
+				record.ATO = 0
+				record.QACK = 0
+				record.CongestionWindow = 2
+				record.SlowStartThreshold = -1
 			}
 		case UDPv4Str, UDPv6Str:
 			fieldsIndex++
