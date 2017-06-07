@@ -302,14 +302,13 @@ func UnixRecordRead() {
 		if len(fields) > 7 {
 			fieldsIndex++
 			record.LocalAddr.Host = fields[fieldsIndex]
-
 		} else {
 			record.LocalAddr.Host = "*"
 		}
 		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
-		GlobalUnixRecords[record.Inode] = record
+		GlobalUnixRecords[record.SK] = record
 	}
 }
 
