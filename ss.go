@@ -11,18 +11,18 @@ import (
 const (
 	UserHz = 3
 
-	Sockstat4Path = "/proc/net/sockstat"
-	Sockstat6Path = "/proc/net/sockstat6"
-
 	IPv4String = "IPv4"
 	IPv6String = "IPv6"
 
-	TCPv4Path = "/proc/net/tcp"
-	TCPv6Path = "/proc/net/tcp6"
-	UDPv4Path = "/proc/net/udp"
-	UDPv6Path = "/proc/net/udp6"
-	RAWv4Path = "/proc/net/raw"
-	RAWv6Path = "/proc/net/raw6"
+	Sockstat4Path = "/proc/net/sockstat"
+	Sockstat6Path = "/proc/net/sockstat6"
+	TCPv4Path     = "/proc/net/tcp"
+	TCPv6Path     = "/proc/net/tcp6"
+	UDPv4Path     = "/proc/net/udp"
+	UDPv6Path     = "/proc/net/udp6"
+	RAWv4Path     = "/proc/net/raw"
+	RAWv6Path     = "/proc/net/raw6"
+	UnixPath      = "/proc/net/unix"
 
 	TCPv4Str = "TCPv4"
 	TCPv6Str = "TCPv6"
@@ -30,6 +30,7 @@ const (
 	UDPv6Str = "UDPv6"
 	RAWv4Str = "RAWv4"
 	RAWv6Str = "RAWv6"
+	UnixStr  = "Unix"
 )
 
 var (
@@ -41,12 +42,20 @@ var (
 	GlobalUDPv6Records map[uint64]*GenericRecord
 	GlobalRAWv4Records map[uint64]*GenericRecord
 	GlobalRAWv6Records map[uint64]*GenericRecord
+	GlobalUnixRecords  map[uint64]*GenericRecord
 
 	Protocal = []string{
 		"RAW",
 		"UDP",
 		"TCP",
 		"FRAG",
+	}
+
+	UnixSstate     = []int{7, 2, 1, 11}
+	UnixSocketType = map[int]string{
+		1: "u_str",
+		2: "u_dgr",
+		5: "u_seq",
 	}
 
 	Sstate = []string{
@@ -63,7 +72,6 @@ var (
 		"LISTEN",
 		"CLOSING",
 	}
-
 	SstateActive = map[int]bool{
 		0:  false,
 		1:  true,
@@ -78,7 +86,6 @@ var (
 		10: true,
 		11: false,
 	}
-
 	SstateListen = map[int]bool{
 		0:  false,
 		1:  false,
@@ -177,14 +184,16 @@ type GenericRecord struct {
 	Inode      uint64
 	RefCount   int
 	SK         uint64
-	// TCP Specific
+	// TCP specific
 	RTO                float64 // RetransmitTimeout
 	ATO                float64 // Predicted tick of soft clock (delayed ACK control data)
 	QACK               int     // (ack.quick<<1)|ack.pingpong
 	CongestionWindow   int     // sending congestion window
 	SlowStartThreshold int     // slow start size threshold, or -1 if the threshold is >= 0xFFFF
-	// Generic like UDP, RAW
+	// Generic like UDP, RAW specific
 	Drops int
+	// UNIX socket specific
+	Type int
 	// Option Info
 	Opt []string
 	// Related processes
@@ -196,6 +205,105 @@ func NewGenericRecord() *GenericRecord {
 	t := new(GenericRecord)
 	t.Procs = make(map[*ProcInfo]bool)
 	return t
+}
+
+func UnixRecordRead() {
+	var (
+		line        string
+		fields      []string
+		fieldsIndex int
+		tempInt64   int64
+		flag        int64
+	)
+	file, err := os.Open(UnixPath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if err = scanner.Err(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		line = scanner.Text()
+		fields = strings.Fields(line)
+		if len(fields) < 7 {
+			continue
+		}
+		if fields[0] == "Num" {
+			continue
+		}
+		record := NewGenericRecord()
+		// Num: the kernel table slot number.
+		fieldsIndex = 1
+		if record.SK, err = strconv.ParseUint(fields[fieldsIndex], 16, 64); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		record.RemoteAddr.Host = "*"
+		record.RemoteAddr.Port = fmt.Sprintf("%x", record.SK)
+		fieldsIndex++
+		// RefCount: the number of users of the socket.
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		record.RxQueue = int(tempInt64)
+		fieldsIndex++
+		// Protocol: currently always 0.
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		record.TxQueue = int(tempInt64)
+		fieldsIndex++
+		// Flags: the internal kernel flags holding the status of the socket.
+		if flag, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		fieldsIndex++
+		// Type: the socket type.
+		// For SOCK_STREAM sockets, this is 0001; for SOCK_DGRAM sockets, it is 0002; and for SOCK_SEQPACKET sockets, it is 0005.
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		record.Type = int(tempInt64)
+		fieldsIndex++
+		// St: the internal state of the socket.
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		if flag&(1<<16) != 0 {
+			record.Status = 10 // LISTEN
+		} else {
+			record.Status = UnixSstate[int(tempInt64)-1]
+			if record.Type == 2 && record.Status == 7 && len(record.RemoteAddr.Port) != 0 {
+				record.Status = 1
+			}
+		}
+		fieldsIndex++
+		// Inode
+		if record.Inode, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		record.LocalAddr.Port = fmt.Sprintf("%d", record.Inode)
+		// Path: the bound path (if any) of the socket.
+		// Sockets in the abstract namespace are included in the list, and are shown with a Path that commences with the character '@'.
+		if len(fields) > 7 {
+			fieldsIndex++
+			record.LocalAddr.Host = fields[fieldsIndex]
+
+		} else {
+			record.LocalAddr.Host = "*"
+		}
+	}
 }
 
 func GenericRecordRead(family string) (err error) {

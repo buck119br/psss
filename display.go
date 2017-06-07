@@ -35,6 +35,7 @@ func ShowSummary() {
 }
 
 func GenericShow(family string, records map[uint64]*GenericRecord) {
+	var ok bool
 	for _, record := range records {
 		if !*flagAll && !SstateActive[record.Status] {
 			continue
@@ -49,6 +50,12 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			fmt.Printf("udp\t")
 		case RAWv4Str, RAWv6Str:
 			fmt.Printf("raw\t")
+		case UnixStr:
+			if _, ok = UnixSocketType[record.Type]; !ok {
+				fmt.Printf("u_dgr\t")
+			} else {
+				fmt.Printf("%s\t", UnixSocketType[record.Type])
+			}
 		}
 		if len(Sstate[record.Status]) > 8 {
 			fmt.Printf("%s\t", Sstate[record.Status])
@@ -73,7 +80,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			fmt.Printf("\n")
 		}
 		// Timer Info
-		if *flagOption && record.Timer != 0 {
+		if !*flagUnix && *flagOption && record.Timer != 0 {
 			fmt.Printf("[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
 			if record.Timer != 1 {
 				fmt.Printf("%d)]\t", record.Probes)
@@ -82,7 +89,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			}
 		}
 		// Detailed Info
-		if *flagExtended {
+		if !*flagUnix && *flagExtended {
 			fmt.Printf("[detail:(")
 			if record.UID != 0 {
 				fmt.Printf("uid:%d,", record.UID)
@@ -122,6 +129,9 @@ func SocketShow() {
 	if Family&FbRAWv6 != 0 {
 		GenericShow(RAWv6Str, GlobalRAWv6Records)
 	}
+	if *flagUnix {
+		GenericShow(UnixStr, GlobalUnixRecords)
+	}
 }
 
 var (
@@ -129,7 +139,7 @@ var (
 	localIP    = make([]string, 0, 0)
 )
 
-func demandRecordHandler(family string, r *GenericRecord) {
+func demandRecordHandler(r *GenericRecord) {
 	var (
 		status            = Sstate[r.Status]
 		procMap           map[string]map[bool]map[string]bool
@@ -171,32 +181,16 @@ func demandRecordHandler(family string, r *GenericRecord) {
 			remoteServiceMap = make(map[string]bool)
 		}
 		if local {
-			switch family {
-			case TCPv4Str, TCPv6Str:
-				for _, remoteRecord = range GlobalTCPv4Records {
-					if (Sstate[remoteRecord.Status] == "LISTEN" || Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
-						remoteServiceName = remoteRecord.UserName
-						break
-					}
+			for _, remoteRecord = range GlobalTCPv4Records {
+				if (Sstate[remoteRecord.Status] == "LISTEN" || Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
+					remoteServiceName = remoteRecord.UserName
+					break
 				}
-				for _, remoteRecord = range GlobalTCPv6Records {
-					if (Sstate[remoteRecord.Status] == "LISTEN" || Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
-						remoteServiceName = remoteRecord.UserName
-						break
-					}
-				}
-			case UDPv4Str, UDPv6Str:
-				for _, remoteRecord = range GlobalUDPv4Records {
-					if (Sstate[remoteRecord.Status] == "LISTEN" || Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
-						remoteServiceName = remoteRecord.UserName
-						break
-					}
-				}
-				for _, remoteRecord = range GlobalUDPv6Records {
-					if (Sstate[remoteRecord.Status] == "LISTEN" || Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
-						remoteServiceName = remoteRecord.UserName
-						break
-					}
+			}
+			for _, remoteRecord = range GlobalTCPv6Records {
+				if (Sstate[remoteRecord.Status] == "LISTEN" || Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
+					remoteServiceName = remoteRecord.UserName
+					break
 				}
 			}
 			if len(remoteServiceName) != 0 {
@@ -226,22 +220,12 @@ func DemandShow() {
 	}
 	if Family&FbTCPv4 != 0 {
 		for _, record := range GlobalTCPv4Records {
-			demandRecordHandler(TCPv4Str, record)
+			demandRecordHandler(record)
 		}
 	}
 	if Family&FbTCPv6 != 0 {
 		for _, record := range GlobalTCPv6Records {
-			demandRecordHandler(TCPv6Str, record)
-		}
-	}
-	if Family&FbUDPv4 != 0 {
-		for _, record := range GlobalUDPv4Records {
-			demandRecordHandler(UDPv4Str, record)
-		}
-	}
-	if Family&FbUDPv6 != 0 {
-		for _, record := range GlobalUDPv6Records {
-			demandRecordHandler(UDPv6Str, record)
+			demandRecordHandler(record)
 		}
 	}
 	for status, localServiceMap := range demandData {

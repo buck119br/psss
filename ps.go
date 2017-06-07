@@ -148,6 +148,10 @@ func SetUpRelation() {
 				record.Procs[proc] = true
 				GlobalRAWv6Records[fd.SysStat.Ino] = record
 			}
+			if record, ok = GlobalUnixRecords[fd.SysStat.Ino]; ok {
+				record.Procs[proc] = true
+				GlobalUnixRecords[fd.SysStat.Ino] = record
+			}
 		}
 	}
 	findRecordUser(GlobalTCPv4Records)
@@ -156,4 +160,5 @@ func SetUpRelation() {
 	findRecordUser(GlobalUDPv6Records)
 	findRecordUser(GlobalRAWv4Records)
 	findRecordUser(GlobalRAWv6Records)
+	findRecordUser(GlobalUnixRecords)
 }

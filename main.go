@@ -42,8 +42,8 @@ var (
 	flagSCTP   = flag.Bool("S", false, "display only SCTP sockets")         //
 	flagTCP    = flag.Bool("t", false, "display only TCP sockets")          // ok
 	flagUDP    = flag.Bool("u", false, "display only UDP sockets")          // ok
-	flagRAW    = flag.Bool("w", false, "display only RAW sockets")          //
-	flagUNIX   = flag.Bool("x", false, "display only Unix domain sockets")  //
+	flagRAW    = flag.Bool("w", false, "display only RAW sockets")          // ok
+	flagUnix   = flag.Bool("x", false, "display only Unix domain sockets")  //
 
 	flagDemand = flag.Bool("demand", false, "my boss' demand") // ok
 
@@ -72,6 +72,7 @@ func init() {
 	GlobalUDPv6Records = make(map[uint64]*GenericRecord)
 	GlobalRAWv4Records = make(map[uint64]*GenericRecord)
 	GlobalRAWv6Records = make(map[uint64]*GenericRecord)
+	GlobalUnixRecords = make(map[uint64]*GenericRecord)
 }
 
 func dataReader() {
@@ -92,6 +93,9 @@ func dataReader() {
 	}
 	if Family&FbRAWv6 != 0 {
 		GenericRecordRead(RAWv6Str)
+	}
+	if *flagUnix {
+		UnixRecordRead()
 	}
 }
 
