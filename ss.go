@@ -244,7 +244,9 @@ func UnixRecordRead() {
 			continue
 		}
 		record.RemoteAddr.Host = "*"
-		record.RemoteAddr.Port = fmt.Sprintf("%x", record.SK)
+		if record.SK != 0 {
+			record.RemoteAddr.Port = fmt.Sprintf("%x", record.SK)
+		}
 		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
 			MaxRemoteAddrLength = len(record.RemoteAddr.String())
 		}
@@ -286,7 +288,7 @@ func UnixRecordRead() {
 			record.Status = 10 // LISTEN
 		} else {
 			record.Status = UnixSstate[int(tempInt64)-1]
-			if record.Type == 2 && record.Status == 7 && len(record.RemoteAddr.Port) != 0 {
+			if record.Type == 2 && record.Status == 7 && record.SK != 0 {
 				record.Status = 1
 			}
 		}
@@ -308,7 +310,7 @@ func UnixRecordRead() {
 		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
-		GlobalUnixRecords[record.SK] = record
+		GlobalUnixRecords[record.Inode] = record
 	}
 }
 
