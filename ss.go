@@ -238,7 +238,7 @@ func UnixRecordRead() {
 		}
 		record := NewGenericRecord()
 		// Num: the kernel table slot number.
-		fieldsIndex = 1
+		fieldsIndex = 0
 		if record.SK, err = strconv.ParseUint(fields[fieldsIndex], 16, 64); err != nil {
 			fmt.Println(err)
 			continue
