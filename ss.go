@@ -245,6 +245,9 @@ func UnixRecordRead() {
 		}
 		record.RemoteAddr.Host = "*"
 		record.RemoteAddr.Port = fmt.Sprintf("%x", record.SK)
+		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
+			MaxRemoteAddrLength = len(record.RemoteAddr.String())
+		}
 		fieldsIndex++
 		// RefCount: the number of users of the socket.
 		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
@@ -302,6 +305,9 @@ func UnixRecordRead() {
 
 		} else {
 			record.LocalAddr.Host = "*"
+		}
+		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
+			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
 		GlobalUnixRecords[record.Inode] = record
 	}
