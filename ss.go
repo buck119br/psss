@@ -216,6 +216,10 @@ func GenericRecordRead(family string) (err error) {
 		file, err = os.Open(UDPv4Path)
 	case UDPv6Str:
 		file, err = os.Open(UDPv6Path)
+	case RAWv4Str:
+		file, err = os.Open(RAWv4Path)
+	case RAWv6Str:
+		file, err = os.Open(RAWv6Path)
 	default:
 		err = fmt.Errorf("invalid family string.")
 	}
@@ -241,9 +245,9 @@ func GenericRecordRead(family string) (err error) {
 		fieldsIndex = 1
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
 		switch family {
-		case TCPv4Str, UDPv4Str:
+		case TCPv4Str, UDPv4Str, RAWv4Str:
 			record.LocalAddr.Host, err = IPv4HexToString(stringBuff[0])
-		case TCPv6Str, UDPv6Str:
+		case TCPv6Str, UDPv6Str, RAWv6Str:
 			record.LocalAddr.Host, err = IPv6HexToString(stringBuff[0])
 		}
 		if err != nil {
@@ -261,9 +265,9 @@ func GenericRecordRead(family string) (err error) {
 		// Remote address
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
 		switch family {
-		case TCPv4Str, UDPv4Str:
+		case TCPv4Str, UDPv4Str, RAWv4Str:
 			record.RemoteAddr.Host, err = IPv4HexToString(stringBuff[0])
-		case TCPv6Str, UDPv6Str:
+		case TCPv6Str, UDPv6Str, RAWv6Str:
 			record.RemoteAddr.Host, err = IPv6HexToString(stringBuff[0])
 		}
 		if err != nil {
@@ -392,7 +396,7 @@ func GenericRecordRead(family string) (err error) {
 			if record.Timer != 1 {
 				record.Retransmit = record.Probes
 			}
-		case UDPv4Str, UDPv6Str:
+		case UDPv4Str, UDPv6Str, RAWv4Str, RAWv6Str:
 			fieldsIndex++
 			if record.Drops, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 				fmt.Println(err)
@@ -411,6 +415,10 @@ func GenericRecordRead(family string) (err error) {
 			GlobalUDPv4Records[record.Inode] = record
 		case UDPv6Str:
 			GlobalUDPv6Records[record.Inode] = record
+		case RAWv4Str:
+			GlobalRAWv4Records[record.Inode] = record
+		case RAWv6Str:
+			GlobalRAWv6Records[record.Inode] = record
 		}
 	}
 	return nil
