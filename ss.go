@@ -303,6 +303,7 @@ func UnixRecordRead() {
 		} else {
 			record.LocalAddr.Host = "*"
 		}
+		GlobalUnixRecords[record.Inode] = record
 	}
 }
 
