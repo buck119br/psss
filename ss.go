@@ -244,9 +244,7 @@ func UnixRecordRead() {
 			continue
 		}
 		record.RemoteAddr.Host = "*"
-		if record.SK != 0 {
-			record.RemoteAddr.Port = fmt.Sprintf("%x", record.SK)
-		}
+		record.RemoteAddr.Port = "0"
 		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
 			MaxRemoteAddrLength = len(record.RemoteAddr.String())
 		}
@@ -259,11 +257,7 @@ func UnixRecordRead() {
 		record.RxQueue = int(tempInt64)
 		fieldsIndex++
 		// Protocol: currently always 0.
-		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
-			fmt.Println(err)
-			continue
-		}
-		record.TxQueue = int(tempInt64)
+		record.TxQueue = 0
 		fieldsIndex++
 		// Flags: the internal kernel flags holding the status of the socket.
 		if flag, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
