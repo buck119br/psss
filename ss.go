@@ -14,18 +14,22 @@ const (
 	Sockstat4Path = "/proc/net/sockstat"
 	Sockstat6Path = "/proc/net/sockstat6"
 
+	IPv4String = "IPv4"
+	IPv6String = "IPv6"
+
 	TCPv4Path = "/proc/net/tcp"
 	TCPv6Path = "/proc/net/tcp6"
 	UDPv4Path = "/proc/net/udp"
 	UDPv6Path = "/proc/net/udp6"
-
-	IPv4String = "IPv4"
-	IPv6String = "IPv6"
+	RAWv4Path = "/proc/net/raw"
+	RAWv6Path = "/proc/net/raw6"
 
 	TCPv4Str = "TCPv4"
 	TCPv6Str = "TCPv6"
 	UDPv4Str = "UDPv4"
 	UDPv6Str = "UDPv6"
+	RAWv4Str = "RAWv4"
+	RAWv6Str = "RAWv6"
 )
 
 var (
@@ -35,6 +39,8 @@ var (
 	GlobalTCPv6Records map[uint64]*GenericRecord
 	GlobalUDPv4Records map[uint64]*GenericRecord
 	GlobalUDPv6Records map[uint64]*GenericRecord
+	GlobalRAWv4Records map[uint64]*GenericRecord
+	GlobalRAWv6Records map[uint64]*GenericRecord
 
 	Protocal = []string{
 		"RAW",

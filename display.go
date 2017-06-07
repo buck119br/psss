@@ -47,6 +47,8 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			fmt.Printf("tcp\t")
 		case UDPv4Str, UDPv6Str:
 			fmt.Printf("udp\t")
+		case RAWv4Str, RAWv6Str:
+			fmt.Printf("raw\t")
 		}
 		if len(Sstate[record.Status]) > 8 {
 			fmt.Printf("%s\t", Sstate[record.Status])
@@ -113,6 +115,12 @@ func SocketShow() {
 	}
 	if Family&FbUDPv6 != 0 {
 		GenericShow(UDPv6Str, GlobalUDPv6Records)
+	}
+	if Family&FbRAWv4 != 0 {
+		GenericShow(RAWv4Str, GlobalRAWv4Records)
+	}
+	if Family&FbRAWv6 != 0 {
+		GenericShow(RAWv6Str, GlobalRAWv6Records)
 	}
 }
 
