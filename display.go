@@ -39,6 +39,9 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 		if !*flagAll && !SstateActive[record.Status] {
 			continue
 		}
+		if *flagListen && !SstateListen[record.Status] {
+			continue
+		}
 		switch family {
 		case TCPv4Str, TCPv6Str:
 			fmt.Printf("tcp\t")

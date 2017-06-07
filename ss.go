@@ -73,6 +73,21 @@ var (
 		11: false,
 	}
 
+	SstateListen = map[int]bool{
+		0:  false,
+		1:  false,
+		2:  false,
+		3:  false,
+		4:  false,
+		5:  false,
+		6:  false,
+		7:  true,
+		8:  false,
+		9:  false,
+		10: true,
+		11: false,
+	}
+
 	TimerName = []string{
 		"OFF",
 		"ON",

@@ -25,7 +25,7 @@ var (
 	flagAll        = flag.Bool("a", false, "display all sockets")              // ok
 	flagExtended   = flag.Bool("e", false, "show detailed socket information") // ok
 	flagInfo       = flag.Bool("i", false, "show internal TCP information")    //
-	flagListen     = flag.Bool("l", false, "display listening sockets")        //
+	flagListen     = flag.Bool("l", false, "display listening sockets")        // ok
 	flagMemory     = flag.Bool("m", false, "show socket memory usage")         //
 	flagNotResolve = flag.Bool("n", false, "don't resolve service names")      //
 	flagOption     = flag.Bool("o", false, "show timer information")           // ok
@@ -109,7 +109,7 @@ func main() {
 	if *flagUDP {
 		Family |= FbUDPv4 | FbUDPv6
 	}
-	if Family == 0 && *flagAll {
+	if Family == 0 {
 		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6
 	}
 	dataReader()
