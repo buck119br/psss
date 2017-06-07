@@ -129,7 +129,7 @@ func main() {
 	if *flagRAW {
 		Family |= FbRAWv4 | FbRAWv6
 	}
-	if Family == 0 {
+	if Family == 0 && *flagAll {
 		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6 | FbRAWv4 | FbRAWv6
 	}
 	dataReader()
