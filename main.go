@@ -18,6 +18,7 @@ const (
 	FbUDPv6
 	FbRAWv4
 	FbRAWv6
+	FbUnix
 )
 
 var (
@@ -56,6 +57,7 @@ var (
 	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  UDPv6
 	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  RAWv4
 	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  RAWv6
+	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  Unix
 	*/
 	Family int
 )
@@ -94,7 +96,7 @@ func dataReader() {
 	if Family&FbRAWv6 != 0 {
 		GenericRecordRead(RAWv6Str)
 	}
-	if *flagUnix {
+	if Family&FbUnix != 0 {
 		UnixRecordRead()
 	}
 }
@@ -129,8 +131,11 @@ func main() {
 	if *flagRAW {
 		Family |= FbRAWv4 | FbRAWv6
 	}
+	if *flagUnix {
+		Family |= FbUnix
+	}
 	if Family == 0 && *flagAll {
-		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6 | FbRAWv4 | FbRAWv6
+		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6 | FbRAWv4 | FbRAWv6 | FbUnix
 	}
 	dataReader()
 	if *flagProcess {

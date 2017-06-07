@@ -80,7 +80,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			fmt.Printf("\n")
 		}
 		// Timer Info
-		if !*flagUnix && *flagOption && record.Timer != 0 {
+		if family != UnixStr && *flagOption && record.Timer != 0 {
 			fmt.Printf("[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
 			if record.Timer != 1 {
 				fmt.Printf("%d)]\t", record.Probes)
@@ -89,7 +89,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			}
 		}
 		// Detailed Info
-		if !*flagUnix && *flagExtended {
+		if family != UnixStr && *flagExtended {
 			fmt.Printf("[detail:(")
 			if record.UID != 0 {
 				fmt.Printf("uid:%d,", record.UID)
@@ -129,7 +129,7 @@ func SocketShow() {
 	if Family&FbRAWv6 != 0 {
 		GenericShow(RAWv6Str, GlobalRAWv6Records)
 	}
-	if *flagUnix {
+	if Family&FbUnix != 0 {
 		GenericShow(UnixStr, GlobalUnixRecords)
 	}
 }
