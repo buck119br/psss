@@ -31,6 +31,24 @@ const (
 	RAWv4Str = "RAWv4"
 	RAWv6Str = "RAWv6"
 	UnixStr  = "Unix"
+
+	UnixSockTypeStream    = 1
+	UnixSockTypeDGRAM     = 2
+	UnixSockTypeSeqPacket = 5
+)
+const (
+	SsUNKNOWN = iota
+	SsESTAB
+	SsSYNSENT
+	SsSYNRECV
+	SsFINWAIT1
+	SsFINWAIT2
+	SsTIMEWAIT
+	SsUNCONN
+	SsCLOSEWAIT
+	SsLASTACK
+	SsLISTEN
+	SsCLOSING
 )
 
 var (
@@ -244,7 +262,7 @@ func UnixRecordRead() {
 			continue
 		}
 		record.RemoteAddr.Host = "*"
-		record.RemoteAddr.Port = "0"
+		record.RemoteAddr.Port = "Unknown"
 		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
 			MaxRemoteAddrLength = len(record.RemoteAddr.String())
 		}
@@ -254,10 +272,10 @@ func UnixRecordRead() {
 			fmt.Println(err)
 			continue
 		}
-		record.RxQueue = int(tempInt64)
+		record.RefCount = int(tempInt64)
+		record.RxQueue = 0
 		fieldsIndex++
 		// Protocol: currently always 0.
-		record.TxQueue = 0
 		fieldsIndex++
 		// Flags: the internal kernel flags holding the status of the socket.
 		if flag, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
@@ -279,11 +297,11 @@ func UnixRecordRead() {
 			continue
 		}
 		if flag&(1<<16) != 0 {
-			record.Status = 10 // LISTEN
+			record.Status = SsLISTEN // LISTEN
 		} else {
 			record.Status = UnixSstate[int(tempInt64)-1]
-			if record.Type == 2 && record.Status == 7 && record.SK != 0 {
-				record.Status = 1
+			if record.Type == UnixSockTypeDGRAM && record.Status == SsUNCONN && record.SK != 0 {
+				record.Status = SsESTAB
 			}
 		}
 		fieldsIndex++
