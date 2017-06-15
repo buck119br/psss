@@ -69,7 +69,7 @@ var (
 		"FRAG",
 	}
 
-	UnixSstate     = []int{7, 2, 1, 11}
+	UnixSstate     = []int{SsUNCONN, SsSYNSENT, SsESTAB, SsCLOSING}
 	UnixSocketType = map[int]string{
 		1: "u_str",
 		2: "u_dgr",
@@ -300,9 +300,9 @@ func UnixRecordRead() {
 			record.Status = SsLISTEN // LISTEN
 		} else {
 			record.Status = UnixSstate[int(tempInt64)-1]
-			if record.Type == UnixSockTypeDGRAM && record.Status == SsUNCONN && record.SK != 0 {
-				record.Status = SsESTAB
-			}
+			// if record.Type == UnixSockTypeDGRAM && record.Status == SsUNCONN {
+			// 	record.Status = SsESTAB
+			// }
 		}
 		fieldsIndex++
 		// Inode
