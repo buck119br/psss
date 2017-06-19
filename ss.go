@@ -31,11 +31,8 @@ const (
 	RAWv4Str = "RAWv4"
 	RAWv6Str = "RAWv6"
 	UnixStr  = "Unix"
-
-	UnixSockTypeStream    = 1
-	UnixSockTypeDGRAM     = 2
-	UnixSockTypeSeqPacket = 5
 )
+
 const (
 	SsUNKNOWN = iota
 	SsESTAB
@@ -49,10 +46,27 @@ const (
 	SsLASTACK
 	SsLISTEN
 	SsCLOSING
+	SsMAX
+)
+
+const (
+	UnixSockSTREAM    = 1
+	UnixSockDGRAM     = 2
+	UnixSockRAW       = 3
+	UnixSockRDM       = 4
+	UnixSockSEQPACKET = 5
+	UnixSockDCCP      = 6
+	UnixSockPACKET    = 10
 )
 
 var (
-	Summary map[string]map[string]int
+	Summary   map[string]map[string]int
+	SummaryPF = []string{
+		"RAW",
+		"UDP",
+		"TCP",
+		"FRAG",
+	}
 
 	GlobalTCPv4Records map[uint64]*GenericRecord
 	GlobalTCPv6Records map[uint64]*GenericRecord
@@ -62,18 +76,15 @@ var (
 	GlobalRAWv6Records map[uint64]*GenericRecord
 	GlobalUnixRecords  map[uint64]*GenericRecord
 
-	Protocal = []string{
-		"RAW",
-		"UDP",
-		"TCP",
-		"FRAG",
-	}
-
 	UnixSstate     = []int{SsUNCONN, SsSYNSENT, SsESTAB, SsCLOSING}
 	UnixSocketType = map[int]string{
-		1: "u_str",
-		2: "u_dgr",
-		5: "u_seq",
+		UnixSockSTREAM:    "u_str",
+		UnixSockDGRAM:     "u_dgr",
+		UnixSockRAW:       "u_raw",
+		UnixSockRDM:       "u_rdm",
+		UnixSockSEQPACKET: "u_seq",
+		UnixSockDCCP:      "u_dccp",
+		UnixSockPACKET:    "u_pack",
 	}
 
 	Sstate = []string{
@@ -89,34 +100,37 @@ var (
 		"LAST-ACK",
 		"LISTEN",
 		"CLOSING",
+		"MAX",
 	}
 	SstateActive = map[int]bool{
-		0:  false,
-		1:  true,
-		2:  false,
-		3:  false,
-		4:  false,
-		5:  false,
-		6:  false,
-		7:  false,
-		8:  false,
-		9:  false,
-		10: true,
-		11: false,
+		SsUNKNOWN:   false,
+		SsESTAB:     true,
+		SsSYNSENT:   false,
+		SsSYNRECV:   false,
+		SsFINWAIT1:  false,
+		SsFINWAIT2:  false,
+		SsTIMEWAIT:  false,
+		SsUNCONN:    false,
+		SsCLOSEWAIT: false,
+		SsLASTACK:   false,
+		SsLISTEN:    true,
+		SsCLOSING:   false,
+		SsMAX:       false,
 	}
 	SstateListen = map[int]bool{
-		0:  false,
-		1:  false,
-		2:  false,
-		3:  false,
-		4:  false,
-		5:  false,
-		6:  false,
-		7:  true,
-		8:  false,
-		9:  false,
-		10: true,
-		11: false,
+		SsUNKNOWN:   false,
+		SsESTAB:     false,
+		SsSYNSENT:   false,
+		SsSYNRECV:   false,
+		SsFINWAIT1:  false,
+		SsFINWAIT2:  false,
+		SsTIMEWAIT:  false,
+		SsUNCONN:    true,
+		SsCLOSEWAIT: false,
+		SsLASTACK:   false,
+		SsLISTEN:    true,
+		SsCLOSING:   false,
+		SsMAX:       false,
 	}
 
 	TimerName = []string{

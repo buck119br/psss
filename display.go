@@ -24,13 +24,13 @@ func ShowSummary() {
 	// Display
 	var format string
 	fmt.Println("Transport\t Total\t IPv4\t IPv6\t")
-	for _, protocal := range Protocal {
-		if len(protocal) >= 8 {
+	for _, pf := range SummaryPF {
+		if len(pf) >= 8 {
 			format = "%s\t %d\t %d\t %d\t\n"
 		} else {
 			format = "%s\t\t %d\t %d\t %d\t\n"
 		}
-		fmt.Printf(format, protocal, Summary[protocal][IPv4String]+Summary[protocal][IPv6String], Summary[protocal][IPv4String], Summary[protocal][IPv6String])
+		fmt.Printf(format, pf, Summary[pf][IPv4String]+Summary[pf][IPv6String], Summary[pf][IPv4String], Summary[pf][IPv6String])
 	}
 }
 

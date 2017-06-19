@@ -64,8 +64,8 @@ var (
 
 func init() {
 	Summary = make(map[string]map[string]int)
-	for _, v := range Protocal {
-		Summary[v] = make(map[string]int)
+	for _, pf := range SummaryPF {
+		Summary[pf] = make(map[string]int)
 	}
 
 	GlobalTCPv4Records = make(map[uint64]*GenericRecord)
