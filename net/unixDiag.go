@@ -115,6 +115,7 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 	if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, 0); err != nil {
 		return nil, err
 	}
+	p = p[:n]
 	raw, err := syscall.ParseNetlinkMessage(p)
 	if err != nil {
 		return nil, err
