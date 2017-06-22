@@ -7,6 +7,7 @@ import (
 
 	"fmt"
 	"golang.org/x/sys/unix"
+	"reflect"
 )
 
 const (
@@ -33,7 +34,7 @@ var (
 	ErrorDone = fmt.Errorf("Done")
 )
 
-type UnixDiagRequest struct {
+type UnixDiagReq struct {
 	SdiagFamily   uint8
 	SdiagProtocol uint8
 	Pad           uint16
@@ -41,6 +42,11 @@ type UnixDiagRequest struct {
 	UdiagIno      uint32
 	UdiagShow     uint32
 	UdiagCookie   [2]uint32
+}
+
+type UnixDiagRequest struct {
+	Header  unix.NlMsghdr
+	Request UnixDiagReq
 }
 
 type UnixDiagMessage struct {
@@ -64,29 +70,26 @@ type UnixDiagRQlen struct {
 
 // Make sure the caller of the function will close skfd
 func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
-	var unDiagReq struct {
-		Header  unix.NlMsghdr
-		Request UnixDiagRequest
-	}
-
 	if skfd, err = unix.Socket(unix.AF_NETLINK, unix.SOCK_RAW, unix.NETLINK_SOCK_DIAG); err != nil {
 		return -1, err
 	}
 	sockAddrNl := unix.SockaddrNetlink{
 		Family: unix.AF_NETLINK,
 	}
-	unDiagReq.Header = unix.NlMsghdr{
-		Type:  SOCK_DIAG_BY_FAMILY,
-		Flags: unix.NLM_F_DUMP | unix.NLM_F_REQUEST,
-	}
-	unDiagReq.Request = UnixDiagReq{
-		SdiagFamily: unix.AF_UNIX,
-		UdiagStates: states,
-		UdiagShow:   show,
+	unDiagReq := UnixDiagRequest{
+		Header: unix.NlMsghdr{
+			Type:  SOCK_DIAG_BY_FAMILY,
+			Flags: unix.NLM_F_DUMP | unix.NLM_F_REQUEST,
+		},
+		Request: UnixDiagReq{
+			SdiagFamily: unix.AF_UNIX,
+			UdiagStates: states,
+			UdiagShow:   show,
+		},
 	}
 	unDiagReq.Header.Len = uint32(unsafe.Sizeof(unDiagReq))
 	p := make([]byte, unsafe.Sizeof(unDiagReq))
-	*(*UnixDiagRequest)(unsafe.Pointer(&p[0])) = unDiagReq
+	*(*reflect.TypeOf(unDiagReq))(unsafe.Pointer(&p[0])) = unDiagReq
 	if err = unix.Sendmsg(skfd, p, nil, &sockAddrNl, 0); err != nil {
 		return -1, err
 	}
@@ -129,29 +132,29 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 			}
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&v.Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
-			case UnixDiagTypeName:
+			case UNIX_DIAG_NAME:
 				ssu.Name = string(v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
-			case UnixDiagTypeVFS:
+			case UNIX_DIAG_VFS:
 				ssu.VFS = *(*UnixDiagVFS)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
-			case UnixDiagTypePeer:
+			case UNIX_DIAG_PEER:
 				ssu.Peer = *(*uint32)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
-			case UnixDiagTypeIcons:
+			case UNIX_DIAG_ICONS:
 				if nlAttr.Len > 4 {
 					ssu.Icons = make([]uint32, 0)
 					for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
 						ssu.Icons = append(ssu.Icons, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
 					}
 				}
-			case UnixDiagTypeRqlen:
+			case UNIX_DIAG_RQLEN:
 				ssu.RQlen = *(*UnixDiagRqlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
-			case UnixDiagTypeMeminfo:
+			case UNIX_DIAG_MEMINFO:
 				if nlAttr.Len > 4 {
 					ssu.Meminfo = make([]uint32, 0, 8)
 					for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
 						ssu.Meminfo = append(ssu.Meminfo, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
 					}
 				}
-			case UnixDiagTypeShutdown:
+			case UNIX_DIAG_SHUTDOWN:
 				ssu.Shutdown = *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
 				return nil, fmt.Errorf("invalid NlAttr Type")
