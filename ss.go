@@ -249,9 +249,9 @@ func UnixRecordRead() {
 			continue
 		}
 		if flag&(1<<16) != 0 {
-			record.Status = net.SsLISTEN // LISTEN
+			record.Status = mynet.SsLISTEN // LISTEN
 		} else {
-			record.Status = net.UnixSstate[int(tempInt64)-1]
+			record.Status = mynet.UnixSstate[int(tempInt64)-1]
 			// if record.Type == UnixSockTypeDGRAM && record.Status == SsUNCONN {
 			// 	record.Status = SsESTAB
 			// }
