@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"strings"
+
+	mynet "github.com/buck119br/psss/net"
 )
 
 var (
@@ -37,10 +39,10 @@ func ShowSummary() {
 func GenericShow(family string, records map[uint64]*GenericRecord) {
 	var ok bool
 	for _, record := range records {
-		if !*flagAll && !SstateActive[record.Status] {
+		if !*flagAll && !mynet.SstateActive[record.Status] {
 			continue
 		}
-		if *flagListen && !SstateListen[record.Status] {
+		if *flagListen && !mynet.SstateListen[record.Status] {
 			continue
 		}
 		switch family {
@@ -51,16 +53,16 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 		case RAWv4Str, RAWv6Str:
 			fmt.Printf("raw\t")
 		case UnixStr:
-			if _, ok = UnixSocketType[record.Type]; !ok {
+			if _, ok = mynet.SocketType[record.Type]; !ok {
 				fmt.Printf("u_dgr\t")
 			} else {
-				fmt.Printf("%s\t", UnixSocketType[record.Type])
+				fmt.Printf("%s\t", mynet.SocketType[record.Type])
 			}
 		}
-		if len(Sstate[record.Status]) > 8 {
-			fmt.Printf("%s\t", Sstate[record.Status])
+		if len(mynet.Sstate[record.Status]) > 8 {
+			fmt.Printf("%s\t", mynet.Sstate[record.Status])
 		} else {
-			fmt.Printf("%s\t\t", Sstate[record.Status])
+			fmt.Printf("%s\t\t", mynet.Sstate[record.Status])
 		}
 		fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
 		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
@@ -141,7 +143,7 @@ var (
 
 func demandRecordHandler(r *GenericRecord) {
 	var (
-		status            = Sstate[r.Status]
+		status            = mynet.Sstate[r.Status]
 		procMap           map[string]map[bool]map[string]bool
 		local             bool
 		locOrRmtMap       map[bool]map[string]bool
@@ -182,13 +184,13 @@ func demandRecordHandler(r *GenericRecord) {
 		}
 		if local {
 			for _, remoteRecord = range GlobalTCPv4Records {
-				if (Sstate[remoteRecord.Status] == "LISTEN" || Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
+				if (mynet.Sstate[remoteRecord.Status] == "LISTEN" || mynet.Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 					remoteServiceName = remoteRecord.UserName
 					break
 				}
 			}
 			for _, remoteRecord = range GlobalTCPv6Records {
-				if (Sstate[remoteRecord.Status] == "LISTEN" || Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
+				if (mynet.Sstate[remoteRecord.Status] == "LISTEN" || mynet.Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
 					remoteServiceName = remoteRecord.UserName
 					break
 				}

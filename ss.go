@@ -6,6 +6,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/sys/unix"
+
+	mynet "github.com/buck119br/psss/net"
 )
 
 const (
@@ -33,32 +37,6 @@ const (
 	UnixStr  = "Unix"
 )
 
-const (
-	SsUNKNOWN = iota
-	SsESTAB
-	SsSYNSENT
-	SsSYNRECV
-	SsFINWAIT1
-	SsFINWAIT2
-	SsTIMEWAIT
-	SsUNCONN
-	SsCLOSEWAIT
-	SsLASTACK
-	SsLISTEN
-	SsCLOSING
-	SsMAX
-)
-
-const (
-	UnixSockSTREAM    = 1
-	UnixSockDGRAM     = 2
-	UnixSockRAW       = 3
-	UnixSockRDM       = 4
-	UnixSockSEQPACKET = 5
-	UnixSockDCCP      = 6
-	UnixSockPACKET    = 10
-)
-
 var (
 	Summary   map[string]map[string]int
 	SummaryPF = []string{
@@ -75,63 +53,6 @@ var (
 	GlobalRAWv4Records map[uint64]*GenericRecord
 	GlobalRAWv6Records map[uint64]*GenericRecord
 	GlobalUnixRecords  map[uint64]*GenericRecord
-
-	UnixSstate     = []int{SsUNCONN, SsSYNSENT, SsESTAB, SsCLOSING}
-	UnixSocketType = map[int]string{
-		UnixSockSTREAM:    "u_str",
-		UnixSockDGRAM:     "u_dgr",
-		UnixSockRAW:       "u_raw",
-		UnixSockRDM:       "u_rdm",
-		UnixSockSEQPACKET: "u_seq",
-		UnixSockDCCP:      "u_dccp",
-		UnixSockPACKET:    "u_pack",
-	}
-
-	Sstate = []string{
-		"UNKNOWN",
-		"ESTAB",
-		"SYN-SENT",
-		"SYN-RECV",
-		"FIN-WAIT-1",
-		"FIN-WAIT-2",
-		"TIME-WAIT",
-		"UNCONN",
-		"CLOSE-WAIT",
-		"LAST-ACK",
-		"LISTEN",
-		"CLOSING",
-		"MAX",
-	}
-	SstateActive = map[int]bool{
-		SsUNKNOWN:   false,
-		SsESTAB:     true,
-		SsSYNSENT:   false,
-		SsSYNRECV:   false,
-		SsFINWAIT1:  false,
-		SsFINWAIT2:  false,
-		SsTIMEWAIT:  false,
-		SsUNCONN:    false,
-		SsCLOSEWAIT: false,
-		SsLASTACK:   false,
-		SsLISTEN:    true,
-		SsCLOSING:   false,
-		SsMAX:       false,
-	}
-	SstateListen = map[int]bool{
-		SsUNKNOWN:   false,
-		SsESTAB:     false,
-		SsSYNSENT:   false,
-		SsSYNRECV:   false,
-		SsFINWAIT1:  false,
-		SsFINWAIT2:  false,
-		SsTIMEWAIT:  false,
-		SsUNCONN:    true,
-		SsCLOSEWAIT: false,
-		SsLASTACK:   false,
-		SsLISTEN:    true,
-		SsCLOSING:   false,
-		SsMAX:       false,
-	}
 
 	TimerName = []string{
 		"OFF",
@@ -240,6 +161,23 @@ func NewGenericRecord() *GenericRecord {
 }
 
 func UnixRecordRead() {
+	skfd, err := mynet.SendUnixDiagMsg((1<<mynet.SsMAX)-1,
+		mynet.UDIAG_SHOW_NAME|mynet.UDIAG_SHOW_VFS|mynet.UDIAG_SHOW_PEER|mynet.UDIAG_SHOW_ICONS|mynet.UDIAG_SHOW_RQLEN|mynet.UDIAG_SHOW_MEMINFO)
+	if err != nil {
+		return
+	}
+	defer unix.Close(skfd)
+	list, err := mynet.RecvUnixDiagMsgAll(skfd)
+	if err != nil {
+		return
+	}
+	for _, v := range list {
+		fmt.Printf("%#v\n\n", v)
+	}
+	if err == nil {
+		panic(err)
+	}
+
 	var (
 		line        string
 		fields      []string
@@ -311,9 +249,9 @@ func UnixRecordRead() {
 			continue
 		}
 		if flag&(1<<16) != 0 {
-			record.Status = SsLISTEN // LISTEN
+			record.Status = net.SsLISTEN // LISTEN
 		} else {
-			record.Status = UnixSstate[int(tempInt64)-1]
+			record.Status = net.UnixSstate[int(tempInt64)-1]
 			// if record.Type == UnixSockTypeDGRAM && record.Status == SsUNCONN {
 			// 	record.Status = SsESTAB
 			// }
