@@ -1,13 +1,12 @@
 package net
 
 import (
+	"fmt"
 	"os"
 	"syscall"
 	"unsafe"
 
-	"fmt"
 	"golang.org/x/sys/unix"
-	"reflect"
 )
 
 const (
@@ -89,7 +88,7 @@ func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
 	}
 	unDiagReq.Header.Len = uint32(unsafe.Sizeof(unDiagReq))
 	p := make([]byte, unsafe.Sizeof(unDiagReq))
-	*(*reflect.TypeOf(unDiagReq))(unsafe.Pointer(&p[0])) = unDiagReq
+	*(*UnixDiagRequest)(unsafe.Pointer(&p[0])) = unDiagReq
 	if err = unix.Sendmsg(skfd, p, nil, &sockAddrNl, 0); err != nil {
 		return -1, err
 	}
@@ -124,7 +123,7 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 		if v.Header.Type == unix.NLMSG_DONE {
 			return multi, ErrorDone
 		}
-		ssu.Msg = *(*UnixDiagMsg)(unsafe.Pointer(&v.Data[:SizeOfUnixDiagMsg][0]))
+		ssu.Msg = *(*UnixDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfUnixDiagMsg][0]))
 		cursor = SizeOfUnixDiagMsg
 		for cursor+4 < len(v.Data) {
 			for v.Data[cursor] == byte(0) {
@@ -146,7 +145,7 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 					}
 				}
 			case UNIX_DIAG_RQLEN:
-				ssu.RQlen = *(*UnixDiagRqlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				ssu.RQlen = *(*UnixDiagRQlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case UNIX_DIAG_MEMINFO:
 				if nlAttr.Len > 4 {
 					ssu.Meminfo = make([]uint32, 0, 8)
