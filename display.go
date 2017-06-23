@@ -81,26 +81,40 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 		if NewlineFlag {
 			fmt.Printf("\n")
 		}
-		// Timer Info
-		if family != UnixStr && *flagOption && record.Timer != 0 {
-			fmt.Printf("[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
-			if record.Timer != 1 {
-				fmt.Printf("%d)]\t", record.Probes)
-			} else {
-				fmt.Printf("%d)]\t", record.Retransmit)
+		if family != UnixStr {
+			// Timer Info
+			if *flagOption && record.Timer != 0 {
+				fmt.Printf("[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
+				if record.Timer != 1 {
+					fmt.Printf("%d)]\t", record.Probes)
+				} else {
+					fmt.Printf("%d)]\t", record.Retransmit)
+				}
+			}
+			// Detailed Info
+			if *flagExtended {
+				fmt.Printf("[detail:(")
+				if record.UID != 0 {
+					fmt.Printf("uid:%d,", record.UID)
+				}
+				fmt.Printf("ino:%d,sk:%x", record.Inode, record.SK)
+				if len(record.Opt) > 0 {
+					fmt.Printf(",opt:%v", record.Opt)
+				}
+				fmt.Printf(")]\t")
 			}
 		}
-		// Detailed Info
-		if family != UnixStr && *flagExtended {
-			fmt.Printf("[detail:(")
-			if record.UID != 0 {
-				fmt.Printf("uid:%d,", record.UID)
-			}
-			fmt.Printf("ino:%d,sk:%x", record.Inode, record.SK)
-			if len(record.Opt) > 0 {
-				fmt.Printf(",opt:%v", record.Opt)
-			}
-			fmt.Printf(")]\t")
+		// Meminfo
+		if *flagMemory && len(record.Meminfo) == 8 {
+			fmt.Printf("[meminfo:(r:%d,rb:%d,t:%d,tb:%d,f:%d,w:%d,o:%d,bl:%d)]\t",
+				meminfo[SK_MEMINFO_RMEM_ALLOC],
+				meminfo[SK_MEMINFO_RCVBUF],
+				meminfo[SK_MEMINFO_WMEM_ALLOC],
+				meminfo[SK_MEMINFO_SNDBUF],
+				meminfo[SK_MEMINFO_FWD_ALLOC],
+				meminfo[SK_MEMINFO_WMEM_QUEUED],
+				meminfo[SK_MEMINFO_OPTMEM],
+				meminfo[SK_MEMINFO_BACKLOG])
 		}
 		fmt.Printf("\n")
 	}

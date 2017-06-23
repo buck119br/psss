@@ -183,6 +183,7 @@ func (record *GenericRecord) TransferFromUnix(u mynet.SockStatUnix) {
 	record.Status = u.Msg.UdiagState
 	record.Type = u.Msg.UdiagType
 	record.SK = uint64(u.Msg.UdiagCookie[1])<<32 | uint64(u.Msg.UdiagCookie[0])
+	record.Meminfo = u.Meminfo
 }
 
 func UnixRecordRead() {

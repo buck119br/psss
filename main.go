@@ -29,7 +29,7 @@ var (
 	flagExtended   = flag.Bool("e", false, "show detailed socket information") // ok
 	flagInfo       = flag.Bool("i", false, "show internal TCP information")    //
 	flagListen     = flag.Bool("l", false, "display listening sockets")        // ok
-	flagMemory     = flag.Bool("m", false, "show socket memory usage")         //
+	flagMemory     = flag.Bool("m", false, "show socket memory usage")         // ok
 	flagNotResolve = flag.Bool("n", false, "don't resolve service names")      // born to be
 	flagOption     = flag.Bool("o", false, "show timer information")           // ok
 	flagProcess    = flag.Bool("p", false, "show process using socket")        // ok
