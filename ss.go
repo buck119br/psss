@@ -179,10 +179,16 @@ func UnixRecordRead() {
 		} else {
 			record.LocalAddr.Host = "*"
 		}
-		record.LocalAddr.Port = fmt.Sprintf("%d", v.Msg.UdiagIno)
 		record.Inode = uint64(v.Msg.UdiagIno)
+		record.LocalAddr.Port = fmt.Sprintf("%d", v.Msg.UdiagIno)
+		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
+			MaxLocalAddrLength = len(record.LocalAddr.String())
+		}
 		record.RemoteAddr.Host = "*"
 		record.RemoteAddr.Port = fmt.Sprintf("%d", v.Peer)
+		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
+			MaxRemoteAddrLength = len(record.RemoteAddr.String())
+		}
 		record.RxQueue = int(v.RQlen.RQ)
 		record.TxQueue = int(v.RQlen.WQ)
 		record.Status = int(v.Msg.UdiagState)
