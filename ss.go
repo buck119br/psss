@@ -46,13 +46,13 @@ var (
 		"FRAG",
 	}
 
-	GlobalTCPv4Records map[uint64]*GenericRecord
-	GlobalTCPv6Records map[uint64]*GenericRecord
-	GlobalUDPv4Records map[uint64]*GenericRecord
-	GlobalUDPv6Records map[uint64]*GenericRecord
-	GlobalRAWv4Records map[uint64]*GenericRecord
-	GlobalRAWv6Records map[uint64]*GenericRecord
-	GlobalUnixRecords  map[uint64]*GenericRecord
+	GlobalTCPv4Records map[uint32]*GenericRecord
+	GlobalTCPv6Records map[uint32]*GenericRecord
+	GlobalUDPv4Records map[uint32]*GenericRecord
+	GlobalUDPv6Records map[uint32]*GenericRecord
+	GlobalRAWv4Records map[uint32]*GenericRecord
+	GlobalRAWv6Records map[uint32]*GenericRecord
+	GlobalUnixRecords  map[uint32]*GenericRecord
 
 	TimerName = []string{
 		"OFF",
@@ -126,15 +126,15 @@ func IPv6HexToString(ipHex string) (ip string, err error) {
 type GenericRecord struct {
 	LocalAddr  IP
 	RemoteAddr IP
-	Status     int
-	TxQueue    int
-	RxQueue    int
+	Status     uint8
+	TxQueue    uint32
+	RxQueue    uint32
 	Timer      int
 	Timeout    int
 	Retransmit int
 	UID        uint64
 	Probes     int // unanswered 0-window probes
-	Inode      uint64
+	Inode      uint32
 	RefCount   int
 	SK         uint64
 	// TCP specific
@@ -145,10 +145,12 @@ type GenericRecord struct {
 	SlowStartThreshold int     // slow start size threshold, or -1 if the threshold is >= 0xFFFF
 	// Generic like UDP, RAW specific
 	Drops int
-	// UNIX socket specific
-	Type int
+	// socket type
+	Type uint8
 	// Option Info
 	Opt []string
+	// Extended Info
+	Meminfo []uint32
 	// Related processes
 	Procs    map[*ProcInfo]bool
 	UserName string
@@ -166,7 +168,7 @@ func (record *GenericRecord) TransferFromUnix(u mynet.SockStatUnix) {
 	} else {
 		record.LocalAddr.Host = "*"
 	}
-	record.Inode = uint64(u.Msg.UdiagIno)
+	record.Inode = u.Msg.UdiagIno
 	record.LocalAddr.Port = fmt.Sprintf("%d", u.Msg.UdiagIno)
 	if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 		MaxLocalAddrLength = len(record.LocalAddr.String())
@@ -176,10 +178,10 @@ func (record *GenericRecord) TransferFromUnix(u mynet.SockStatUnix) {
 	if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
 		MaxRemoteAddrLength = len(record.RemoteAddr.String())
 	}
-	record.RxQueue = int(u.RQlen.RQ)
-	record.TxQueue = int(u.RQlen.WQ)
-	record.Status = int(u.Msg.UdiagState)
-	record.Type = int(u.Msg.UdiagType)
+	record.RxQueue = u.RQlen.RQ
+	record.TxQueue = u.RQlen.WQ
+	record.Status = u.Msg.UdiagState
+	record.Type = u.Msg.UdiagType
 	record.SK = uint64(u.Msg.UdiagCookie[1])<<32 | uint64(u.Msg.UdiagCookie[0])
 }
 
@@ -245,7 +247,7 @@ readProc:
 		}
 		fieldsIndex++
 		// RefCount: the number of users of the socket.
-		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if record.RxQueue, err = strconv.ParseUint32(fields[fieldsIndex], 16, 32); err != nil {
 			fmt.Println(err)
 			continue
 		}
@@ -265,7 +267,7 @@ readProc:
 			fmt.Println(err)
 			continue
 		}
-		record.Type = int(tempInt64)
+		record.Type = uint8(tempInt64)
 		fieldsIndex++
 		// St: the internal state of the socket.
 		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
@@ -279,7 +281,7 @@ readProc:
 		}
 		fieldsIndex++
 		// Inode
-		if record.Inode, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
+		if record.Inode, err = strconv.ParseUint32(fields[fieldsIndex], 10, 32); err != nil {
 			fmt.Println(err)
 			continue
 		}
@@ -388,20 +390,18 @@ func GenericRecordRead(family string) (err error) {
 			fmt.Println(err)
 			continue
 		}
-		record.Status = int(tempInt64)
+		record.Status = uint8(tempInt64)
 		fieldsIndex++
 		// TxQueue:RxQueue
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if tempInt64, err = strconv.ParseInt(stringBuff[0], 16, 32); err != nil {
+		if record.TxQueue, err = strconv.ParseUint32(stringBuff[0], 16, 32); err != nil {
 			fmt.Println(err)
 			continue
 		}
-		record.TxQueue = int(tempInt64)
-		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 32); err != nil {
+		if record.RxQueue, err = strconv.ParseUint32(stringBuff[1], 16, 32); err != nil {
 			fmt.Println(err)
 			continue
 		}
-		record.RxQueue = int(tempInt64)
 		fieldsIndex++
 		// Timer:TmWhen
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
@@ -437,7 +437,7 @@ func GenericRecordRead(family string) (err error) {
 			continue
 		}
 		fieldsIndex++
-		if record.Inode, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
+		if record.Inode, err = strconv.ParseUint32(fields[fieldsIndex], 10, 32); err != nil {
 			fmt.Println(err)
 			continue
 		}

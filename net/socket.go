@@ -1,7 +1,7 @@
 package net
 
 const (
-	SsUNKNOWN = iota
+	SsUNKNOWN uint8 = iota
 	SsESTAB
 	SsSYNSENT
 	SsSYNRECV
@@ -43,7 +43,7 @@ var (
 		"MAX",
 	}
 
-	SstateActive = map[int]bool{
+	SstateActive = map[uint8]bool{
 		SsUNKNOWN:   false,
 		SsESTAB:     true,
 		SsSYNSENT:   false,
@@ -59,7 +59,7 @@ var (
 		SsMAX:       false,
 	}
 
-	SstateListen = map[int]bool{
+	SstateListen = map[uint8]bool{
 		SsUNKNOWN:   false,
 		SsESTAB:     false,
 		SsSYNSENT:   false,
@@ -75,7 +75,7 @@ var (
 		SsMAX:       false,
 	}
 
-	SocketType = map[int]string{
+	SocketType = map[uint8]string{
 		SOCK_STREAM:    "str",
 		SOCK_DGRAM:     "dgr",
 		SOCK_RAW:       "raw",
@@ -85,7 +85,7 @@ var (
 		SOCK_PACKET:    "pack",
 	}
 
-	UnixSstate = []int{SsUNCONN, SsSYNSENT, SsESTAB, SsCLOSING}
+	UnixSstate = []uint8{SsUNCONN, SsSYNSENT, SsESTAB, SsCLOSING}
 )
 
 type SockStatUnix struct {
