@@ -247,10 +247,6 @@ readProc:
 		}
 		fieldsIndex++
 		// RefCount: the number of users of the socket.
-		if record.RxQueue, err = strconv.ParseUint32(fields[fieldsIndex], 16, 32); err != nil {
-			fmt.Println(err)
-			continue
-		}
 		record.RxQueue = 0
 		fieldsIndex++
 		// Protocol: currently always 0.
@@ -281,10 +277,11 @@ readProc:
 		}
 		fieldsIndex++
 		// Inode
-		if record.Inode, err = strconv.ParseUint32(fields[fieldsIndex], 10, 32); err != nil {
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
+		record.Inode = uint32(tempInt64)
 		record.LocalAddr.Port = fmt.Sprintf("%d", record.Inode)
 		// Path: the bound path (if any) of the socket.
 		// Sockets in the abstract namespace are included in the list, and are shown with a Path that commences with the character '@'.
@@ -394,14 +391,16 @@ func GenericRecordRead(family string) (err error) {
 		fieldsIndex++
 		// TxQueue:RxQueue
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if record.TxQueue, err = strconv.ParseUint32(stringBuff[0], 16, 32); err != nil {
+		if record.TxQueue, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
-		if record.RxQueue, err = strconv.ParseUint32(stringBuff[1], 16, 32); err != nil {
+		record.TxQueue = tempInt64
+		if record.RxQueue, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
+		record.RxQueue = tempInt64
 		fieldsIndex++
 		// Timer:TmWhen
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
@@ -437,10 +436,11 @@ func GenericRecordRead(family string) (err error) {
 			continue
 		}
 		fieldsIndex++
-		if record.Inode, err = strconv.ParseUint32(fields[fieldsIndex], 10, 32); err != nil {
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
+		record.Inode = tempInt64
 		fieldsIndex++
 		if record.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			fmt.Println(err)
