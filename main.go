@@ -68,13 +68,13 @@ func init() {
 		Summary[pf] = make(map[string]int)
 	}
 
-	GlobalTCPv4Records = make(map[uint64]*GenericRecord)
-	GlobalTCPv6Records = make(map[uint64]*GenericRecord)
-	GlobalUDPv4Records = make(map[uint64]*GenericRecord)
-	GlobalUDPv6Records = make(map[uint64]*GenericRecord)
-	GlobalRAWv4Records = make(map[uint64]*GenericRecord)
-	GlobalRAWv6Records = make(map[uint64]*GenericRecord)
-	GlobalUnixRecords = make(map[uint64]*GenericRecord)
+	GlobalTCPv4Records = make(map[uint32]*GenericRecord)
+	GlobalTCPv6Records = make(map[uint32]*GenericRecord)
+	GlobalUDPv4Records = make(map[uint32]*GenericRecord)
+	GlobalUDPv6Records = make(map[uint32]*GenericRecord)
+	GlobalRAWv4Records = make(map[uint32]*GenericRecord)
+	GlobalRAWv6Records = make(map[uint32]*GenericRecord)
+	GlobalUnixRecords = make(map[uint32]*GenericRecord)
 }
 
 func dataReader() {

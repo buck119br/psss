@@ -36,7 +36,7 @@ func ShowSummary() {
 	}
 }
 
-func GenericShow(family string, records map[uint64]*GenericRecord) {
+func GenericShow(family string, records map[uint32]*GenericRecord) {
 	var ok bool
 	for _, record := range records {
 		if !*flagAll && !mynet.SstateActive[record.Status] {
@@ -71,7 +71,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			fmt.Printf(`["%s"`, record.UserName)
 			for proc := range record.Procs {
 				for _, fd := range proc.Fd {
-					if fd.SysStat.Ino == record.Inode {
+					if fd.SysStat.Ino == uint64(record.Inode) {
 						fmt.Printf(`(pid=%d,fd=%s)`, proc.Pid, fd.Name)
 					}
 				}
