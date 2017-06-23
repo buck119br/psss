@@ -180,6 +180,7 @@ func UnixRecordRead() {
 			record.LocalAddr.Host = "*"
 		}
 		record.LocalAddr.Port = fmt.Sprintf("%d", v.Msg.UdiagIno)
+		record.Inode = uint64(v.Msg.UdiagIno)
 		record.RemoteAddr.Host = "*"
 		record.RemoteAddr.Port = fmt.Sprintf("%d", v.Peer)
 		record.RxQueue = int(v.RQlen.RQ)
