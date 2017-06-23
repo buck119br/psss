@@ -164,20 +164,32 @@ func UnixRecordRead() {
 	skfd, err := mynet.SendUnixDiagMsg((1<<mynet.SsMAX)-1,
 		mynet.UDIAG_SHOW_NAME|mynet.UDIAG_SHOW_VFS|mynet.UDIAG_SHOW_PEER|mynet.UDIAG_SHOW_ICONS|mynet.UDIAG_SHOW_RQLEN|mynet.UDIAG_SHOW_MEMINFO)
 	if err != nil {
-		return
+		goto readProc
 	}
 	defer unix.Close(skfd)
 	list, err := mynet.RecvUnixDiagMsgAll(skfd)
 	if err != nil {
-		return
+		goto readProc
 	}
 	for _, v := range list {
-		fmt.Printf("%#v\n\n", v)
+		record := NewGenericRecord()
+		if len(v.Name) > 0 {
+			record.LocalAddr.Host = v.Name
+		} else {
+			record.LocalAddr.Host = "*"
+		}
+		record.LocalAddr.Port = fmt.Sprintf("%d", v.Msg.UdiagIno)
+		record.RemoteAddr.Host = "*"
+		record.RemoteAddr.Port = fmt.Sprintf("%d", v.Peer)
+		record.RxQueue = int(v.RQlen.RQ)
+		record.TxQueue = int(v.RQlen.WQ)
+		record.Status = int(v.Msg.UdiagState)
+		record.SK = uint64(v.Msg.Cookie[1])<<32 | uint64(v.Msg.Cookie[0])
+		GlobalUnixRecords[record.Inode] = record
 	}
-	if err == nil {
-		panic(err)
-	}
+	return
 
+readProc:
 	var (
 		line        string
 		fields      []string
