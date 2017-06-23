@@ -100,7 +100,6 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 		n      int
 		cursor int
 		nlAttr unix.NlAttr
-		ssu    SockStatUnix
 	)
 	p := make([]byte, os.Getpagesize())
 	for {
@@ -121,6 +120,7 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 		return nil, err
 	}
 	for _, v := range raw {
+		var ssu SockStatUnix
 		if v.Header.Type == unix.NLMSG_DONE {
 			return multi, ErrorDone
 		}

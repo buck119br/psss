@@ -50,7 +50,6 @@ func (p *ProcInfo) GetStatus() (err error) {
 }
 
 func GetProcFiles(pid int) (files []*FileInfo, err error) {
-	var file *FileInfo
 	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", pid)
 	fd, err := os.Open(fdPath)
 	if err != nil {
@@ -65,6 +64,7 @@ func GetProcFiles(pid int) (files []*FileInfo, err error) {
 	}
 	files = make([]*FileInfo, 0, 0)
 	for _, v := range names {
+		var file *FileInfo
 		if file, err = GetFileStat(fdPath, v); err != nil {
 			continue
 		}
