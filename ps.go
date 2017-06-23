@@ -103,11 +103,11 @@ func GetProcInfo() {
 	}
 }
 
-func findRecordUser(records map[uint64]*GenericRecord) {
+func findRecordUser(records map[uint32]*GenericRecord) {
 	for _, record := range records {
 		for proc := range record.Procs {
 			for _, fd := range proc.Fd {
-				if record.Inode == fd.SysStat.Ino {
+				if record.Inode == uint32(fd.SysStat.Ino) {
 					record.UserName = proc.Name
 					goto found
 				}
@@ -124,33 +124,33 @@ func SetUpRelation() {
 	)
 	for _, proc := range GlobalProcInfo {
 		for _, fd := range proc.Fd {
-			if record, ok = GlobalTCPv4Records[fd.SysStat.Ino]; ok {
+			if record, ok = GlobalTCPv4Records[uint32(fd.SysStat.Ino)]; ok {
 				record.Procs[proc] = true
-				GlobalTCPv4Records[fd.SysStat.Ino] = record
+				GlobalTCPv4Records[uint32(fd.SysStat.Ino)] = record
 			}
-			if record, ok = GlobalTCPv6Records[fd.SysStat.Ino]; ok {
+			if record, ok = GlobalTCPv6Records[uint32(fd.SysStat.Ino)]; ok {
 				record.Procs[proc] = true
-				GlobalTCPv6Records[fd.SysStat.Ino] = record
+				GlobalTCPv6Records[uint32(fd.SysStat.Ino)] = record
 			}
-			if record, ok = GlobalUDPv4Records[fd.SysStat.Ino]; ok {
+			if record, ok = GlobalUDPv4Records[uint32(fd.SysStat.Ino)]; ok {
 				record.Procs[proc] = true
-				GlobalUDPv4Records[fd.SysStat.Ino] = record
+				GlobalUDPv4Records[uint32(fd.SysStat.Ino)] = record
 			}
-			if record, ok = GlobalUDPv6Records[fd.SysStat.Ino]; ok {
+			if record, ok = GlobalUDPv6Records[uint32(fd.SysStat.Ino)]; ok {
 				record.Procs[proc] = true
-				GlobalUDPv6Records[fd.SysStat.Ino] = record
+				GlobalUDPv6Records[uint32(fd.SysStat.Ino)] = record
 			}
-			if record, ok = GlobalRAWv4Records[fd.SysStat.Ino]; ok {
+			if record, ok = GlobalRAWv4Records[uint32(fd.SysStat.Ino)]; ok {
 				record.Procs[proc] = true
-				GlobalRAWv4Records[fd.SysStat.Ino] = record
+				GlobalRAWv4Records[uint32(fd.SysStat.Ino)] = record
 			}
-			if record, ok = GlobalRAWv6Records[fd.SysStat.Ino]; ok {
+			if record, ok = GlobalRAWv6Records[uint32(fd.SysStat.Ino)]; ok {
 				record.Procs[proc] = true
-				GlobalRAWv6Records[fd.SysStat.Ino] = record
+				GlobalRAWv6Records[uint32(fd.SysStat.Ino)] = record
 			}
-			if record, ok = GlobalUnixRecords[fd.SysStat.Ino]; ok {
+			if record, ok = GlobalUnixRecords[uint32(fd.SysStat.Ino)]; ok {
 				record.Procs[proc] = true
-				GlobalUnixRecords[fd.SysStat.Ino] = record
+				GlobalUnixRecords[uint32(fd.SysStat.Ino)] = record
 			}
 		}
 	}
