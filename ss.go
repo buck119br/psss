@@ -160,6 +160,29 @@ func NewGenericRecord() *GenericRecord {
 	return t
 }
 
+func (record *GenericRecord) TransferFromUnix(u mynet.SockStatUnix) {
+	if len(u.Name) > 0 {
+		record.LocalAddr.Host = u.Name
+	} else {
+		record.LocalAddr.Host = "*"
+	}
+	record.Inode = uint64(u.Msg.UdiagIno)
+	record.LocalAddr.Port = fmt.Sprintf("%d", u.Msg.UdiagIno)
+	if MaxLocalAddrLength < len(record.LocalAddr.String()) {
+		MaxLocalAddrLength = len(record.LocalAddr.String())
+	}
+	record.RemoteAddr.Host = "*"
+	record.RemoteAddr.Port = fmt.Sprintf("%d", u.Peer)
+	if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
+		MaxRemoteAddrLength = len(record.RemoteAddr.String())
+	}
+	record.RxQueue = int(u.RQlen.RQ)
+	record.TxQueue = int(u.RQlen.WQ)
+	record.Status = int(u.Msg.UdiagState)
+	record.Type = int(u.Msg.UdiagType)
+	record.SK = uint64(u.Msg.UdiagCookie[1])<<32 | uint64(u.Msg.UdiagCookie[0])
+}
+
 func UnixRecordRead() {
 	var list []mynet.SockStatUnix
 	skfd, err := mynet.SendUnixDiagMsg((1<<mynet.SsMAX)-1,
@@ -174,31 +197,13 @@ func UnixRecordRead() {
 	}
 	for _, v := range list {
 		record := NewGenericRecord()
-		if len(v.Name) > 0 {
-			record.LocalAddr.Host = v.Name
-		} else {
-			record.LocalAddr.Host = "*"
-		}
-		record.Inode = uint64(v.Msg.UdiagIno)
-		record.LocalAddr.Port = fmt.Sprintf("%d", v.Msg.UdiagIno)
-		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
-			MaxLocalAddrLength = len(record.LocalAddr.String())
-		}
-		record.RemoteAddr.Host = "*"
-		record.RemoteAddr.Port = fmt.Sprintf("%d", v.Peer)
-		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
-			MaxRemoteAddrLength = len(record.RemoteAddr.String())
-		}
-		record.RxQueue = int(v.RQlen.RQ)
-		record.TxQueue = int(v.RQlen.WQ)
-		record.Status = int(v.Msg.UdiagState)
-		record.Type = int(v.Msg.UdiagType)
-		record.SK = uint64(v.Msg.UdiagCookie[1])<<32 | uint64(v.Msg.UdiagCookie[0])
+		record.TransferFromUnix(v)
 		GlobalUnixRecords[record.Inode] = record
 	}
 	return
 
 readProc:
+	// In this way, so much information cannot get.
 	var (
 		line        string
 		fields      []string
@@ -212,7 +217,6 @@ readProc:
 		return
 	}
 	defer file.Close()
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if err = scanner.Err(); err != nil {
@@ -245,7 +249,6 @@ readProc:
 			fmt.Println(err)
 			continue
 		}
-		record.RefCount = int(tempInt64)
 		record.RxQueue = 0
 		fieldsIndex++
 		// Protocol: currently always 0.
@@ -270,12 +273,9 @@ readProc:
 			continue
 		}
 		if flag&(1<<16) != 0 {
-			record.Status = mynet.SsLISTEN // LISTEN
+			record.Status = mynet.SsLISTEN
 		} else {
 			record.Status = mynet.UnixSstate[int(tempInt64)-1]
-			// if record.Type == UnixSockTypeDGRAM && record.Status == SsUNCONN {
-			// 	record.Status = SsESTAB
-			// }
 		}
 		fieldsIndex++
 		// Inode
