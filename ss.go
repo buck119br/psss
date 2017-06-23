@@ -391,16 +391,16 @@ func GenericRecordRead(family string) (err error) {
 		fieldsIndex++
 		// TxQueue:RxQueue
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if record.TxQueue, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
+		if tempInt64, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
-		record.TxQueue = tempInt64
-		if record.RxQueue, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+		record.TxQueue = uint32(tempInt64)
+		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			fmt.Println(err)
 			continue
 		}
-		record.RxQueue = tempInt64
+		record.RxQueue = uint32(tempInt64)
 		fieldsIndex++
 		// Timer:TmWhen
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
@@ -440,7 +440,7 @@ func GenericRecordRead(family string) (err error) {
 			fmt.Println(err)
 			continue
 		}
-		record.Inode = tempInt64
+		record.Inode = uint32(tempInt64)
 		fieldsIndex++
 		if record.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			fmt.Println(err)
