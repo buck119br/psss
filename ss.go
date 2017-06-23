@@ -192,6 +192,7 @@ func UnixRecordRead() {
 		record.RxQueue = int(v.RQlen.RQ)
 		record.TxQueue = int(v.RQlen.WQ)
 		record.Status = int(v.Msg.UdiagState)
+		record.Type = int(v.Msg.UdiagType)
 		record.SK = uint64(v.Msg.UdiagCookie[1])<<32 | uint64(v.Msg.UdiagCookie[0])
 		GlobalUnixRecords[record.Inode] = record
 	}
