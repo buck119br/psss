@@ -161,13 +161,14 @@ func NewGenericRecord() *GenericRecord {
 }
 
 func UnixRecordRead() {
+	var list []mynet.SockStatUnix
 	skfd, err := mynet.SendUnixDiagMsg((1<<mynet.SsMAX)-1,
 		mynet.UDIAG_SHOW_NAME|mynet.UDIAG_SHOW_VFS|mynet.UDIAG_SHOW_PEER|mynet.UDIAG_SHOW_ICONS|mynet.UDIAG_SHOW_RQLEN|mynet.UDIAG_SHOW_MEMINFO)
 	if err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	list, err := mynet.RecvUnixDiagMsgAll(skfd)
+	list, err = mynet.RecvUnixDiagMsgAll(skfd)
 	if err != nil {
 		goto readProc
 	}
