@@ -54,7 +54,7 @@ func GenericShow(family string, records map[uint64]*GenericRecord) {
 			fmt.Printf("raw\t")
 		case UnixStr:
 			if _, ok = mynet.SocketType[record.Type]; !ok {
-				fmt.Printf("u_dgr\t")
+				fmt.Printf("dgr\t")
 			} else {
 				fmt.Printf("%s\t", mynet.SocketType[record.Type])
 			}
