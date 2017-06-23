@@ -107,14 +107,14 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 		// Meminfo
 		if *flagMemory && len(record.Meminfo) == 8 {
 			fmt.Printf("[meminfo:(r:%d,rb:%d,t:%d,tb:%d,f:%d,w:%d,o:%d,bl:%d)]\t",
-				record.Meminfo[SK_MEMINFO_RMEM_ALLOC],
-				record.Meminfo[SK_MEMINFO_RCVBUF],
-				record.Meminfo[SK_MEMINFO_WMEM_ALLOC],
-				record.Meminfo[SK_MEMINFO_SNDBUF],
-				record.Meminfo[SK_MEMINFO_FWD_ALLOC],
-				record.Meminfo[SK_MEMINFO_WMEM_QUEUED],
-				record.Meminfo[SK_MEMINFO_OPTMEM],
-				record.Meminfo[SK_MEMINFO_BACKLOG])
+				record.Meminfo[mynet.SK_MEMINFO_RMEM_ALLOC],
+				record.Meminfo[mynet.SK_MEMINFO_RCVBUF],
+				record.Meminfo[mynet.SK_MEMINFO_WMEM_ALLOC],
+				record.Meminfo[mynet.SK_MEMINFO_SNDBUF],
+				record.Meminfo[mynet.SK_MEMINFO_FWD_ALLOC],
+				record.Meminfo[mynet.SK_MEMINFO_WMEM_QUEUED],
+				record.Meminfo[mynet.SK_MEMINFO_OPTMEM],
+				record.Meminfo[mynet.SK_MEMINFO_BACKLOG])
 		}
 		fmt.Printf("\n")
 	}
