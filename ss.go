@@ -630,10 +630,9 @@ func GetSocketCount(fields []string) (int, error) {
 // IPv6:versionFlag = true; IPv4:versionFlag = false
 func GenericReadSockstat(versionFlag bool) (err error) {
 	var (
-		file      *os.File
-		line      string
-		fields    []string
-		tempCount int
+		file   *os.File
+		line   string
+		fields []string
 	)
 	if versionFlag {
 		file, err = os.Open(Sockstat6Path)
@@ -676,18 +675,18 @@ func GenericReadSockstat(versionFlag bool) (err error) {
 				fmt.Println(err)
 				return err
 			}
-		case "UDPLITE:":
-			if tempCount, err = GetSocketCount(fields[1:]); err != nil {
-				fmt.Println(err)
-				return err
-			}
-			// Summary["UDP"][IPv4String] += tempCount
-		case "UDPLITE6:":
-			if tempCount, err = GetSocketCount(fields[1:]); err != nil {
-				fmt.Println(err)
-				return err
-			}
-			// Summary["UDP"][IPv6String] += tempCount
+		// case "UDPLITE:":
+		// 	if tempCount, err = GetSocketCount(fields[1:]); err != nil {
+		// 		fmt.Println(err)
+		// 		return err
+		// 	}
+		// 	Summary["UDP"][IPv4String] += tempCount
+		// case "UDPLITE6:":
+		// 	if tempCount, err = GetSocketCount(fields[1:]); err != nil {
+		// 		fmt.Println(err)
+		// 		return err
+		// 	}
+		// 	Summary["UDP"][IPv6String] += tempCount
 		case "RAW:":
 			if Summary["RAW"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
 				fmt.Println(err)
