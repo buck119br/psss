@@ -211,7 +211,7 @@ func (record *GenericRecord) TransferFromInet(i mynet.SockStatInet) {
 	record.Inode = i.Msg.IdiagInode
 	record.RefCount = int(i.Msg.ID.IdiagIF)
 	record.SK = uint64(i.Msg.ID.IdiagCookie[1])<<32 | uint64(i.Msg.ID.IdiagCookie[0])
-	record.TCPInfo = i.TCPInfo
+	record.TCPInfo = &i.TCPInfo
 	record.Meminfo = i.SKMeminfo
 }
 
@@ -333,7 +333,7 @@ func GenericRecordRead(family string) (err error) {
 		af, protocal uint8
 		states       uint32
 		skfd         int
-		list         []mynet.SockStatUnix
+		list         []mynet.SockStatInet
 	)
 	switch family {
 	case TCPv4Str, TCPv6Str:
