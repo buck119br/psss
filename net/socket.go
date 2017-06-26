@@ -1,5 +1,9 @@
 package net
 
+import (
+	"golang.org/x/sys/unix"
+)
+
 const (
 	SsUNKNOWN uint8 = iota
 	SsESTAB
