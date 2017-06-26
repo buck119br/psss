@@ -193,14 +193,14 @@ func (record *GenericRecord) TransferFromInet(i mynet.SockStatInet) {
 		record.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[0]), "0x"))
 	case unix.AF_INET6:
 		record.RemoteAddr.Host, _ = IPv6HexToString(
-			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[0]), "0x")+
-			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[1]), "0x")+
-			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[2]), "0x")+
-			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[3]), "0x")
+			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[0]), "0x") +
+				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[1]), "0x") +
+				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[2]), "0x") +
+				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[3]), "0x"),
 		)
 	}
-	record.LocalAddr.Port = fmt.Sprintf("%d",i.Msg.ID.IdiagSport)
-	record.RemoteAddr.Port = fmt.Sprintf("%d",i.Msg.ID.IdiagDport)
+	record.LocalAddr.Port = fmt.Sprintf("%d", i.Msg.ID.IdiagSport)
+	record.RemoteAddr.Port = fmt.Sprintf("%d", i.Msg.ID.IdiagDport)
 	record.Status = i.Msg.IdiagState
 	record.RxQueue = i.Msg.IdiagRqueue
 	record.TxQueue = i.Msg.IdiagWqueue
