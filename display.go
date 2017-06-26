@@ -116,6 +116,10 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 				record.Meminfo[mynet.SK_MEMINFO_OPTMEM],
 				record.Meminfo[mynet.SK_MEMINFO_BACKLOG])
 		}
+		// internal TCP info
+		if *flagInfo && (family == TCPv4Str || family == TCPv6Str) {
+			fmt.Printf("[internal:()]\t")
+		}
 		fmt.Printf("\n")
 	}
 }

@@ -4,6 +4,7 @@ const (
 	SOCK_DIAG_BY_FAMILY = 20
 
 	SizeOfUnixDiagMsg = 16
+	SizeOfInetDiagMsg = 72
 )
 
 const (

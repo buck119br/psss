@@ -98,3 +98,10 @@ type SockStatUnix struct {
 	Meminfo  []uint32
 	Shutdown uint8
 }
+
+type SockStatInet struct {
+	Msg       InetDiagMessage
+	TCPInfo   unix.TCPInfo
+	SKMeminfo []uint32
+	Shutdown  uint8
+}

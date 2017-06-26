@@ -143,6 +143,7 @@ type GenericRecord struct {
 	QACK               int     // (ack.quick<<1)|ack.pingpong
 	CongestionWindow   int     // sending congestion window
 	SlowStartThreshold int     // slow start size threshold, or -1 if the threshold is >= 0xFFFF
+	TCPInfo            *unix.TCPInfo
 	// Generic like UDP, RAW specific
 	Drops int
 	// socket type
@@ -184,6 +185,34 @@ func (record *GenericRecord) TransferFromUnix(u mynet.SockStatUnix) {
 	record.Type = u.Msg.UdiagType
 	record.SK = uint64(u.Msg.UdiagCookie[1])<<32 | uint64(u.Msg.UdiagCookie[0])
 	record.Meminfo = u.Meminfo
+}
+
+func (record *GenericRecord) TransferFromInet(i mynet.SockStatInet) {
+	switch i.Msg.IdiagFamily {
+	case unix.AF_INET:
+		record.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[0]), "0x"))
+	case unix.AF_INET6:
+		record.RemoteAddr.Host, _ = IPv6HexToString(
+			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[0]), "0x")+
+			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[1]), "0x")+
+			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[2]), "0x")+
+			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[3]), "0x")
+		)
+	}
+	record.LocalAddr.Port = fmt.Sprintf("%d",i.Msg.ID.IdiagSport)
+	record.RemoteAddr.Port = fmt.Sprintf("%d",i.Msg.ID.IdiagDport)
+	record.Status = i.Msg.IdiagState
+	record.RxQueue = i.Msg.IdiagRqueue
+	record.TxQueue = i.Msg.IdiagWqueue
+	record.Timer = int(i.Msg.IdiagTimer)
+	record.Timeout = int(i.Msg.IdiagExpires)
+	record.Retransmit = int(i.Msg.IdiagRetrans)
+	record.UID = uint64(i.Msg.IdiagUid)
+	record.Inode = i.Msg.IdiagInode
+	record.RefCount = int(i.Msg.ID.IdiagIF)
+	record.SK = uint64(i.Msg.ID.IdiagCookie[1])<<32 | uint64(i.Msg.ID.IdiagCookie[0])
+	record.TCPInfo = i.TCPInfo
+	record.Meminfo = i.SKMeminfo
 }
 
 func UnixRecordRead() {
@@ -300,6 +329,69 @@ readProc:
 }
 
 func GenericRecordRead(family string) (err error) {
+	var (
+		af, protocal uint8
+		states       uint32
+		skfd         int
+		list         []mynet.SockStatUnix
+	)
+	switch family {
+	case TCPv4Str, TCPv6Str:
+		af = unix.AF_INET
+		if family == TCPv6Str {
+			af = unix.AF_INET6
+		}
+		protocal = mynet.IPPROTO_TCP
+		if *flagInfo {
+			states |= 1 << (mynet.INET_DIAG_INFO - 1)
+		}
+	case UDPv4Str, UDPv6Str:
+		af = unix.AF_INET
+		if family == UDPv6Str {
+			af = unix.AF_INET6
+		}
+		protocal = mynet.IPPROTO_UDP
+	case RAWv4Str, RAWv6Str:
+		af = unix.AF_INET
+		if family == RAWv6Str {
+			af = unix.AF_INET6
+		}
+		protocal = mynet.IPPROTO_RAW
+	default:
+		err = fmt.Errorf("invalid family string.")
+		return
+	}
+	if *flagMemory {
+		states |= 1 << (mynet.INET_DIAG_SKMEMINFO - 1)
+	}
+	if skfd, err = mynet.SendInetDiagMsg(af, protocal, states); err != nil {
+		goto readProc
+	}
+	defer unix.Close(skfd)
+	list, err = mynet.RecvInetDiagMsgAll(skfd)
+	if err != nil {
+		goto readProc
+	}
+	for _, v := range list {
+		record := NewGenericRecord()
+		record.TransferFromInet(v)
+		switch family {
+		case TCPv4Str:
+			GlobalTCPv4Records[record.Inode] = record
+		case TCPv6Str:
+			GlobalTCPv6Records[record.Inode] = record
+		case UDPv4Str:
+			GlobalUDPv4Records[record.Inode] = record
+		case UDPv6Str:
+			GlobalUDPv6Records[record.Inode] = record
+		case RAWv4Str:
+			GlobalRAWv4Records[record.Inode] = record
+		case RAWv6Str:
+			GlobalRAWv6Records[record.Inode] = record
+		}
+	}
+
+readProc:
 	var (
 		file        *os.File
 		line        string
@@ -589,13 +681,13 @@ func GenericReadSockstat(versionFlag bool) (err error) {
 				fmt.Println(err)
 				return err
 			}
-			Summary["UDP"][IPv4String] += tempCount
+			// Summary["UDP"][IPv4String] += tempCount
 		case "UDPLITE6:":
 			if tempCount, err = GetSocketCount(fields[1:]); err != nil {
 				fmt.Println(err)
 				return err
 			}
-			Summary["UDP"][IPv6String] += tempCount
+			// Summary["UDP"][IPv6String] += tempCount
 		case "RAW:":
 			if Summary["RAW"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
 				fmt.Println(err)
