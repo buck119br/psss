@@ -59,7 +59,7 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 				fmt.Printf("%s\t", mynet.SocketType[record.Type])
 			}
 		}
-		if len(mynet.Sstate[record.Status]) > 8 {
+		if len(mynet.Sstate[record.Status]) >= 8 {
 			fmt.Printf("%s\t", mynet.Sstate[record.Status])
 		} else {
 			fmt.Printf("%s\t\t", mynet.Sstate[record.Status])
@@ -86,9 +86,9 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 			if *flagOption && record.Timer != 0 {
 				fmt.Printf("[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
 				if record.Timer != 1 {
-					fmt.Printf("%d)]\t", record.Probes)
+					fmt.Printf("%d)]    ", record.Probes)
 				} else {
-					fmt.Printf("%d)]\t", record.Retransmit)
+					fmt.Printf("%d)]    ", record.Retransmit)
 				}
 			}
 			// Detailed Info
@@ -101,12 +101,12 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 				if len(record.Opt) > 0 {
 					fmt.Printf(",opt:%v", record.Opt)
 				}
-				fmt.Printf(")]\t")
+				fmt.Printf(")]    ")
 			}
 		}
 		// Meminfo
 		if *flagMemory && len(record.Meminfo) == 8 {
-			fmt.Printf("[meminfo:(r:%d,rb:%d,t:%d,tb:%d,f:%d,w:%d,o:%d,bl:%d)]\t",
+			fmt.Printf("[meminfo:(r:%d,rb:%d,t:%d,tb:%d,f:%d,w:%d,o:%d,bl:%d)]    ",
 				record.Meminfo[mynet.SK_MEMINFO_RMEM_ALLOC],
 				record.Meminfo[mynet.SK_MEMINFO_RCVBUF],
 				record.Meminfo[mynet.SK_MEMINFO_WMEM_ALLOC],
@@ -118,7 +118,7 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 		}
 		// internal TCP info
 		if *flagInfo && (family == TCPv4Str || family == TCPv6Str) {
-			fmt.Printf("[internal:()]\t")
+			fmt.Printf("[internal:(%#v)]\t", *record.TCPInfo)
 		}
 		fmt.Printf("\n")
 	}

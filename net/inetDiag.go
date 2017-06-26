@@ -1,7 +1,7 @@
 package net
 
 import (
-	"fmt"
+	// "fmt"
 	"os"
 	"syscall"
 	"unsafe"
@@ -169,10 +169,10 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 						ssi.SKMeminfo = append(ssi.SKMeminfo, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
 					}
 				}
-			case UNIX_DIAG_SHUTDOWN:
+			case INET_DIAG_SHUTDOWN:
 				ssi.Shutdown = *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
-				return nil, fmt.Errorf("invalid NlAttr Type")
+				// return nil, fmt.Errorf("invalid NlAttr Type")
 			}
 			cursor += int(nlAttr.Len)
 		}
