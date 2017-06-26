@@ -115,7 +115,7 @@ func SendInetDiagMsg(af uint8, protocal uint8, states uint32) (skfd int, err err
 	}
 	inDiagReq.Header.Len = uint32(unsafe.Sizeof(inDiagReq))
 	p := make([]byte, unsafe.Sizeof(inDiagReq))
-	*(*UnixDiagRequest)(unsafe.Pointer(&p[0])) = inDiagReq
+	*(*InetDiagRequest)(unsafe.Pointer(&p[0])) = inDiagReq
 	if err = unix.Sendmsg(skfd, p, nil, &sockAddrNl, 0); err != nil {
 		return -1, err
 	}
@@ -151,7 +151,7 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 		if v.Header.Type == unix.NLMSG_DONE {
 			return multi, ErrorDone
 		}
-		ssi.Msg = *(*UnixDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfInetDiagMsg][0]))
+		ssi.Msg = *(*InetDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfInetDiagMsg][0]))
 		cursor = SizeOfInetDiagMsg
 		for cursor+4 < len(v.Data) {
 			for v.Data[cursor] == byte(0) {
