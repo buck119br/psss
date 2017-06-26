@@ -390,6 +390,7 @@ func GenericRecordRead(family string) (err error) {
 			GlobalRAWv6Records[record.Inode] = record
 		}
 	}
+	return
 
 readProc:
 	var (
