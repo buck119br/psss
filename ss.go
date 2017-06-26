@@ -331,7 +331,7 @@ readProc:
 func GenericRecordRead(family string) (err error) {
 	var (
 		af, protocal uint8
-		states       uint32
+		exts         uint8
 		skfd         int
 		list         []mynet.SockStatInet
 	)
@@ -343,7 +343,7 @@ func GenericRecordRead(family string) (err error) {
 		}
 		protocal = mynet.IPPROTO_TCP
 		if *flagInfo {
-			states |= 1 << (mynet.INET_DIAG_INFO - 1)
+			exts |= 1 << (mynet.INET_DIAG_INFO - 1)
 		}
 	case UDPv4Str, UDPv6Str:
 		af = unix.AF_INET
@@ -362,9 +362,9 @@ func GenericRecordRead(family string) (err error) {
 		return
 	}
 	if *flagMemory {
-		states |= 1 << (mynet.INET_DIAG_SKMEMINFO - 1)
+		exts |= 1 << (mynet.INET_DIAG_SKMEMINFO - 1)
 	}
-	if skfd, err = mynet.SendInetDiagMsg(af, protocal, states); err != nil {
+	if skfd, err = mynet.SendInetDiagMsg(af, protocal, exts, (1<<mynet.SsMAX)-1); err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)

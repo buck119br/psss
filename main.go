@@ -142,7 +142,7 @@ func main() {
 		GetProcInfo()
 		SetUpRelation()
 	}
-	if *flagExtended || *flagOption || *flagMemory {
+	if *flagExtended || *flagOption || *flagMemory || *flagInfo {
 		NewlineFlag = true
 	}
 	if *flagDemand {

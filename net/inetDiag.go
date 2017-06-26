@@ -95,7 +95,7 @@ type InetDiagMessage struct {
 	IdiagInode   uint32
 }
 
-func SendInetDiagMsg(af uint8, protocal uint8, states uint32) (skfd int, err error) {
+func SendInetDiagMsg(af uint8, protocal uint8, exts uint8, states uint32) (skfd int, err error) {
 	if skfd, err = unix.Socket(unix.AF_NETLINK, unix.SOCK_RAW, unix.NETLINK_SOCK_DIAG); err != nil {
 		return -1, err
 	}
@@ -110,6 +110,7 @@ func SendInetDiagMsg(af uint8, protocal uint8, states uint32) (skfd int, err err
 		Request: InetDiagReq{
 			SdiagFamily:   af,
 			SdiagProtocol: protocal,
+			IdiagExt:      exts,
 			IdiagStates:   states,
 		},
 	}
