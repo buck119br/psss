@@ -135,7 +135,7 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 				fmt.Printf(" fastopen")
 			}
 			if len(record.CONG) > 0 {
-				fmt.Printf(" cong:%s", string(record.CONG))
+				fmt.Printf(" %s", string(record.CONG))
 			}
 			if record.TCPInfo.Options&mynet.TCPI_OPT_WSCALE != 0 {
 				fmt.Printf(" wscale:%d,%d", record.TCPInfo.Pad_cgo_0[0]>>4, record.TCPInfo.Pad_cgo_0[0]&0xf)
