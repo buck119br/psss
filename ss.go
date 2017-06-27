@@ -376,13 +376,17 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" app_limited")
 	}
 	if record.TCPInfo.Busy_time != 0 {
-		fmt.Printf(" busy:%dms", record.TCPInfo.Busy_time/1000)
+		fmt.Printf(" busy:%sms", BwToStr(float64(record.TCPInfo.Busy_time/1000)))
 	}
 	if record.TCPInfo.Rwnd_limited != 0 {
-		fmt.Printf(" rwnd_limited:%dms(%.1g%%)", record.TCPInfo.Rwnd_limited/1000, 100.0*float64(record.TCPInfo.Rwnd_limited)/float64(record.TCPInfo.Busy_time))
+		fmt.Printf(" rwnd_limited:%sms(%.1g%%)",
+			BwToStr(float64(record.TCPInfo.Rwnd_limited/1000)),
+			100.0*float64(record.TCPInfo.Rwnd_limited)/float64(record.TCPInfo.Busy_time))
 	}
 	if record.TCPInfo.Sndbuf_limited != 0 {
-		fmt.Printf(" sndbuf_limited:%dms(%.1g%%)", record.TCPInfo.Sndbuf_limited/1000, 100.0*float64(record.TCPInfo.Sndbuf_limited)/float64(record.TCPInfo.Busy_time))
+		fmt.Printf(" sndbuf_limited:%sms(%.1g%%)",
+			BwToStr(float64(record.TCPInfo.Sndbuf_limited/1000)),
+			100.0*float64(record.TCPInfo.Sndbuf_limited)/float64(record.TCPInfo.Busy_time))
 	}
 	if record.TCPInfo.Unacked != 0 {
 		fmt.Printf(" unacked:%d", record.TCPInfo.Unacked)
