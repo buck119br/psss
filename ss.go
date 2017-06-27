@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -303,14 +304,12 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Ato != 0 {
 		fmt.Printf(" ato:%g", float64(record.TCPInfo.Ato)/1000)
 	}
-
 	if record.QACK != 0 {
 		fmt.Printf(" qack:%d", record.QACK)
 	}
 	if record.QACK&1 != 0 {
 		fmt.Printf(" bidir")
 	}
-
 	if record.TCPInfo.Snd_mss != 0 {
 		fmt.Printf(" mss:%d", record.TCPInfo.Snd_mss)
 	}
@@ -326,48 +325,34 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Snd_ssthresh < 0xffff {
 		fmt.Printf(" ssthresh:%d", record.TCPInfo.Snd_ssthresh)
 	}
+	if record.TCPInfo.Bytes_acked != 0 {
+		fmt.Printf(" bytes_acked:%d", record.TCPInfo.Bytes_acked)
+	}
+	if record.TCPInfo.Bytes_received != 0 {
+		fmt.Printf(" bytes_received:%d", record.TCPInfo.Bytes_received)
+	}
+	if record.TCPInfo.segs_out != 0 {
+		fmt.Printf(" segs_out:%d", record.TCPInfo.segs_out)
+	}
+	if record.TCPInfo.segs_in != 0 {
+		fmt.Printf(" segs_in:%d", record.TCPInfo.segs_in)
+	}
+	if record.TCPInfo.Data_segs_out != 0 {
+		fmt.Printf(" data_segs_out:%d", record.TCPInfo.Data_segs_out)
+	}
+	if record.TCPInfo.Data_segs_in != 0 {
+		fmt.Printf(" data_segs_in:%d", record.TCPInfo.Data_segs_in)
+	}
 
-	// if record.bytes_acked {}
-	// 	fmt.Printf(" bytes_acked:%llu", record.bytes_acked);
-	// if record.bytes_received {}
-	// 	fmt.Printf(" bytes_received:%llu", record.bytes_received);
-	// if record.segs_out {}
-	// 	fmt.Printf(" segs_out:%u", record.segs_out);
-	// if record.segs_in {}
-	// 	fmt.Printf(" segs_in:%u", record.segs_in);
-	// if record.data_segs_out {}
-	// 	fmt.Printf(" data_segs_out:%u", record.data_segs_out);
-	// if record.data_segs_in {}
-	// 	fmt.Printf(" data_segs_in:%u", record.data_segs_in);
+	// DCTCP && BBRInfo
 
-	// if record.dctcp && record.dctcp->enabled  {}
-	// 	struct dctcpstat *dctcp = record.dctcp;
-	// 	fmt.Printf(" dctcp:(ce_state:%u,alpha:%u,ab_ecn:%u,ab_tot:%u)",
-	// 			dctcp->ce_state, dctcp->alpha, dctcp->ab_ecn,
-	// 			dctcp->ab_tot);
-	// } else if record.dctcp)  {}
-	// 	fmt.Printf(" dctcp:fallback_mode");
-	// }
-
-	// if record.bbr_info  {
-	// 	__u64 bw;
-	// 	bw = record.bbr_info->bbr_bw_hi;
-	// 	bw <<= 32;
-	// 	bw |= record.bbr_info->bbr_bw_lo;
-	// 	fmt.Printf(" bbr:(bw:%sbps,mrtt:%g",
-	// 	       sprint_bw(b1, bw * 8.0),
-	// 	       (double)record.bbr_info->bbr_min_rtt / 1000.0);
-	// 	if record.bbr_info->bbr_pacing_gain {}
-	// 		printf(",pacing_gain:%g",
-	// 		       (double)record.bbr_info->bbr_pacing_gain / 256.0);
-	// 	if record.bbr_info->bbr_cwnd_gain {}
-	// 		printf(",cwnd_gain:%g",
-	// 		       (double)record.bbr_info->bbr_cwnd_gain / 256.0);
-	// 	fmt.Printf(")");
-	// }
-
-	// if record.send_bps {}
-	// 	fmt.Printf(" send %sbps", sprint_bw(b1, record.send_bps));
+	rtt := record.TCPInfo.Rtt
+	if record.VegasInfo.Enabled != 0 && record.VegasInfo.Rtt != 0 && record.VegasInfo.Rtt != 0x7fffffff {
+		rtt = record.VegasInfo.Rtt
+	}
+	if rtt > 0 && record.TCPInfo.Snd_mss != 0 && record.TCPInfo.Snd_cwnd != 0 {
+		fmt.Printf(" send:%sbps", BwToStr(float64(record.TCPInfo.Snd_cwnd)*float64(record.TCPInfo.Snd_mss)*8000000/float64(rtt)))
+	}
 
 	if record.TCPInfo.Last_data_sent != 0 {
 		fmt.Printf(" lastsnd:%d", record.TCPInfo.Last_data_sent)
@@ -378,31 +363,27 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Last_ack_recv != 0 {
 		fmt.Printf(" lastack:%d", record.TCPInfo.Last_ack_recv)
 	}
-
-	// if record.pacing_rate)  {}
-	// 	fmt.Printf(" pacing_rate %sbps", sprint_bw(b1, record.pacing_rate));
-	// 	if record.pacing_rate_max {}
-	// 			printf("/%sbps", sprint_bw(b1,
-	// 						record.pacing_rate_max));
-	// }
-
-	// if record.delivery_rate {}
-	// 	fmt.Printf(" delivery_rate %sbps", sprint_bw(b1, record.delivery_rate));
-	// if record.app_limited {}
-	// 	fmt.Printf(" app_limited");
-
-	// if record.busy_time {}
-	// 	fmt.Printf(" busy:%llums", record.busy_time / 1000);
-	// 	if record.rwnd_limited {}
-	// 		printf(" rwnd_limited:%llums(%.1f%%)",
-	// 		       record.rwnd_limited / 1000,
-	// 		       100.0 * record.rwnd_limited / record.busy_time);
-	// 	if record.sndbuf_limited {}
-	// 		printf(" sndbuf_limited:%llums(%.1f%%)",
-	// 		       record.sndbuf_limited / 1000,
-	// 		       100.0 * record.sndbuf_limited / record.busy_time);
-	// }
-
+	if record.TCPInfo.Pacing_rate != 0 {
+		fmt.Printf(" pacing_rate:%sbps", BwToStr(record.TCPInfo.Pacing_rate))
+		if record.TCPInfo.Max_pacing_rate != 0 {
+			printf("/%sbps", BwToStr(record.TCPInfo.Max_pacing_rate))
+		}
+	}
+	if record.TCPInfo.Delivery_rate != 0 {
+		fmt.Printf(" delivery_rate:%sbps", BwToStr(record.TCPInfo.Delivery_rate))
+	}
+	if record.TCPInfo.Pad_cgo_0[1] != 0 {
+		fmt.Printf(" app_limited")
+	}
+	if record.TCPInfo.Busy_time != 0 {
+		fmt.Printf(" busy:%dms", record.TCPInfo.Busy_time/1000)
+	}
+	if record.TCPInfo.Rwnd_limited != 0 {
+		printf(" rwnd_limited:%dms(%.1g%%)", record.TCPInfo.Rwnd_limited/1000, 100.0*float64(record.TCPInfo.Rwnd_limited)/float64(record.TCPInfo.Busy_time))
+	}
+	if record.TCPInfo.Sndbuf_limited != 0 {
+		printf(" sndbuf_limited:%dms(%.1g%%)", record.TCPInfo.Sndbuf_limited/1000, 100.0*float64(record.TCPInfo.Sndbuf_limited)/float64(record.TCPInfo.Busy_time))
+	}
 	if record.TCPInfo.Unacked != 0 {
 		fmt.Printf(" unacked:%d", record.TCPInfo.Unacked)
 	}
@@ -427,10 +408,12 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Rcv_space != 0 {
 		fmt.Printf(" rcv_space:%d", record.TCPInfo.Rcv_space)
 	}
-	// if record.not_sent {}
-	// 	fmt.Printf(" notsent:%u", record.not_sent);
-	// if record.min_rtt {}
-	// 	fmt.Printf(" minrtt:%g", record.min_rtt);
+	if record.TCPInfo.Notsent_bytes != 0 {
+		fmt.Printf(" notsent:%d", record.TCPInfo.Notsent_bytes)
+	}
+	if record.TCPInfo.Min_rtt != 0 && record.TCPInfo.Min_rtt != math.MaxUint32 {
+		fmt.Printf(" minrtt:%g", float64(record.TCPInfo.Min_rtt)/1000)
+	}
 	fmt.Printf(" )]\t")
 }
 
