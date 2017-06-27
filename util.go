@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"syscall"
 )
@@ -54,16 +55,20 @@ func GetFileStat(path string, name string) (fi *FileInfo, err error) {
 
 func BwToStr(bw float64) string {
 	switch {
-	case bw > 1000000000000000:
-		return fmt.Sprintf("%.1gP", bw/1000000000000000)
-	case bw > 1000000000000:
-		return fmt.Sprintf("%.1gT", bw/1000000000000)
-	case bw > 1000000000:
-		return fmt.Sprintf("%.1gG", bw/1000000000)
-	case bw > 1000000:
-		return fmt.Sprintf("%.1gM", bw/1000000)
-	case bw > 1000:
-		return fmt.Sprintf("%.1gK", bw/1000)
+	case bw > math.Pow(1000, 7):
+		return fmt.Sprintf("%.1gZ", bw/math.Pow(1000, 7))
+	case bw > math.Pow(1000, 6):
+		return fmt.Sprintf("%.1gE", bw/math.Pow(1000, 6))
+	case bw > math.Pow(1000, 5):
+		return fmt.Sprintf("%.1gP", bw/math.Pow(1000, 5))
+	case bw > math.Pow(1000, 4):
+		return fmt.Sprintf("%.1gT", bw/math.Pow(1000, 4))
+	case bw > math.Pow(1000, 3):
+		return fmt.Sprintf("%.1gG", bw/math.Pow(1000, 3))
+	case bw > math.Pow(1000, 2):
+		return fmt.Sprintf("%.1gM", bw/math.Pow(1000, 2))
+	case bw > math.Pow(1000, 1):
+		return fmt.Sprintf("%.1gK", bw/math.Pow(1000, 1))
 	}
 	return fmt.Sprintf("%g", bw)
 }
