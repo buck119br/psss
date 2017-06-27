@@ -331,11 +331,11 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Bytes_received != 0 {
 		fmt.Printf(" bytes_received:%d", record.TCPInfo.Bytes_received)
 	}
-	if record.TCPInfo.segs_out != 0 {
-		fmt.Printf(" segs_out:%d", record.TCPInfo.segs_out)
+	if record.TCPInfo.Segs_out != 0 {
+		fmt.Printf(" segs_out:%d", record.TCPInfo.Segs_out)
 	}
-	if record.TCPInfo.segs_in != 0 {
-		fmt.Printf(" segs_in:%d", record.TCPInfo.segs_in)
+	if record.TCPInfo.Segs_in != 0 {
+		fmt.Printf(" segs_in:%d", record.TCPInfo.Segs_in)
 	}
 	if record.TCPInfo.Data_segs_out != 0 {
 		fmt.Printf(" data_segs_out:%d", record.TCPInfo.Data_segs_out)
@@ -364,13 +364,13 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" lastack:%d", record.TCPInfo.Last_ack_recv)
 	}
 	if record.TCPInfo.Pacing_rate != 0 {
-		fmt.Printf(" pacing_rate:%sbps", BwToStr(record.TCPInfo.Pacing_rate))
+		fmt.Printf(" pacing_rate:%sbps", BwToStr(float64(record.TCPInfo.Pacing_rate)))
 		if record.TCPInfo.Max_pacing_rate != 0 {
-			printf("/%sbps", BwToStr(record.TCPInfo.Max_pacing_rate))
+			fmt.Printf("/%sbps", BwToStr(float64(record.TCPInfo.Max_pacing_rate)))
 		}
 	}
 	if record.TCPInfo.Delivery_rate != 0 {
-		fmt.Printf(" delivery_rate:%sbps", BwToStr(record.TCPInfo.Delivery_rate))
+		fmt.Printf(" delivery_rate:%sbps", BwToStr(float64(record.TCPInfo.Delivery_rate)))
 	}
 	if record.TCPInfo.Pad_cgo_0[1] != 0 {
 		fmt.Printf(" app_limited")
@@ -379,10 +379,10 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" busy:%dms", record.TCPInfo.Busy_time/1000)
 	}
 	if record.TCPInfo.Rwnd_limited != 0 {
-		printf(" rwnd_limited:%dms(%.1g%%)", record.TCPInfo.Rwnd_limited/1000, 100.0*float64(record.TCPInfo.Rwnd_limited)/float64(record.TCPInfo.Busy_time))
+		fmt.Printf(" rwnd_limited:%dms(%.1g%%)", record.TCPInfo.Rwnd_limited/1000, 100.0*float64(record.TCPInfo.Rwnd_limited)/float64(record.TCPInfo.Busy_time))
 	}
 	if record.TCPInfo.Sndbuf_limited != 0 {
-		printf(" sndbuf_limited:%dms(%.1g%%)", record.TCPInfo.Sndbuf_limited/1000, 100.0*float64(record.TCPInfo.Sndbuf_limited)/float64(record.TCPInfo.Busy_time))
+		fmt.Printf(" sndbuf_limited:%dms(%.1g%%)", record.TCPInfo.Sndbuf_limited/1000, 100.0*float64(record.TCPInfo.Sndbuf_limited)/float64(record.TCPInfo.Busy_time))
 	}
 	if record.TCPInfo.Unacked != 0 {
 		fmt.Printf(" unacked:%d", record.TCPInfo.Unacked)
