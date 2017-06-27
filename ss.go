@@ -202,7 +202,7 @@ func (record *GenericRecord) TransferFromInet(i mynet.SockStatInet) {
 		)
 	}
 	record.LocalAddr.Port = fmt.Sprintf("%d", (i.Msg.ID.IdiagSport&0xff00)>>8+(i.Msg.ID.IdiagSport&0xff)<<8)
-	record.RemoteAddr.Port = fmt.Sprintf("%d", (i.Msg.ID.IdiagDport&0xf0)>>8+(i.Msg.ID.IdiagDport&0xf)<<8)
+	record.RemoteAddr.Port = fmt.Sprintf("%d", (i.Msg.ID.IdiagDport&0xff00)>>8+(i.Msg.ID.IdiagDport&0xff)<<8)
 	record.Status = i.Msg.IdiagState
 	record.RxQueue = i.Msg.IdiagRqueue
 	record.TxQueue = i.Msg.IdiagWqueue
