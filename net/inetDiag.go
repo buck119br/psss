@@ -1,7 +1,7 @@
 package net
 
 import (
-	// "fmt"
+	"fmt"
 	"os"
 	"syscall"
 	"unsafe"
@@ -95,6 +95,13 @@ type InetDiagMessage struct {
 	IdiagInode   uint32
 }
 
+type TCPVegasInfo struct {
+	Enabled uint32
+	Rttcnt  uint32
+	Rtt     uint32
+	Minrtt  uint32
+}
+
 func SendInetDiagMsg(af uint8, protocal uint8, exts uint8, states uint32) (skfd int, err error) {
 	if skfd, err = unix.Socket(unix.AF_NETLINK, unix.SOCK_RAW, unix.NETLINK_SOCK_DIAG); err != nil {
 		return -1, err
@@ -162,6 +169,11 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 			switch nlAttr.Type {
 			case INET_DIAG_INFO:
 				ssi.TCPInfo = *(*unix.TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+			case INET_DIAG_VEGASINFO:
+				ssi.VegasInfo = *(*TCPVegasInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+			case INET_DIAG_CONG:
+				ssi.CONG = make([]byte, 0)
+				ssi.CONG = append(ssi.CONG, v.Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
 			case INET_DIAG_SKMEMINFO:
 				if nlAttr.Len > 4 {
 					ssi.SKMeminfo = make([]uint32, 0, 8)
@@ -172,7 +184,7 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 			case INET_DIAG_SHUTDOWN:
 				ssi.Shutdown = *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
-				// return nil, fmt.Errorf("invalid NlAttr Type")
+				fmt.Println("invalid NlAttr Type")
 			}
 			cursor += int(nlAttr.Len)
 		}

@@ -144,6 +144,8 @@ type GenericRecord struct {
 	CongestionWindow   int     // sending congestion window
 	SlowStartThreshold int     // slow start size threshold, or -1 if the threshold is >= 0xFFFF
 	TCPInfo            *unix.TCPInfo
+	VegasInfo          *mynet.TCPVegasInfo
+	CONG               []byte
 	// Generic like UDP, RAW specific
 	Drops int
 	// socket type
@@ -212,6 +214,8 @@ func (record *GenericRecord) TransferFromInet(i mynet.SockStatInet) {
 	record.RefCount = int(i.Msg.ID.IdiagIF)
 	record.SK = uint64(i.Msg.ID.IdiagCookie[1])<<32 | uint64(i.Msg.ID.IdiagCookie[0])
 	record.TCPInfo = &i.TCPInfo
+	record.VegasInfo = &i.VegasInfo
+	record.CONG = i.CONG
 	record.Meminfo = i.SKMeminfo
 }
 
@@ -344,6 +348,8 @@ func GenericRecordRead(family string) (err error) {
 		protocal = mynet.IPPROTO_TCP
 		if *flagInfo {
 			exts |= 1 << (mynet.INET_DIAG_INFO - 1)
+			exts |= 1 << (mynet.INET_DIAG_VEGASINFO - 1)
+			exts |= 1 << (mynet.INET_DIAG_CONG - 1)
 		}
 	case UDPv4Str, UDPv6Str:
 		af = unix.AF_INET

@@ -106,6 +106,8 @@ type SockStatUnix struct {
 type SockStatInet struct {
 	Msg       InetDiagMessage
 	TCPInfo   unix.TCPInfo
+	VegasInfo TCPVegasInfo
+	CONG      []byte
 	SKMeminfo []uint32
 	Shutdown  uint8
 }

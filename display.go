@@ -118,7 +118,29 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 		}
 		// internal TCP info
 		if *flagInfo && (family == TCPv4Str || family == TCPv6Str) {
-			fmt.Printf("[internal:(%#v)]\t", *record.TCPInfo)
+			fmt.Printf("[internal:(")
+			if record.TCPInfo.Options&mynet.TCPI_OPT_TIMESTAMPS != 0 {
+				fmt.Printf(" ts")
+			}
+			if record.TCPInfo.Options&mynet.TCPI_OPT_SACK != 0 {
+				fmt.Printf(" sack")
+			}
+			if record.TCPInfo.Options&mynet.TCPI_OPT_ECN != 0 {
+				fmt.Printf(" ecn")
+			}
+			if record.TCPInfo.Options&mynet.TCPI_OPT_ECN_SEEN != 0 {
+				fmt.Printf(" ecnseen")
+			}
+			if record.TCPInfo.Options&mynet.TCPI_OPT_SYN_DATA != 0 {
+				fmt.Printf(" fastopen")
+			}
+			if len(record.CONG) > 0 {
+				fmt.Printf(" cong:%s", string(record.CONG))
+			}
+			if record.TCPInfo.Options&mynet.TCPI_OPT_WSCALE != 0 {
+				fmt.Printf(" wscale:%d,%d", record.TCPInfo.Pad_cgo_0[0]>>4, record.TCPInfo.Pad_cgo_0[0]&0xf)
+			}
+			fmt.Printf(")]\t")
 		}
 		fmt.Printf("\n")
 	}
