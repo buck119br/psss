@@ -1,9 +1,5 @@
 package net
 
-import (
-	"golang.org/x/sys/unix"
-)
-
 const (
 	SsUNKNOWN uint8 = iota
 	SsESTAB
@@ -105,7 +101,7 @@ type SockStatUnix struct {
 
 type SockStatInet struct {
 	Msg       InetDiagMessage
-	TCPInfo   unix.TCPInfo
+	TCPInfo   TCPInfo
 	VegasInfo TCPVegasInfo
 	CONG      []byte
 	SKMeminfo []uint32

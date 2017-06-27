@@ -146,7 +146,7 @@ type GenericRecord struct {
 	SlowStartThreshold int      // slow start size threshold, or -1 if the threshold is >= 0xFFFF
 	Opt                []string // Option Info
 	// Internal TCP information
-	TCPInfo   *unix.TCPInfo
+	TCPInfo   *mynet.TCPInfo
 	VegasInfo *mynet.TCPVegasInfo
 	CONG      []byte
 	// Extended Info

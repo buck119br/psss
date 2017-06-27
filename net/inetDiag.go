@@ -168,7 +168,7 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&v.Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case INET_DIAG_INFO:
-				ssi.TCPInfo = *(*unix.TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				ssi.TCPInfo = *(*TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_VEGASINFO:
 				ssi.VegasInfo = *(*TCPVegasInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_CONG:
