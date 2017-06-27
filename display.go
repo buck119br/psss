@@ -46,12 +46,18 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 			continue
 		}
 		switch family {
-		case TCPv4Str, TCPv6Str:
-			fmt.Printf("tcp\t")
-		case UDPv4Str, UDPv6Str:
-			fmt.Printf("udp\t")
-		case RAWv4Str, RAWv6Str:
-			fmt.Printf("raw\t")
+		case TCPv4Str:
+			fmt.Printf("tcp4\t")
+		case TCPv6Str:
+			fmt.Printf("tcp6\t")
+		case UDPv4Str:
+			fmt.Printf("udp4\t")
+		case UDPv6Str:
+			fmt.Printf("udp6\t")
+		case RAWv4Str:
+			fmt.Printf("raw4\t")
+		case RAWv6Str:
+			fmt.Printf("raw6\t")
 		case UnixStr:
 			if _, ok = mynet.SocketType[record.Type]; !ok {
 				fmt.Printf("dgr\t")
