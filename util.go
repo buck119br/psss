@@ -54,6 +54,8 @@ func GetFileStat(path string, name string) (fi *FileInfo, err error) {
 
 func BwToStr(bw float64) string {
 	switch {
+	case bw > 1000000000:
+		return fmt.Sprintf("%.1gG", bw/1000000000)
 	case bw > 1000000:
 		return fmt.Sprintf("%.1gM", bw/1000000)
 	case bw > 1000:

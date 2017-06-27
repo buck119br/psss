@@ -326,10 +326,10 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" ssthresh:%d", record.TCPInfo.Snd_ssthresh)
 	}
 	if record.TCPInfo.Bytes_acked != 0 {
-		fmt.Printf(" bytes_acked:%d", record.TCPInfo.Bytes_acked)
+		fmt.Printf(" bytes_acked:%s", BwToStr(float64(record.TCPInfo.Bytes_acked)))
 	}
 	if record.TCPInfo.Bytes_received != 0 {
-		fmt.Printf(" bytes_received:%d", record.TCPInfo.Bytes_received)
+		fmt.Printf(" bytes_received:%s", BwToStr(float64(record.TCPInfo.Bytes_received)))
 	}
 	if record.TCPInfo.Segs_out != 0 {
 		fmt.Printf(" segs_out:%d", record.TCPInfo.Segs_out)
