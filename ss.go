@@ -286,7 +286,7 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Options&mynet.TCPI_OPT_SYN_DATA != 0 {
 		fmt.Printf(" fastopen")
 	}
-	if record.CONG[0] != 0 {
+	if len(record.CONG[0]) > 1 {
 		fmt.Printf(" %s", string(record.CONG))
 	}
 	if record.TCPInfo.Options&mynet.TCPI_OPT_WSCALE != 0 {
