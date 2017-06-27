@@ -293,16 +293,16 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" wscale:%d,%d", record.TCPInfo.Pad_cgo_0[0]&0xf, record.TCPInfo.Pad_cgo_0[0]>>4)
 	}
 	if record.TCPInfo.Rto != 0 && record.TCPInfo.Rto != 3000000 {
-		fmt.Printf(" rto:%g", float64(record.TCPInfo.Rto)/1000)
+		fmt.Printf(" rto:%.3f", float64(record.TCPInfo.Rto)/1000)
 	}
 	if record.TCPInfo.Backoff != 0 {
 		fmt.Printf(" bakcoff:%d", record.TCPInfo.Backoff)
 	}
 	if record.TCPInfo.Rtt != 0 {
-		fmt.Printf(" rtt:%g/%g", float64(record.TCPInfo.Rtt)/1000, float64(record.TCPInfo.Rttvar)/1000)
+		fmt.Printf(" rtt:%.3f/%.3f", float64(record.TCPInfo.Rtt)/1000, float64(record.TCPInfo.Rttvar)/1000)
 	}
 	if record.TCPInfo.Ato != 0 {
-		fmt.Printf(" ato:%g", float64(record.TCPInfo.Ato)/1000)
+		fmt.Printf(" ato:%.3f", float64(record.TCPInfo.Ato)/1000)
 	}
 	if record.QACK != 0 {
 		fmt.Printf(" qack:%d", record.QACK)
@@ -407,7 +407,7 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" reordering:%d", record.TCPInfo.Reordering)
 	}
 	if record.TCPInfo.Rcv_rtt != 0 {
-		fmt.Printf(" rcv_rtt:%g", float64(record.TCPInfo.Rcv_rtt)/1000)
+		fmt.Printf(" rcv_rtt:%.3f", float64(record.TCPInfo.Rcv_rtt)/1000)
 	}
 	if record.TCPInfo.Rcv_space != 0 {
 		fmt.Printf(" rcv_space:%d", record.TCPInfo.Rcv_space)
@@ -416,7 +416,7 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" notsent:%d", record.TCPInfo.Notsent_bytes)
 	}
 	if record.TCPInfo.Min_rtt != 0 && record.TCPInfo.Min_rtt != math.MaxUint32 {
-		fmt.Printf(" minrtt:%g", float64(record.TCPInfo.Min_rtt)/1000)
+		fmt.Printf(" minrtt:%s", BwToStr(float64(record.TCPInfo.Min_rtt)/1000))
 	}
 	fmt.Printf(" )]\t")
 }
