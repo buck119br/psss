@@ -124,6 +124,7 @@ func IPv6HexToString(ipHex string) (ip string, err error) {
 }
 
 type GenericRecord struct {
+	// Generic
 	LocalAddr  IP
 	RemoteAddr IP
 	Status     uint8
@@ -137,22 +138,20 @@ type GenericRecord struct {
 	Inode      uint32
 	RefCount   int
 	SK         uint64
-	// TCP specific
-	RTO                float64 // RetransmitTimeout
-	ATO                float64 // Predicted tick of soft clock (delayed ACK control data)
-	QACK               int     // (ack.quick<<1)|ack.pingpong
-	CongestionWindow   int     // sending congestion window
-	SlowStartThreshold int     // slow start size threshold, or -1 if the threshold is >= 0xFFFF
-	TCPInfo            *unix.TCPInfo
-	VegasInfo          *mynet.TCPVegasInfo
-	CONG               []byte
-	// Generic like UDP, RAW specific
-	Drops int
-	// socket type
-	Type uint8
-	// Option Info
-	Opt []string
+	// /proc/net/tcp or /proc/net/tcp6 specific
+	RTO                float64  // RetransmitTimeout
+	ATO                float64  // Predicted tick of soft clock (delayed ACK control data)
+	QACK               int      // (ack.quick<<1)|ack.pingpong
+	CongestionWindow   int      // sending congestion window
+	SlowStartThreshold int      // slow start size threshold, or -1 if the threshold is >= 0xFFFF
+	Opt                []string // Option Info
+	// Internal TCP information
+	TCPInfo   *unix.TCPInfo
+	VegasInfo *mynet.TCPVegasInfo
+	CONG      []byte
 	// Extended Info
+	Drops   int   // Generic like UDP, RAW specific
+	Type    uint8 // socket type
 	Meminfo []uint32
 	// Related processes
 	Procs    map[*ProcInfo]bool
@@ -224,6 +223,75 @@ func (record *GenericRecord) TransferFromInet(i mynet.SockStatInet) {
 	record.VegasInfo = &i.VegasInfo
 	record.CONG = i.CONG
 	record.Meminfo = i.SKMeminfo
+}
+
+func (record *GenericRecord) ProcInfoPrint() {
+	fmt.Printf(`["%s"`, record.UserName)
+	for proc := range record.Procs {
+		for _, fd := range proc.Fd {
+			if fd.SysStat.Ino == uint64(record.Inode) {
+				fmt.Printf(`(pid=%d,fd=%s)`, proc.Pid, fd.Name)
+			}
+		}
+	}
+	fmt.Printf("]")
+}
+func (record *GenericRecord) TimerInfoPrint() {
+	fmt.Printf("[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
+	if record.Timer != 1 {
+		fmt.Printf("%d)]    ", record.Probes)
+	} else {
+		fmt.Printf("%d)]    ", record.Retransmit)
+	}
+}
+func (record *GenericRecord) ExtendInfoPrint() {
+	fmt.Printf("[detail:(")
+	if record.UID != 0 {
+		fmt.Printf("uid:%d,", record.UID)
+	}
+	fmt.Printf("ino:%d,sk:%x", record.Inode, record.SK)
+	if len(record.Opt) > 0 {
+		fmt.Printf(",opt:%v", record.Opt)
+	}
+	fmt.Printf(")]    ")
+}
+
+func (record *GenericRecord) MeminfoPrint() {
+	fmt.Printf("[meminfo:(r:%d,rb:%d,t:%d,tb:%d,f:%d,w:%d,o:%d,bl:%d)]    ",
+		record.Meminfo[mynet.SK_MEMINFO_RMEM_ALLOC],
+		record.Meminfo[mynet.SK_MEMINFO_RCVBUF],
+		record.Meminfo[mynet.SK_MEMINFO_WMEM_ALLOC],
+		record.Meminfo[mynet.SK_MEMINFO_SNDBUF],
+		record.Meminfo[mynet.SK_MEMINFO_FWD_ALLOC],
+		record.Meminfo[mynet.SK_MEMINFO_WMEM_QUEUED],
+		record.Meminfo[mynet.SK_MEMINFO_OPTMEM],
+		record.Meminfo[mynet.SK_MEMINFO_BACKLOG])
+}
+
+func (record *GenericRecord) TCPInfoPrint() {
+	fmt.Printf("[internal:(")
+	if record.TCPInfo.Options&mynet.TCPI_OPT_TIMESTAMPS != 0 {
+		fmt.Printf(" ts")
+	}
+	if record.TCPInfo.Options&mynet.TCPI_OPT_SACK != 0 {
+		fmt.Printf(" sack")
+	}
+	if record.TCPInfo.Options&mynet.TCPI_OPT_ECN != 0 {
+		fmt.Printf(" ecn")
+	}
+	if record.TCPInfo.Options&mynet.TCPI_OPT_ECN_SEEN != 0 {
+		fmt.Printf(" ecnseen")
+	}
+	if record.TCPInfo.Options&mynet.TCPI_OPT_SYN_DATA != 0 {
+		fmt.Printf(" fastopen")
+	}
+	if record.CONG[0] != 0 {
+		fmt.Printf(" %s", string(record.CONG))
+	}
+	if record.TCPInfo.Options&mynet.TCPI_OPT_WSCALE != 0 {
+		fmt.Printf(" wscale:%d,%d", record.TCPInfo.Pad_cgo_0[0]&0xf, record.TCPInfo.Pad_cgo_0[0]>>4)
+	}
+	fmt.Printf(" )]\t")
 }
 
 func UnixRecordRead() {

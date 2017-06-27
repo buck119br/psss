@@ -74,15 +74,7 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
 		// Process Info
 		if *flagProcess && len(record.UserName) > 0 {
-			fmt.Printf(`["%s"`, record.UserName)
-			for proc := range record.Procs {
-				for _, fd := range proc.Fd {
-					if fd.SysStat.Ino == uint64(record.Inode) {
-						fmt.Printf(`(pid=%d,fd=%s)`, proc.Pid, fd.Name)
-					}
-				}
-			}
-			fmt.Printf("]")
+			record.ProcInfoPrint()
 		}
 		if NewlineFlag {
 			fmt.Printf("\n")
@@ -90,63 +82,20 @@ func GenericShow(family string, records map[uint32]*GenericRecord) {
 		if family != UnixStr {
 			// Timer Info
 			if *flagOption && record.Timer != 0 {
-				fmt.Printf("[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
-				if record.Timer != 1 {
-					fmt.Printf("%d)]    ", record.Probes)
-				} else {
-					fmt.Printf("%d)]    ", record.Retransmit)
-				}
+				record.TimerInfoPrint()
 			}
 			// Detailed Info
 			if *flagExtended {
-				fmt.Printf("[detail:(")
-				if record.UID != 0 {
-					fmt.Printf("uid:%d,", record.UID)
-				}
-				fmt.Printf("ino:%d,sk:%x", record.Inode, record.SK)
-				if len(record.Opt) > 0 {
-					fmt.Printf(",opt:%v", record.Opt)
-				}
-				fmt.Printf(")]    ")
+				record.ExtendInfoPrint()
 			}
 		}
 		// Meminfo
 		if *flagMemory && len(record.Meminfo) == 8 {
-			fmt.Printf("[meminfo:(r:%d,rb:%d,t:%d,tb:%d,f:%d,w:%d,o:%d,bl:%d)]    ",
-				record.Meminfo[mynet.SK_MEMINFO_RMEM_ALLOC],
-				record.Meminfo[mynet.SK_MEMINFO_RCVBUF],
-				record.Meminfo[mynet.SK_MEMINFO_WMEM_ALLOC],
-				record.Meminfo[mynet.SK_MEMINFO_SNDBUF],
-				record.Meminfo[mynet.SK_MEMINFO_FWD_ALLOC],
-				record.Meminfo[mynet.SK_MEMINFO_WMEM_QUEUED],
-				record.Meminfo[mynet.SK_MEMINFO_OPTMEM],
-				record.Meminfo[mynet.SK_MEMINFO_BACKLOG])
+			record.MeminfoPrint()
 		}
 		// internal TCP info
 		if *flagInfo && (family == TCPv4Str || family == TCPv6Str) {
-			fmt.Printf("[internal:(")
-			if record.TCPInfo.Options&mynet.TCPI_OPT_TIMESTAMPS != 0 {
-				fmt.Printf(" ts")
-			}
-			if record.TCPInfo.Options&mynet.TCPI_OPT_SACK != 0 {
-				fmt.Printf(" sack")
-			}
-			if record.TCPInfo.Options&mynet.TCPI_OPT_ECN != 0 {
-				fmt.Printf(" ecn")
-			}
-			if record.TCPInfo.Options&mynet.TCPI_OPT_ECN_SEEN != 0 {
-				fmt.Printf(" ecnseen")
-			}
-			if record.TCPInfo.Options&mynet.TCPI_OPT_SYN_DATA != 0 {
-				fmt.Printf(" fastopen")
-			}
-			if record.CONG[0] != 0 {
-				fmt.Printf(" %s", string(record.CONG))
-			}
-			if record.TCPInfo.Options&mynet.TCPI_OPT_WSCALE != 0 {
-				fmt.Printf(" wscale:%d,%d", record.TCPInfo.Pad_cgo_0[0]>>4, record.TCPInfo.Pad_cgo_0[0]&0xf)
-			}
-			fmt.Printf(")]\t")
+			record.TCPInfoPrint()
 		}
 		fmt.Printf("\n")
 	}
