@@ -300,8 +300,8 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Rtt != 0 {
 		fmt.Printf(" rtt:%g/%g", float64(record.TCPInfo.Rtt)/1000, float64(record.TCPInfo.Rttvar)/1000)
 	}
-	if record.Ato != 0 {
-		fmt.Printf(" ato:%g", float64(record.Ato)/1000)
+	if record.TCPInfo.Ato != 0 {
+		fmt.Printf(" ato:%g", float64(record.TCPInfo.Ato)/1000)
 	}
 
 	if record.QACK != 0 {
@@ -323,8 +323,8 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Snd_cwnd != 0 {
 		fmt.Printf(" cwnd:%d", record.TCPInfo.Snd_cwnd)
 	}
-	if record.Snd_ssthresh < 0xffff {
-		fmt.Printf(" ssthresh:%d", record.Snd_ssthresh)
+	if record.TCPInfo.Snd_ssthresh < 0xffff {
+		fmt.Printf(" ssthresh:%d", record.TCPInfo.Snd_ssthresh)
 	}
 
 	// if record.bytes_acked {}
