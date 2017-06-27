@@ -27,7 +27,7 @@ var (
 
 	flagAll        = flag.Bool("a", false, "display all sockets")              // ok
 	flagExtended   = flag.Bool("e", false, "show detailed socket information") // ok
-	flagInfo       = flag.Bool("i", false, "show internal TCP information")    //
+	flagInfo       = flag.Bool("i", false, "show internal TCP information")    // ok
 	flagListen     = flag.Bool("l", false, "display listening sockets")        // ok
 	flagMemory     = flag.Bool("m", false, "show socket memory usage")         // ok
 	flagNotResolve = flag.Bool("n", false, "don't resolve service names")      // born to be

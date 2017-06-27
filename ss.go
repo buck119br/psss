@@ -293,16 +293,16 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" wscale:%d,%d", record.TCPInfo.Pad_cgo_0[0]&0xf, record.TCPInfo.Pad_cgo_0[0]>>4)
 	}
 	if record.TCPInfo.Rto != 0 && record.TCPInfo.Rto != 3000000 {
-		fmt.Printf(" rto:%.3f", float64(record.TCPInfo.Rto)/1000)
+		fmt.Printf(" rto:%.2f", float64(record.TCPInfo.Rto)/1000)
 	}
 	if record.TCPInfo.Backoff != 0 {
 		fmt.Printf(" bakcoff:%d", record.TCPInfo.Backoff)
 	}
 	if record.TCPInfo.Rtt != 0 {
-		fmt.Printf(" rtt:%.3f/%.3f", float64(record.TCPInfo.Rtt)/1000, float64(record.TCPInfo.Rttvar)/1000)
+		fmt.Printf(" rtt:%.2f/%.2f", float64(record.TCPInfo.Rtt)/1000, float64(record.TCPInfo.Rttvar)/1000)
 	}
 	if record.TCPInfo.Ato != 0 {
-		fmt.Printf(" ato:%.3f", float64(record.TCPInfo.Ato)/1000)
+		fmt.Printf(" ato:%.2f", float64(record.TCPInfo.Ato)/1000)
 	}
 	if record.QACK != 0 {
 		fmt.Printf(" qack:%d", record.QACK)
@@ -364,13 +364,13 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" lastack:%d", record.TCPInfo.Last_ack_recv)
 	}
 	if record.TCPInfo.Pacing_rate != 0 {
-		fmt.Printf(" pacing_rate:%sbps", BwToStr(float64(record.TCPInfo.Pacing_rate)))
+		fmt.Printf(" pacing_rate:%sbps", BwToStr(float64(record.TCPInfo.Pacing_rate*8)))
 		if record.TCPInfo.Max_pacing_rate != 0 {
-			fmt.Printf("/%sbps", BwToStr(float64(record.TCPInfo.Max_pacing_rate)))
+			fmt.Printf("/%sbps", BwToStr(float64(record.TCPInfo.Max_pacing_rate*8)))
 		}
 	}
 	if record.TCPInfo.Delivery_rate != 0 {
-		fmt.Printf(" delivery_rate:%sbps", BwToStr(float64(record.TCPInfo.Delivery_rate)))
+		fmt.Printf(" delivery_rate:%sbps", BwToStr(float64(record.TCPInfo.Delivery_rate*8)))
 	}
 	if record.TCPInfo.Pad_cgo_0[1] != 0 {
 		fmt.Printf(" app_limited")
@@ -407,7 +407,7 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" reordering:%d", record.TCPInfo.Reordering)
 	}
 	if record.TCPInfo.Rcv_rtt != 0 {
-		fmt.Printf(" rcv_rtt:%.3f", float64(record.TCPInfo.Rcv_rtt)/1000)
+		fmt.Printf(" rcv_rtt:%.2f", float64(record.TCPInfo.Rcv_rtt)/1000)
 	}
 	if record.TCPInfo.Rcv_space != 0 {
 		fmt.Printf(" rcv_space:%d", record.TCPInfo.Rcv_space)
@@ -418,7 +418,7 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Min_rtt != 0 && record.TCPInfo.Min_rtt != math.MaxUint32 {
 		fmt.Printf(" minrtt:%s", BwToStr(float64(record.TCPInfo.Min_rtt)/1000))
 	}
-	fmt.Printf(" )]\t")
+	fmt.Printf(" )]\n")
 }
 
 func UnixRecordRead() {
