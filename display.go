@@ -79,7 +79,7 @@ func GenericShow(protocal, af int) {
 	if *flagProcess {
 		GetProcInfo()
 	}
-	fmt.Printf("\nNetid\tState\t\tRecv-Q\tSend-Q\t")
+	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
 	fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, "LocalAddress:Port", MaxRemoteAddrLength, "RemoteAddress:Port")
 	if *flagProcess {
 		fmt.Printf("Users")
@@ -134,4 +134,5 @@ func GenericShow(protocal, af int) {
 		}
 		fmt.Printf("\n")
 	}
+	fmt.Printf("\n")
 }
