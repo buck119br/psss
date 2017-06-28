@@ -174,7 +174,7 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			case UNIX_DIAG_SHUTDOWN:
 				// shutdown := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
-				return nil, fmt.Errorf("invalid NlAttr Type")
+				fmt.Println("invalid NlAttr Type")
 			}
 			cursor += int(nlAttr.Len)
 		}
