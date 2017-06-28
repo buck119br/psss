@@ -41,33 +41,33 @@ func SocketShow() {
 	}
 	if protocalFilter&ProtocalRAW != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		GenericRecordRead(ProtocalRAW, unix.AF_INET)
-		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalRAW, unix.AF_INET)
+		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalRAW, unix.AF_INET)
+		GenericShow(ProtocalRAW, unix.AF_INET)
 	}
 	if protocalFilter&ProtocalRAW != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		GenericRecordRead(ProtocalRAW, unix.AF_INET6)
-		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalRAW, unix.AF_INET6)
+		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalRAW, unix.AF_INET6)
+		GenericShow(ProtocalRAW, unix.AF_INET6)
 	}
 	if protocalFilter&ProtocalUDP != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		GenericRecordRead(ProtocalUDP, unix.AF_INET)
-		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalUDP, unix.AF_INET)
+		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalUDP, unix.AF_INET)
+		GenericShow(ProtocalUDP, unix.AF_INET)
 	}
 	if protocalFilter&ProtocalUDP != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		GenericRecordRead(ProtocalUDP, unix.AF_INET6)
-		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalUDP, unix.AF_INET6)
+		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalUDP, unix.AF_INET6)
+		GenericShow(ProtocalUDP, unix.AF_INET6)
 	}
 	if protocalFilter&ProtocalTCP != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		GenericRecordRead(ProtocalTCP, unix.AF_INET)
-		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalTCP, unix.AF_INET)
+		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
+		GenericShow(ProtocalTCP, unix.AF_INET)
 	}
 	if protocalFilter&ProtocalTCP != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		GenericRecordRead(ProtocalTCP, unix.AF_INET6)
-		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalTCP, unix.AF_INET6)
+		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalTCP, unix.AF_INET6)
+		GenericShow(ProtocalTCP, unix.AF_INET6)
 	}
 }
 
