@@ -129,7 +129,7 @@ func GenericShow(protocal, af int) {
 			record.MeminfoPrint()
 		}
 		// internal TCP info
-		if *flagInfo && protocal == ProtocalUnix {
+		if *flagInfo && protocal == ProtocalTCP {
 			record.TCPInfoPrint()
 		}
 		fmt.Printf("\n")
