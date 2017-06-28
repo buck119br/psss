@@ -783,7 +783,7 @@ readProc:
 		}
 		records[record.Inode] = record
 	}
-	return nil
+	return
 }
 
 func GetSocketCount(fields []string) (int, error) {
