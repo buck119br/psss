@@ -95,7 +95,7 @@ func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
 	return skfd, nil
 }
 
-func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
+func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err error) {
 	var (
 		n      int
 		cursor int
@@ -120,11 +120,16 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 		return nil, err
 	}
 	for _, v := range raw {
-		var ssu SockStatUnix
+		record := NewGenericRecord()
 		if v.Header.Type == unix.NLMSG_DONE {
 			return multi, ErrorDone
 		}
-		ssu.Msg = *(*UnixDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfUnixDiagMsg][0]))
+		msg := *(*UnixDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfUnixDiagMsg][0]))
+		record.Inode = msg.UdiagIno
+		record.LocalAddr.Port = fmt.Sprintf("%d", msg.UdiagIno)
+		record.Status = msg.UdiagState
+		record.Type = msg.UdiagType
+		record.SK = uint64(msg.UdiagCookie[1])<<32 | uint64(msg.UdiagCookie[0])
 		cursor = SizeOfUnixDiagMsg
 		for cursor+4 < len(v.Data) {
 			for v.Data[cursor] == byte(0) {
@@ -133,11 +138,21 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&v.Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case UNIX_DIAG_NAME:
-				ssu.Name = string(v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
+				record.LocalAddr.Host = string(v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
+				if len(record.LocalAddr.Host) == 0 {
+					record.LocalAddr.Host = "*"
+				}
+				if MaxLocalAddrLength < len(record.LocalAddr.String()) {
+					MaxLocalAddrLength = len(record.LocalAddr.String())
+				}
 			case UNIX_DIAG_VFS:
-				ssu.VFS = *(*UnixDiagVFS)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// vfs := *(*UnixDiagVFS)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case UNIX_DIAG_PEER:
-				ssu.Peer = *(*uint32)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.RemoteAddr.Host = "*"
+				record.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
+				if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
+					MaxRemoteAddrLength = len(record.RemoteAddr.String())
+				}
 			case UNIX_DIAG_ICONS:
 				if nlAttr.Len > 4 {
 					ssu.Icons = make([]uint32, 0)
@@ -146,36 +161,37 @@ func RecvUnixDiagMsgMulti(skfd int) (multi []SockStatUnix, err error) {
 					}
 				}
 			case UNIX_DIAG_RQLEN:
-				ssu.RQlen = *(*UnixDiagRQlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				rqlen := *(*UnixDiagRQlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.RxQueue = rqlen.RQ
+				record.TxQueue = rqlen.WQ
 			case UNIX_DIAG_MEMINFO:
 				if nlAttr.Len > 4 {
-					ssu.Meminfo = make([]uint32, 0, 8)
+					record.Meminfo = make([]uint32, 0, 8)
 					for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
-						ssu.Meminfo = append(ssu.Meminfo, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
+						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
 					}
 				}
 			case UNIX_DIAG_SHUTDOWN:
-				ssu.Shutdown = *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// shutdown := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
 				return nil, fmt.Errorf("invalid NlAttr Type")
 			}
 			cursor += int(nlAttr.Len)
 		}
-		multi = append(multi, ssu)
+		records[record.Inode] = record
 	}
-	return multi, nil
+	return nil
 }
 
-func RecvUnixDiagMsgAll(skfd int) (list []SockStatUnix, err error) {
-	var multi []SockStatUnix
+func RecvUnixDiagMsgAll(skfd int) (records map[uint32]*GenericRecord) {
+	records = make(map[uint32]*GenericRecord)
 	for {
-		if multi, err = RecvUnixDiagMsgMulti(skfd); err != nil {
+		if err := RecvUnixDiagMsgMulti(skfd, records); err != nil {
 			if err == ErrorDone {
 				break
 			}
 			continue
 		}
-		list = append(list, multi...)
 	}
-	return list, nil
+	return
 }

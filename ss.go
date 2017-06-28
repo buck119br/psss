@@ -136,8 +136,8 @@ type GenericRecord struct {
 	SlowStartThreshold int      // slow start size threshold, or -1 if the threshold is >= 0xFFFF
 	Opt                []string // Option Info
 	// Internal TCP information
-	TCPInfo   *TCPInfo
-	VegasInfo *TCPVegasInfo
+	TCPInfo   TCPInfo
+	VegasInfo TCPVegasInfo
 	CONG      []byte
 	// Extended Info
 	Drops   int   // Generic like UDP, RAW specific
@@ -148,34 +148,10 @@ type GenericRecord struct {
 	UserName string
 }
 
-func NewGenericRecord() *GenericRecord {
+func NewGenericRecord() GenericRecord {
 	t := new(GenericRecord)
 	t.Procs = make(map[*ProcInfo]bool)
-	return t
-}
-
-func (record *GenericRecord) TransferFromUnix(u SockStatUnix) {
-	if len(u.Name) > 0 {
-		record.LocalAddr.Host = u.Name
-	} else {
-		record.LocalAddr.Host = "*"
-	}
-	record.Inode = u.Msg.UdiagIno
-	record.LocalAddr.Port = fmt.Sprintf("%d", u.Msg.UdiagIno)
-	if MaxLocalAddrLength < len(record.LocalAddr.String()) {
-		MaxLocalAddrLength = len(record.LocalAddr.String())
-	}
-	record.RemoteAddr.Host = "*"
-	record.RemoteAddr.Port = fmt.Sprintf("%d", u.Peer)
-	if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
-		MaxRemoteAddrLength = len(record.RemoteAddr.String())
-	}
-	record.RxQueue = u.RQlen.RQ
-	record.TxQueue = u.RQlen.WQ
-	record.Status = u.Msg.UdiagState
-	record.Type = u.Msg.UdiagType
-	record.SK = uint64(u.Msg.UdiagCookie[1])<<32 | uint64(u.Msg.UdiagCookie[0])
-	record.Meminfo = u.Meminfo
+	return *t
 }
 
 func (record *GenericRecord) TransferFromInet(i SockStatInet) {
@@ -412,21 +388,15 @@ func (record *GenericRecord) TCPInfoPrint() {
 
 func UnixRecordRead() (records map[uint32]*GenericRecord) {
 	var list []SockStatUnix
-	records = make(map[uint32]*GenericRecord)
 	skfd, err := SendUnixDiagMsg(ssFilter,
 		UDIAG_SHOW_NAME|UDIAG_SHOW_VFS|UDIAG_SHOW_PEER|UDIAG_SHOW_ICONS|UDIAG_SHOW_RQLEN|UDIAG_SHOW_MEMINFO)
 	if err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	list, err = RecvUnixDiagMsgAll(skfd)
+	records, err = RecvUnixDiagMsgAll(skfd)
 	if err != nil {
 		goto readProc
-	}
-	for _, v := range list {
-		record := NewGenericRecord()
-		record.TransferFromUnix(v)
-		records[record.Inode] = record
 	}
 	return
 
