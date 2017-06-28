@@ -29,7 +29,6 @@ func ShowSummary() {
 }
 
 func SocketShowInit() {
-	GlobalRecords[GlobalRecordsKey] = make(map[uint32]*GenericRecord)
 	MaxLocalAddrLength = 17
 	MaxRemoteAddrLength = 18
 }
@@ -42,33 +41,33 @@ func SocketShow() {
 	}
 	if protocalFilter&ProtocalRAW != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		GenericRecordRead()
-		GenericShow(ProtocalRAW, unix.AF_INET)
+		GenericRecordRead(ProtocalRAW, unix.AF_INET)
+		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalRAW, unix.AF_INET)
 	}
 	if protocalFilter&ProtocalRAW != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		GenericRecordRead()
-		GenericShow(ProtocalRAW, unix.AF_INET6)
+		GenericRecordRead(ProtocalRAW, unix.AF_INET6)
+		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalRAW, unix.AF_INET6)
 	}
 	if protocalFilter&ProtocalUDP != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		GenericRecordRead()
-		GenericShow(ProtocalUDP, unix.AF_INET)
+		GenericRecordRead(ProtocalUDP, unix.AF_INET)
+		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalUDP, unix.AF_INET)
 	}
 	if protocalFilter&ProtocalUDP != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		GenericRecordRead()
-		GenericShow(ProtocalUDP, unix.AF_INET6)
+		GenericRecordRead(ProtocalUDP, unix.AF_INET6)
+		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalUDP, unix.AF_INET6)
 	}
 	if protocalFilter&ProtocalTCP != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		GenericRecordRead()
-		GenericShow(ProtocalTCP, unix.AF_INET)
+		GenericRecordRead(ProtocalTCP, unix.AF_INET)
+		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalTCP, unix.AF_INET)
 	}
 	if protocalFilter&ProtocalTCP != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		GenericRecordRead()
-		GenericShow(ProtocalTCP, unix.AF_INET6)
+		GenericRecordRead(ProtocalTCP, unix.AF_INET6)
+		GlobalRecord[GlobalRecordsKey] = GenericShow(ProtocalTCP, unix.AF_INET6)
 	}
 }
 

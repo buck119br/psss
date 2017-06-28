@@ -20,6 +20,17 @@ const (
 
 	IPv4String = "IPv4"
 	IPv6String = "IPv6"
+)
+
+var (
+	Summary   map[string]map[string]int
+	SummaryPF = []string{
+		"TCP",
+		"UDP",
+		"UDPLITE",
+		"RAW",
+		"FRAG",
+	}
 
 	procFilePath = map[string]string{
 		"sockstat4": "/proc/net/sockstat",
@@ -31,17 +42,6 @@ const (
 		"RAW4":      "/proc/net/raw",
 		"RAW6":      "/proc/net/raw6",
 		"Unix":      "/proc/net/unix",
-	}
-)
-
-var (
-	Summary   map[string]map[string]int
-	SummaryPF = []string{
-		"TCP",
-		"UDP",
-		"UDPLITE",
-		"RAW",
-		"FRAG",
 	}
 
 	TimerName = []string{
@@ -412,8 +412,9 @@ func (record *GenericRecord) TCPInfoPrint() {
 	fmt.Printf(" )]\n")
 }
 
-func UnixRecordRead() {
+func UnixRecordRead() (records map[uint32]*GenericRecord) {
 	var list []mynet.SockStatUnix
+	records = make(map[uint32]*GenericRecord)
 	skfd, err := mynet.SendUnixDiagMsg((1<<mynet.SsMAX)-1,
 		mynet.UDIAG_SHOW_NAME|mynet.UDIAG_SHOW_VFS|mynet.UDIAG_SHOW_PEER|mynet.UDIAG_SHOW_ICONS|mynet.UDIAG_SHOW_RQLEN|mynet.UDIAG_SHOW_MEMINFO)
 	if err != nil {
@@ -427,7 +428,7 @@ func UnixRecordRead() {
 	for _, v := range list {
 		record := NewGenericRecord()
 		record.TransferFromUnix(v)
-		Records[GlobalRecordsKey][record.Inode] = record
+		records[record.Inode] = record
 	}
 	return
 
@@ -440,6 +441,7 @@ readProc:
 		tempInt64   int64
 		flag        int64
 	)
+	records = make(map[uint32]*GenericRecord)
 	file, err := os.Open(procFilePath["Unix"])
 	if err != nil {
 		fmt.Println(err)
@@ -521,11 +523,12 @@ readProc:
 		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
-		Records[GlobalRecordsKey][record.Inode] = record
+		records[record.Inode] = record
 	}
+	return
 }
 
-func GenericRecordRead(protocal int, af int) {
+func GenericRecordRead(protocal int, af int) (records map[uint32]*GenericRecord) {
 	var (
 		ipproto uint8
 		exts    uint8
@@ -533,6 +536,7 @@ func GenericRecordRead(protocal int, af int) {
 		list    []mynet.SockStatInet
 		err     error
 	)
+	records = make(map[uint32]*GenericRecord)
 	switch protocal {
 	case ProtocalTCP:
 		ipproto = unix.IPPROTO_TCP
@@ -563,7 +567,7 @@ func GenericRecordRead(protocal int, af int) {
 	for _, v := range list {
 		record := NewGenericRecord()
 		record.TransferFromInet(v)
-		Records[GlobalRecordsKey][record.Inode] = record
+		records[record.Inode] = record
 	}
 	return
 
@@ -577,6 +581,7 @@ readProc:
 		stringBuff  []string
 		tempInt64   int64
 	)
+	records = make(map[uint32]*GenericRecord)
 
 	switch protocal {
 	case ProtocalTCP:
@@ -776,7 +781,7 @@ readProc:
 		if len(fields) > 17 {
 			record.Opt = fields[17:]
 		}
-		Records[GlobalRecordsKey][record.Inode] = record
+		records[record.Inode] = record
 	}
 	return nil
 }
