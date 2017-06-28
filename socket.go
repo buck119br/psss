@@ -55,3 +55,12 @@ var (
 
 	UnixSstate = []uint8{SsUNCONN, SsSYNSENT, SsESTAB, SsCLOSING}
 )
+
+type SockStatInet struct {
+	Msg       InetDiagMessage
+	TCPInfo   TCPInfo
+	VegasInfo TCPVegasInfo
+	CONG      []byte
+	SKMeminfo []uint32
+	Shutdown  uint8
+}
