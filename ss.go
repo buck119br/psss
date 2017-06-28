@@ -415,7 +415,7 @@ func (record *GenericRecord) TCPInfoPrint() {
 func UnixRecordRead() (records map[uint32]*GenericRecord) {
 	var list []mynet.SockStatUnix
 	records = make(map[uint32]*GenericRecord)
-	skfd, err := mynet.SendUnixDiagMsg((1<<mynet.SsMAX)-1,
+	skfd, err := mynet.SendUnixDiagMsg(ssFilter,
 		mynet.UDIAG_SHOW_NAME|mynet.UDIAG_SHOW_VFS|mynet.UDIAG_SHOW_PEER|mynet.UDIAG_SHOW_ICONS|mynet.UDIAG_SHOW_RQLEN|mynet.UDIAG_SHOW_MEMINFO)
 	if err != nil {
 		goto readProc
@@ -504,6 +504,9 @@ readProc:
 		} else {
 			record.Status = mynet.UnixSstate[int(tempInt64)-1]
 		}
+		if ssFilter&(1<<record.Status) == 0 {
+			continue
+		}
 		fieldsIndex++
 		// Inode
 		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
@@ -528,7 +531,7 @@ readProc:
 	return
 }
 
-func GenericRecordRead(protocal int, af int) (records map[uint32]*GenericRecord) {
+func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 	var (
 		ipproto uint8
 		exts    uint8
@@ -556,7 +559,7 @@ func GenericRecordRead(protocal int, af int) (records map[uint32]*GenericRecord)
 	if *flagMemory {
 		exts |= 1 << (mynet.INET_DIAG_SKMEMINFO - 1)
 	}
-	if skfd, err = mynet.SendInetDiagMsg(uint8(af), ipproto, exts, (1<<mynet.SsMAX)-1); err != nil {
+	if skfd, err = mynet.SendInetDiagMsg(uint8(af), ipproto, exts, ssFilter); err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
@@ -662,6 +665,9 @@ readProc:
 			continue
 		}
 		record.Status = uint8(tempInt64)
+		if ssFilter&(1<<record.Status) == 0 {
+			continue
+		}
 		fieldsIndex++
 		// TxQueue:RxQueue
 		stringBuff = strings.Split(fields[fieldsIndex], ":")

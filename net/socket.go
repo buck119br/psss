@@ -43,38 +43,6 @@ var (
 		"MAX",
 	}
 
-	SstateActive = map[uint8]bool{
-		SsUNKNOWN:   false,
-		SsESTAB:     true,
-		SsSYNSENT:   false,
-		SsSYNRECV:   false,
-		SsFINWAIT1:  false,
-		SsFINWAIT2:  false,
-		SsTIMEWAIT:  false,
-		SsUNCONN:    false,
-		SsCLOSEWAIT: false,
-		SsLASTACK:   false,
-		SsLISTEN:    true,
-		SsCLOSING:   false,
-		SsMAX:       false,
-	}
-
-	SstateListen = map[uint8]bool{
-		SsUNKNOWN:   false,
-		SsESTAB:     false,
-		SsSYNSENT:   false,
-		SsSYNRECV:   false,
-		SsFINWAIT1:  false,
-		SsFINWAIT2:  false,
-		SsTIMEWAIT:  false,
-		SsUNCONN:    true,
-		SsCLOSEWAIT: false,
-		SsLASTACK:   false,
-		SsLISTEN:    true,
-		SsCLOSING:   false,
-		SsMAX:       false,
-	}
-
 	SocketType = map[uint8]string{
 		SOCK_STREAM:    "str",
 		SOCK_DGRAM:     "dgr",

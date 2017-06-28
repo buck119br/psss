@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 
+	mynet "github.com/buck119br/psss/net"
 	"golang.org/x/sys/unix"
 )
 
@@ -55,6 +56,7 @@ var (
 
 	afFilter       uint64
 	protocalFilter uint64
+	ssFilter       uint32
 )
 
 func init() {
@@ -81,12 +83,31 @@ func main() {
 		ShowSummary()
 		return
 	}
+	if *flagUnix {
+		afFilter |= 1 << unix.AF_UNIX
+		protocalFilter |= ProtocalUnix
+	}
+
 	if *flagIPv4 {
 		afFilter |= 1 << unix.AF_INET
+		if !*flagTCP && !*flagUDP && !*flagRAW {
+			*flagTCP = true
+			*flagUDP = true
+			*flagRAW = true
+		}
 	}
 	if *flagIPv6 {
 		afFilter |= 1 << unix.AF_INET6
+		if !*flagTCP && !*flagUDP && !*flagRAW {
+			*flagTCP = true
+			*flagUDP = true
+			*flagRAW = true
+		}
 	}
+	if afFilter == 0 {
+		afFilter |= 1<<unix.AF_INET | 1<<unix.AF_INET6
+	}
+
 	if *flagTCP {
 		protocalFilter |= ProtocalTCP
 	}
@@ -96,20 +117,24 @@ func main() {
 	if *flagRAW {
 		protocalFilter |= ProtocalRAW
 	}
-	if afFilter == 0 {
-		afFilter |= 1<<unix.AF_INET | 1<<unix.AF_INET6
-	}
-	if *flagUnix {
-		afFilter |= 1 << unix.AF_UNIX
-		protocalFilter |= ProtocalUnix
-	}
-	if *flagAll && protocalFilter == 0 && afFilter == 0 {
-		afFilter |= (1 << unix.AF_MAX) - 1
+	if protocalFilter == 0 {
 		protocalFilter |= ProtocalMax - 1
 	}
+
+	if *flagListen {
+		ssFilter |= 1<<mynet.SsLISTEN | 1<<mynet.SsUNCONN
+	}
+	if *flagAll {
+		ssFilter |= (1 << mynet.SsMAX) - 1
+	}
+	if ssFilter == 0 {
+		ssFilter |= 1 << mynet.SsESTAB
+	}
+
 	if *flagExtended || *flagOption || *flagMemory || *flagInfo {
 		NewlineFlag = true
 	}
+
 	if *flagDemand {
 		// DemandShow()
 		return

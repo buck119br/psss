@@ -71,7 +71,10 @@ func SocketShow() {
 	}
 }
 
-func GenericShow(protocal int, af int) {
+func GenericShow(protocal, af int) {
+	if len(GlobalRecords[GlobalRecordsKey]) == 0 {
+		return
+	}
 	var ok bool
 	if *flagProcess {
 		GetProcInfo()
@@ -83,12 +86,6 @@ func GenericShow(protocal int, af int) {
 	}
 	fmt.Printf("\n")
 	for _, record := range GlobalRecords[GlobalRecordsKey] {
-		if !*flagAll && !mynet.SstateActive[record.Status] {
-			continue
-		}
-		if *flagListen && !mynet.SstateListen[record.Status] {
-			continue
-		}
 		switch protocal {
 		case ProtocalTCP:
 			fmt.Printf("tcp\t")
