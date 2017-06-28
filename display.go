@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	mynet "github.com/buck119br/psss/net"
 	"golang.org/x/sys/unix"
 )
 
@@ -94,16 +93,16 @@ func GenericShow(protocal, af int) {
 		case ProtocalRAW:
 			fmt.Printf("raw\t")
 		case ProtocalUnix:
-			if _, ok = mynet.SocketType[record.Type]; !ok {
+			if _, ok = SocketType[record.Type]; !ok {
 				fmt.Printf("dgr\t")
 			} else {
-				fmt.Printf("%s\t", mynet.SocketType[record.Type])
+				fmt.Printf("%s\t", SocketType[record.Type])
 			}
 		}
-		if len(mynet.Sstate[record.Status]) >= 8 {
-			fmt.Printf("%s\t", mynet.Sstate[record.Status])
+		if len(Sstate[record.Status]) >= 8 {
+			fmt.Printf("%s\t", Sstate[record.Status])
 		} else {
-			fmt.Printf("%s\t\t", mynet.Sstate[record.Status])
+			fmt.Printf("%s\t\t", Sstate[record.Status])
 		}
 		fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
 		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())

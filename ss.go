@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	"golang.org/x/sys/unix"
-
-	mynet "github.com/buck119br/psss/net"
 )
 
 const (
@@ -138,8 +136,8 @@ type GenericRecord struct {
 	SlowStartThreshold int      // slow start size threshold, or -1 if the threshold is >= 0xFFFF
 	Opt                []string // Option Info
 	// Internal TCP information
-	TCPInfo   *mynet.TCPInfo
-	VegasInfo *mynet.TCPVegasInfo
+	TCPInfo   *TCPInfo
+	VegasInfo *TCPVegasInfo
 	CONG      []byte
 	// Extended Info
 	Drops   int   // Generic like UDP, RAW specific
@@ -156,7 +154,7 @@ func NewGenericRecord() *GenericRecord {
 	return t
 }
 
-func (record *GenericRecord) TransferFromUnix(u mynet.SockStatUnix) {
+func (record *GenericRecord) TransferFromUnix(u SockStatUnix) {
 	if len(u.Name) > 0 {
 		record.LocalAddr.Host = u.Name
 	} else {
@@ -180,7 +178,7 @@ func (record *GenericRecord) TransferFromUnix(u mynet.SockStatUnix) {
 	record.Meminfo = u.Meminfo
 }
 
-func (record *GenericRecord) TransferFromInet(i mynet.SockStatInet) {
+func (record *GenericRecord) TransferFromInet(i SockStatInet) {
 	switch i.Msg.IdiagFamily {
 	case unix.AF_INET:
 		record.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[0]), "0x"))
@@ -249,38 +247,38 @@ func (record *GenericRecord) ExtendInfoPrint() {
 }
 
 func (record *GenericRecord) MeminfoPrint() {
-	fmt.Printf("[meminfo:(r:%d,rb:%d,t:%d,tb:%d,f:%d,w:%d,o:%d,bl:%d)]    ",
-		record.Meminfo[mynet.SK_MEMINFO_RMEM_ALLOC],
-		record.Meminfo[mynet.SK_MEMINFO_RCVBUF],
-		record.Meminfo[mynet.SK_MEMINFO_WMEM_ALLOC],
-		record.Meminfo[mynet.SK_MEMINFO_SNDBUF],
-		record.Meminfo[mynet.SK_MEMINFO_FWD_ALLOC],
-		record.Meminfo[mynet.SK_MEMINFO_WMEM_QUEUED],
-		record.Meminfo[mynet.SK_MEMINFO_OPTMEM],
-		record.Meminfo[mynet.SK_MEMINFO_BACKLOG])
+	fmt.Printf("[skmem:(r:%d,rb:%d,t:%d,tb:%d,f:%d,w:%d,o:%d,bl:%d)]    ",
+		record.Meminfo[SK_MEMINFO_RMEM_ALLOC],
+		record.Meminfo[SK_MEMINFO_RCVBUF],
+		record.Meminfo[SK_MEMINFO_WMEM_ALLOC],
+		record.Meminfo[SK_MEMINFO_SNDBUF],
+		record.Meminfo[SK_MEMINFO_FWD_ALLOC],
+		record.Meminfo[SK_MEMINFO_WMEM_QUEUED],
+		record.Meminfo[SK_MEMINFO_OPTMEM],
+		record.Meminfo[SK_MEMINFO_BACKLOG])
 }
 
 func (record *GenericRecord) TCPInfoPrint() {
 	fmt.Printf("[internal:(")
-	if record.TCPInfo.Options&mynet.TCPI_OPT_TIMESTAMPS != 0 {
+	if record.TCPInfo.Options&TCPI_OPT_TIMESTAMPS != 0 {
 		fmt.Printf(" ts")
 	}
-	if record.TCPInfo.Options&mynet.TCPI_OPT_SACK != 0 {
+	if record.TCPInfo.Options&TCPI_OPT_SACK != 0 {
 		fmt.Printf(" sack")
 	}
-	if record.TCPInfo.Options&mynet.TCPI_OPT_ECN != 0 {
+	if record.TCPInfo.Options&TCPI_OPT_ECN != 0 {
 		fmt.Printf(" ecn")
 	}
-	if record.TCPInfo.Options&mynet.TCPI_OPT_ECN_SEEN != 0 {
+	if record.TCPInfo.Options&TCPI_OPT_ECN_SEEN != 0 {
 		fmt.Printf(" ecnseen")
 	}
-	if record.TCPInfo.Options&mynet.TCPI_OPT_SYN_DATA != 0 {
+	if record.TCPInfo.Options&TCPI_OPT_SYN_DATA != 0 {
 		fmt.Printf(" fastopen")
 	}
 	if len(record.CONG) > 1 {
 		fmt.Printf(" %s", string(record.CONG))
 	}
-	if record.TCPInfo.Options&mynet.TCPI_OPT_WSCALE != 0 {
+	if record.TCPInfo.Options&TCPI_OPT_WSCALE != 0 {
 		fmt.Printf(" wscale:%d,%d", record.TCPInfo.Pad_cgo_0[0]&0xf, record.TCPInfo.Pad_cgo_0[0]>>4)
 	}
 	if record.TCPInfo.Rto != 0 && record.TCPInfo.Rto != 3000000 {
@@ -388,7 +386,7 @@ func (record *GenericRecord) TCPInfoPrint() {
 	if record.TCPInfo.Lost != 0 {
 		fmt.Printf(" lost:%d", record.TCPInfo.Lost)
 	}
-	if record.TCPInfo.Sacked != 0 && record.Status != mynet.SsLISTEN {
+	if record.TCPInfo.Sacked != 0 && record.Status != SsLISTEN {
 		fmt.Printf(" sacked:%d", record.TCPInfo.Sacked)
 	}
 	if record.TCPInfo.Fackets != 0 {
@@ -413,15 +411,15 @@ func (record *GenericRecord) TCPInfoPrint() {
 }
 
 func UnixRecordRead() (records map[uint32]*GenericRecord) {
-	var list []mynet.SockStatUnix
+	var list []SockStatUnix
 	records = make(map[uint32]*GenericRecord)
-	skfd, err := mynet.SendUnixDiagMsg(ssFilter,
-		mynet.UDIAG_SHOW_NAME|mynet.UDIAG_SHOW_VFS|mynet.UDIAG_SHOW_PEER|mynet.UDIAG_SHOW_ICONS|mynet.UDIAG_SHOW_RQLEN|mynet.UDIAG_SHOW_MEMINFO)
+	skfd, err := SendUnixDiagMsg(ssFilter,
+		UDIAG_SHOW_NAME|UDIAG_SHOW_VFS|UDIAG_SHOW_PEER|UDIAG_SHOW_ICONS|UDIAG_SHOW_RQLEN|UDIAG_SHOW_MEMINFO)
 	if err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	list, err = mynet.RecvUnixDiagMsgAll(skfd)
+	list, err = RecvUnixDiagMsgAll(skfd)
 	if err != nil {
 		goto readProc
 	}
@@ -500,9 +498,9 @@ readProc:
 			continue
 		}
 		if flag&(1<<16) != 0 {
-			record.Status = mynet.SsLISTEN
+			record.Status = SsLISTEN
 		} else {
-			record.Status = mynet.UnixSstate[int(tempInt64)-1]
+			record.Status = UnixSstate[int(tempInt64)-1]
 		}
 		if ssFilter&(1<<record.Status) == 0 {
 			continue
@@ -536,7 +534,7 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 		ipproto uint8
 		exts    uint8
 		skfd    int
-		list    []mynet.SockStatInet
+		list    []SockStatInet
 		err     error
 	)
 	records = make(map[uint32]*GenericRecord)
@@ -544,9 +542,9 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 	case ProtocalTCP:
 		ipproto = unix.IPPROTO_TCP
 		if *flagInfo {
-			exts |= 1 << (mynet.INET_DIAG_INFO - 1)
-			exts |= 1 << (mynet.INET_DIAG_VEGASINFO - 1)
-			exts |= 1 << (mynet.INET_DIAG_CONG - 1)
+			exts |= 1 << (INET_DIAG_INFO - 1)
+			exts |= 1 << (INET_DIAG_VEGASINFO - 1)
+			exts |= 1 << (INET_DIAG_CONG - 1)
 		}
 	case ProtocalUDP:
 		ipproto = unix.IPPROTO_UDP
@@ -557,13 +555,13 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 		return
 	}
 	if *flagMemory {
-		exts |= 1 << (mynet.INET_DIAG_SKMEMINFO - 1)
+		exts |= 1 << (INET_DIAG_SKMEMINFO - 1)
 	}
-	if skfd, err = mynet.SendInetDiagMsg(uint8(af), ipproto, exts, ssFilter); err != nil {
+	if skfd, err = SendInetDiagMsg(uint8(af), ipproto, exts, ssFilter); err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	list, err = mynet.RecvInetDiagMsgAll(skfd)
+	list, err = RecvInetDiagMsgAll(skfd)
 	if err != nil {
 		goto readProc
 	}

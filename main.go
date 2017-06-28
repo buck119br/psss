@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 
-	mynet "github.com/buck119br/psss/net"
 	"golang.org/x/sys/unix"
 )
 
@@ -122,13 +121,13 @@ func main() {
 	}
 
 	if *flagListen {
-		ssFilter |= 1<<mynet.SsLISTEN | 1<<mynet.SsUNCONN
+		ssFilter |= 1<<SsLISTEN | 1<<SsUNCONN
 	}
 	if *flagAll {
-		ssFilter |= (1 << mynet.SsMAX) - 1
+		ssFilter |= (1 << SsMAX) - 1
 	}
 	if ssFilter == 0 {
-		ssFilter |= 1 << mynet.SsESTAB
+		ssFilter |= 1 << SsESTAB
 	}
 
 	if *flagExtended || *flagOption || *flagMemory || *flagInfo {

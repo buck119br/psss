@@ -1,4 +1,4 @@
-package net
+package main
 
 const (
 	TCPI_OPT_TIMESTAMPS = 1

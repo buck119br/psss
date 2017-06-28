@@ -1,4 +1,4 @@
-package net
+package main
 
 const (
 	SsUNKNOWN uint8 = iota
