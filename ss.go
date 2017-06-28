@@ -154,43 +154,6 @@ func NewGenericRecord() GenericRecord {
 	return *t
 }
 
-func (record *GenericRecord) TransferFromInet(i SockStatInet) {
-	switch i.Msg.IdiagFamily {
-	case unix.AF_INET:
-		record.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[0]), "0x"))
-		record.RemoteAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagDst[0]), "0x"))
-	case unix.AF_INET6:
-		record.LocalAddr.Host, _ = IPv6HexToString(
-			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[0]), "0x") +
-				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[1]), "0x") +
-				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[2]), "0x") +
-				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagSrc[3]), "0x"),
-		)
-		record.RemoteAddr.Host, _ = IPv6HexToString(
-			strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagDst[0]), "0x") +
-				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagDst[1]), "0x") +
-				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagDst[2]), "0x") +
-				strings.TrimPrefix(fmt.Sprintf("%08x", i.Msg.ID.IdiagDst[3]), "0x"),
-		)
-	}
-	record.LocalAddr.Port = fmt.Sprintf("%d", (i.Msg.ID.IdiagSport&0xff00)>>8+(i.Msg.ID.IdiagSport&0xff)<<8)
-	record.RemoteAddr.Port = fmt.Sprintf("%d", (i.Msg.ID.IdiagDport&0xff00)>>8+(i.Msg.ID.IdiagDport&0xff)<<8)
-	record.Status = i.Msg.IdiagState
-	record.RxQueue = i.Msg.IdiagRqueue
-	record.TxQueue = i.Msg.IdiagWqueue
-	record.Timer = int(i.Msg.IdiagTimer)
-	record.Timeout = int(i.Msg.IdiagExpires)
-	record.Retransmit = int(i.Msg.IdiagRetrans)
-	record.UID = uint64(i.Msg.IdiagUid)
-	record.Inode = i.Msg.IdiagInode
-	record.RefCount = int(i.Msg.ID.IdiagIF)
-	record.SK = uint64(i.Msg.ID.IdiagCookie[1])<<32 | uint64(i.Msg.ID.IdiagCookie[0])
-	record.TCPInfo = &i.TCPInfo
-	record.VegasInfo = &i.VegasInfo
-	record.CONG = i.CONG
-	record.Meminfo = i.SKMeminfo
-}
-
 func (record *GenericRecord) ProcInfoPrint() {
 	fmt.Printf(`["%s"`, record.UserName)
 	for proc := range record.Procs {
@@ -387,17 +350,13 @@ func (record *GenericRecord) TCPInfoPrint() {
 }
 
 func UnixRecordRead() (records map[uint32]*GenericRecord) {
-	var list []SockStatUnix
 	skfd, err := SendUnixDiagMsg(ssFilter,
 		UDIAG_SHOW_NAME|UDIAG_SHOW_VFS|UDIAG_SHOW_PEER|UDIAG_SHOW_ICONS|UDIAG_SHOW_RQLEN|UDIAG_SHOW_MEMINFO)
 	if err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	records, err = RecvUnixDiagMsgAll(skfd)
-	if err != nil {
-		goto readProc
-	}
+	records = RecvUnixDiagMsgAll(skfd)
 	return
 
 readProc:
@@ -494,7 +453,7 @@ readProc:
 		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
-		records[record.Inode] = record
+		records[record.Inode] = &record
 	}
 	return
 }
@@ -504,10 +463,8 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 		ipproto uint8
 		exts    uint8
 		skfd    int
-		list    []SockStatInet
 		err     error
 	)
-	records = make(map[uint32]*GenericRecord)
 	switch protocal {
 	case ProtocalTCP:
 		ipproto = unix.IPPROTO_TCP
@@ -531,15 +488,7 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	list, err = RecvInetDiagMsgAll(skfd)
-	if err != nil {
-		goto readProc
-	}
-	for _, v := range list {
-		record := NewGenericRecord()
-		record.TransferFromInet(v)
-		records[record.Inode] = record
-	}
+	records = RecvInetDiagMsgAll(skfd)
 	return
 
 readProc:
@@ -755,7 +704,7 @@ readProc:
 		if len(fields) > 17 {
 			record.Opt = fields[17:]
 		}
-		records[record.Inode] = record
+		records[record.Inode] = &record
 	}
 	return
 }

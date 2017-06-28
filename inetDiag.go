@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"syscall"
 	"unsafe"
 
@@ -101,7 +102,7 @@ func SendInetDiagMsg(af uint8, protocal uint8, exts uint8, states uint32) (skfd 
 	return skfd, nil
 }
 
-func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
+func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err error) {
 	var (
 		n      int
 		cursor int
@@ -110,7 +111,7 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 	p := make([]byte, os.Getpagesize())
 	for {
 		if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, unix.MSG_PEEK); err != nil {
-			return nil, err
+			return err
 		}
 		if n < len(p) {
 			break
@@ -118,19 +119,49 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 		p = make([]byte, 2*len(p))
 	}
 	if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, 0); err != nil {
-		return nil, err
+		return err
 	}
 	p = p[:n]
 	raw, err := syscall.ParseNetlinkMessage(p)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, v := range raw {
-		var ssi SockStatInet
+		record := NewGenericRecord()
 		if v.Header.Type == unix.NLMSG_DONE {
-			return multi, ErrorDone
+			return ErrorDone
 		}
-		ssi.Msg = *(*InetDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfInetDiagMsg][0]))
+		msg := *(*InetDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfInetDiagMsg][0]))
+		switch msg.IdiagFamily {
+		case unix.AF_INET:
+			record.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagSrc[0]), "0x"))
+			record.RemoteAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagDst[0]), "0x"))
+		case unix.AF_INET6:
+			record.LocalAddr.Host, _ = IPv6HexToString(
+				strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagSrc[0]), "0x") +
+					strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagSrc[1]), "0x") +
+					strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagSrc[2]), "0x") +
+					strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagSrc[3]), "0x"),
+			)
+			record.RemoteAddr.Host, _ = IPv6HexToString(
+				strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagDst[0]), "0x") +
+					strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagDst[1]), "0x") +
+					strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagDst[2]), "0x") +
+					strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagDst[3]), "0x"),
+			)
+		}
+		record.LocalAddr.Port = fmt.Sprintf("%d", (msg.ID.IdiagSport&0xff00)>>8+(msg.ID.IdiagSport&0xff)<<8)
+		record.RemoteAddr.Port = fmt.Sprintf("%d", (msg.ID.IdiagDport&0xff00)>>8+(msg.ID.IdiagDport&0xff)<<8)
+		record.Status = msg.IdiagState
+		record.RxQueue = msg.IdiagRqueue
+		record.TxQueue = msg.IdiagWqueue
+		record.Timer = int(msg.IdiagTimer)
+		record.Timeout = int(msg.IdiagExpires)
+		record.Retransmit = int(msg.IdiagRetrans)
+		record.UID = uint64(msg.IdiagUid)
+		record.Inode = msg.IdiagInode
+		record.RefCount = int(msg.ID.IdiagIF)
+		record.SK = uint64(msg.ID.IdiagCookie[1])<<32 | uint64(msg.ID.IdiagCookie[0])
 		cursor = SizeOfInetDiagMsg
 		for cursor+4 < len(v.Data) {
 			for v.Data[cursor] == byte(0) {
@@ -139,17 +170,17 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&v.Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case INET_DIAG_INFO:
-				ssi.TCPInfo = *(*TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.TCPInfo = *(*TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_VEGASINFO:
-				ssi.VegasInfo = *(*TCPVegasInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.VegasInfo = *(*TCPVegasInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_CONG:
-				ssi.CONG = make([]byte, 0)
-				ssi.CONG = append(ssi.CONG, v.Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
+				record.CONG = make([]byte, 0)
+				record.CONG = append(record.CONG, v.Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
 			case INET_DIAG_SKMEMINFO:
 				if nlAttr.Len > 4 {
-					ssi.SKMeminfo = make([]uint32, 0, 8)
+					record.Meminfo = make([]uint32, 0, 8)
 					for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
-						ssi.SKMeminfo = append(ssi.SKMeminfo, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
+						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
 					}
 				}
 			case INET_DIAG_SHUTDOWN:
@@ -159,21 +190,20 @@ func RecvInetDiagMsgMulti(skfd int) (multi []SockStatInet, err error) {
 			}
 			cursor += int(nlAttr.Len)
 		}
-		multi = append(multi, ssi)
+		records[record.Inode] = &record
 	}
 	return multi, nil
 }
 
-func RecvInetDiagMsgAll(skfd int) (list []SockStatInet, err error) {
-	var multi []SockStatInet
+func RecvInetDiagMsgAll(skfd int) (records map[uint32]*GenericRecord) {
+	records = make(map[uint32]*GenericRecord)
 	for {
-		if multi, err = RecvInetDiagMsgMulti(skfd); err != nil {
+		if err = RecvInetDiagMsgMulti(skfd, records); err != nil {
 			if err == ErrorDone {
 				break
 			}
 			continue
 		}
-		list = append(list, multi...)
 	}
-	return list, nil
+	return records
 }

@@ -104,7 +104,7 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 	p := make([]byte, os.Getpagesize())
 	for {
 		if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, unix.MSG_PEEK); err != nil {
-			return nil, err
+			return err
 		}
 		if n < len(p) {
 			break
@@ -112,17 +112,17 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 		p = make([]byte, 2*len(p))
 	}
 	if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, 0); err != nil {
-		return nil, err
+		return err
 	}
 	p = p[:n]
 	raw, err := syscall.ParseNetlinkMessage(p)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, v := range raw {
 		record := NewGenericRecord()
 		if v.Header.Type == unix.NLMSG_DONE {
-			return multi, ErrorDone
+			return ErrorDone
 		}
 		msg := *(*UnixDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfUnixDiagMsg][0]))
 		record.Inode = msg.UdiagIno
@@ -178,7 +178,7 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			}
 			cursor += int(nlAttr.Len)
 		}
-		records[record.Inode] = record
+		records[record.Inode] = &record
 	}
 	return nil
 }
