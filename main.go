@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -12,18 +14,21 @@ const (
 )
 
 const (
-	FbTCPv4 = 1 << iota
-	FbTCPv6
-	FbUDPv4
-	FbUDPv6
-	FbRAWv4
-	FbRAWv6
-	FbUnix
+	ProtocalUnknown = 1 << iota
+	ProtocalDCCP
+	ProtocalNetlink
+	ProtocalPacket
+	ProtocalRAW
+	ProtocalSCTP
+	ProtocalTCP
+	ProtocalUDP
+	ProtocalUnix
+	ProtocalMax
 )
 
 var (
-	flagHelp    = flag.Bool("h", false, "this message")               // OK
-	flagVersion = flag.Bool("v", false, "output version information") // OK
+	flagHelp    = flag.Bool("h", false, "help message")               // ok
+	flagVersion = flag.Bool("v", false, "output version information") // ok
 
 	flagAll        = flag.Bool("a", false, "display all sockets")              // ok
 	flagExtended   = flag.Bool("e", false, "show detailed socket information") // ok
@@ -44,22 +49,12 @@ var (
 	flagTCP    = flag.Bool("t", false, "display only TCP sockets")          // ok
 	flagUDP    = flag.Bool("u", false, "display only UDP sockets")          // ok
 	flagRAW    = flag.Bool("w", false, "display only RAW sockets")          // ok
-	flagUnix   = flag.Bool("x", false, "display only Unix domain sockets")  //
+	flagUnix   = flag.Bool("x", false, "display only Unix domain sockets")  // ok
 
 	flagDemand = flag.Bool("demand", false, "my boss' demand") // ok
 
-	/* Family bitmap
-	31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
-	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  TCPv4
-	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  TCPv6
-	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  UDPv4
-	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  UDPv6
-	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  RAWv4
-	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  RAWv6
-	|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  Unix
-	*/
-	Family int
+	afFilter       uint64
+	protocalFilter uint64
 )
 
 func init() {
@@ -68,37 +63,7 @@ func init() {
 		Summary[pf] = make(map[string]int)
 	}
 
-	GlobalTCPv4Records = make(map[uint32]*GenericRecord)
-	GlobalTCPv6Records = make(map[uint32]*GenericRecord)
-	GlobalUDPv4Records = make(map[uint32]*GenericRecord)
-	GlobalUDPv6Records = make(map[uint32]*GenericRecord)
-	GlobalRAWv4Records = make(map[uint32]*GenericRecord)
-	GlobalRAWv6Records = make(map[uint32]*GenericRecord)
-	GlobalUnixRecords = make(map[uint32]*GenericRecord)
-}
-
-func dataReader() {
-	if Family&FbTCPv4 != 0 {
-		GenericRecordRead(TCPv4Str)
-	}
-	if Family&FbTCPv6 != 0 {
-		GenericRecordRead(TCPv6Str)
-	}
-	if Family&FbUDPv4 != 0 {
-		GenericRecordRead(UDPv4Str)
-	}
-	if Family&FbUDPv6 != 0 {
-		GenericRecordRead(UDPv6Str)
-	}
-	if Family&FbRAWv4 != 0 {
-		GenericRecordRead(RAWv4Str)
-	}
-	if Family&FbRAWv6 != 0 {
-		GenericRecordRead(RAWv6Str)
-	}
-	if Family&FbUnix != 0 {
-		UnixRecordRead()
-	}
+	GlobalRecords = make(map[string]map[uint32]*GenericRecord)
 }
 
 func main() {
@@ -117,36 +82,36 @@ func main() {
 		return
 	}
 	if *flagIPv4 {
-		Family |= FbTCPv4 | FbUDPv4
+		afFilter |= 1 << unix.AF_INET
 	}
 	if *flagIPv6 {
-		Family |= FbTCPv6 | FbUDPv6
+		afFilter |= 1 << unix.AF_INET6
 	}
 	if *flagTCP {
-		Family |= FbTCPv4 | FbTCPv6
+		protocalFilter |= ProtocalTCP
 	}
 	if *flagUDP {
-		Family |= FbUDPv4 | FbUDPv6
+		protocalFilter |= ProtocalUDP
 	}
 	if *flagRAW {
-		Family |= FbRAWv4 | FbRAWv6
+		protocalFilter |= ProtocalRAW
+	}
+	if afFilter == 0 {
+		afFilter |= 1<<unix.AF_INET | 1<<unix.AF_INET6
 	}
 	if *flagUnix {
-		Family |= FbUnix
+		afFilter |= 1 << unix.AF_UNIX
+		protocalFilter |= ProtocalUnix
 	}
-	if Family == 0 && *flagAll {
-		Family |= FbTCPv4 | FbTCPv6 | FbUDPv4 | FbUDPv6 | FbRAWv4 | FbRAWv6 | FbUnix
-	}
-	dataReader()
-	if *flagProcess {
-		GetProcInfo()
-		SetUpRelation()
+	if *flagAll && protocalFilter == 0 && afFilter == 0 {
+		afFilter |= (1 << unix.AF_MAX) - 1
+		protocalFilter |= ProtocalMax - 1
 	}
 	if *flagExtended || *flagOption || *flagMemory || *flagInfo {
 		NewlineFlag = true
 	}
 	if *flagDemand {
-		DemandShow()
+		// DemandShow()
 		return
 	}
 	SocketShow()

@@ -14,46 +14,35 @@ import (
 )
 
 const (
+	GlobalRecordsKey = "GlobalRecords"
+
 	UserHz = 3
 
 	IPv4String = "IPv4"
 	IPv6String = "IPv6"
 
-	Sockstat4Path = "/proc/net/sockstat"
-	Sockstat6Path = "/proc/net/sockstat6"
-	TCPv4Path     = "/proc/net/tcp"
-	TCPv6Path     = "/proc/net/tcp6"
-	UDPv4Path     = "/proc/net/udp"
-	UDPv6Path     = "/proc/net/udp6"
-	RAWv4Path     = "/proc/net/raw"
-	RAWv6Path     = "/proc/net/raw6"
-	UnixPath      = "/proc/net/unix"
-
-	TCPv4Str = "TCPv4"
-	TCPv6Str = "TCPv6"
-	UDPv4Str = "UDPv4"
-	UDPv6Str = "UDPv6"
-	RAWv4Str = "RAWv4"
-	RAWv6Str = "RAWv6"
-	UnixStr  = "Unix"
+	procFilePath = map[string]string{
+		"sockstat4": "/proc/net/sockstat",
+		"sockstat6": "/proc/net/sockstat6",
+		"TCP4":      "/proc/net/tcp",
+		"TCP6":      "/proc/net/tcp6",
+		"UDP4":      "/proc/net/udp",
+		"UDP6":      "/proc/net/udp6",
+		"RAW4":      "/proc/net/raw",
+		"RAW6":      "/proc/net/raw6",
+		"Unix":      "/proc/net/unix",
+	}
 )
 
 var (
 	Summary   map[string]map[string]int
 	SummaryPF = []string{
-		"RAW",
-		"UDP",
 		"TCP",
+		"UDP",
+		"UDPLITE",
+		"RAW",
 		"FRAG",
 	}
-
-	GlobalTCPv4Records map[uint32]*GenericRecord
-	GlobalTCPv6Records map[uint32]*GenericRecord
-	GlobalUDPv4Records map[uint32]*GenericRecord
-	GlobalUDPv6Records map[uint32]*GenericRecord
-	GlobalRAWv4Records map[uint32]*GenericRecord
-	GlobalRAWv6Records map[uint32]*GenericRecord
-	GlobalUnixRecords  map[uint32]*GenericRecord
 
 	TimerName = []string{
 		"OFF",
@@ -71,6 +60,8 @@ var (
 		"::::",
 		":::",
 	}
+
+	GlobalRecords map[string]map[uint32]*GenericRecord
 )
 
 type IP struct {
@@ -436,7 +427,7 @@ func UnixRecordRead() {
 	for _, v := range list {
 		record := NewGenericRecord()
 		record.TransferFromUnix(v)
-		GlobalUnixRecords[record.Inode] = record
+		Records[GlobalRecordsKey][record.Inode] = record
 	}
 	return
 
@@ -449,7 +440,7 @@ readProc:
 		tempInt64   int64
 		flag        int64
 	)
-	file, err := os.Open(UnixPath)
+	file, err := os.Open(procFilePath["Unix"])
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -530,49 +521,38 @@ readProc:
 		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
-		GlobalUnixRecords[record.Inode] = record
+		Records[GlobalRecordsKey][record.Inode] = record
 	}
 }
 
-func GenericRecordRead(family string) (err error) {
+func GenericRecordRead(protocal int, af int) {
 	var (
-		af, protocal uint8
-		exts         uint8
-		skfd         int
-		list         []mynet.SockStatInet
+		ipproto uint8
+		exts    uint8
+		skfd    int
+		list    []mynet.SockStatInet
+		err     error
 	)
-	switch family {
-	case TCPv4Str, TCPv6Str:
-		af = unix.AF_INET
-		if family == TCPv6Str {
-			af = unix.AF_INET6
-		}
-		protocal = mynet.IPPROTO_TCP
+	switch protocal {
+	case ProtocalTCP:
+		ipproto = unix.IPPROTO_TCP
 		if *flagInfo {
 			exts |= 1 << (mynet.INET_DIAG_INFO - 1)
 			exts |= 1 << (mynet.INET_DIAG_VEGASINFO - 1)
 			exts |= 1 << (mynet.INET_DIAG_CONG - 1)
 		}
-	case UDPv4Str, UDPv6Str:
-		af = unix.AF_INET
-		if family == UDPv6Str {
-			af = unix.AF_INET6
-		}
-		protocal = mynet.IPPROTO_UDP
-	case RAWv4Str, RAWv6Str:
-		af = unix.AF_INET
-		if family == RAWv6Str {
-			af = unix.AF_INET6
-		}
-		protocal = mynet.IPPROTO_RAW
+	case ProtocalUDP:
+		ipproto = unix.IPPROTO_UDP
+	case ProtocalRAW:
+		ipproto = unix.IPPROTO_RAW
 	default:
-		err = fmt.Errorf("invalid family string.")
+		fmt.Println("invalid protocal")
 		return
 	}
 	if *flagMemory {
 		exts |= 1 << (mynet.INET_DIAG_SKMEMINFO - 1)
 	}
-	if skfd, err = mynet.SendInetDiagMsg(af, protocal, exts, (1<<mynet.SsMAX)-1); err != nil {
+	if skfd, err = mynet.SendInetDiagMsg(uint8(af), ipproto, exts, (1<<mynet.SsMAX)-1); err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
@@ -583,25 +563,13 @@ func GenericRecordRead(family string) (err error) {
 	for _, v := range list {
 		record := NewGenericRecord()
 		record.TransferFromInet(v)
-		switch family {
-		case TCPv4Str:
-			GlobalTCPv4Records[record.Inode] = record
-		case TCPv6Str:
-			GlobalTCPv6Records[record.Inode] = record
-		case UDPv4Str:
-			GlobalUDPv4Records[record.Inode] = record
-		case UDPv6Str:
-			GlobalUDPv6Records[record.Inode] = record
-		case RAWv4Str:
-			GlobalRAWv4Records[record.Inode] = record
-		case RAWv6Str:
-			GlobalRAWv6Records[record.Inode] = record
-		}
+		Records[GlobalRecordsKey][record.Inode] = record
 	}
 	return
 
 readProc:
 	var (
+		procPath    string
 		file        *os.File
 		line        string
 		fields      []string
@@ -609,23 +577,22 @@ readProc:
 		stringBuff  []string
 		tempInt64   int64
 	)
-	switch family {
-	case TCPv4Str:
-		file, err = os.Open(TCPv4Path)
-	case TCPv6Str:
-		file, err = os.Open(TCPv6Path)
-	case UDPv4Str:
-		file, err = os.Open(UDPv4Path)
-	case UDPv6Str:
-		file, err = os.Open(UDPv6Path)
-	case RAWv4Str:
-		file, err = os.Open(RAWv4Path)
-	case RAWv6Str:
-		file, err = os.Open(RAWv6Path)
-	default:
-		err = fmt.Errorf("invalid family string.")
+
+	switch protocal {
+	case ProtocalTCP:
+		procPath = "TCP"
+	case ProtocalUDP:
+		procPath = "UDP"
+	case ProtocalRAW:
+		procPath = "RAW"
 	}
-	if err != nil {
+	switch af {
+	case unix.AF_INET:
+		procPath += "4"
+	case unix.AF_INET6:
+		procPath += "6"
+	}
+	if file, err = os.Open(procFilePath[procPath]); err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -635,7 +602,7 @@ readProc:
 	for scanner.Scan() {
 		if err = scanner.Err(); err != nil {
 			fmt.Println(err)
-			return err
+			return
 		}
 		line = scanner.Text()
 		fields = strings.Fields(line)
@@ -646,10 +613,10 @@ readProc:
 		// Local address
 		fieldsIndex = 1
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		switch family {
-		case TCPv4Str, UDPv4Str, RAWv4Str:
+		switch af {
+		case unix.AF_INET:
 			record.LocalAddr.Host, err = IPv4HexToString(stringBuff[0])
-		case TCPv6Str, UDPv6Str, RAWv6Str:
+		case unix.AF_INET6:
 			record.LocalAddr.Host, err = IPv6HexToString(stringBuff[0])
 		}
 		if err != nil {
@@ -666,10 +633,10 @@ readProc:
 		fieldsIndex++
 		// Remote address
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		switch family {
-		case TCPv4Str, UDPv4Str, RAWv4Str:
+		switch af {
+		case unix.AF_INET:
 			record.RemoteAddr.Host, err = IPv4HexToString(stringBuff[0])
-		case TCPv6Str, UDPv6Str, RAWv6Str:
+		case unix.AF_INET6:
 			record.RemoteAddr.Host, err = IPv6HexToString(stringBuff[0])
 		}
 		if err != nil {
@@ -753,8 +720,8 @@ readProc:
 			fmt.Println(err)
 			continue
 		}
-		switch family {
-		case TCPv4Str, TCPv6Str:
+		switch protocal {
+		case ProtocalTCP:
 			if len(fields) > 12 {
 				fieldsIndex++
 				if record.RTO, err = strconv.ParseFloat(fields[fieldsIndex], 64); err != nil {
@@ -799,7 +766,7 @@ readProc:
 			if record.Timer != 1 {
 				record.Retransmit = record.Probes
 			}
-		case UDPv4Str, UDPv6Str, RAWv4Str, RAWv6Str:
+		case ProtocalUDP, ProtocalRAW:
 			fieldsIndex++
 			if record.Drops, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 				fmt.Println(err)
@@ -809,20 +776,7 @@ readProc:
 		if len(fields) > 17 {
 			record.Opt = fields[17:]
 		}
-		switch family {
-		case TCPv4Str:
-			GlobalTCPv4Records[record.Inode] = record
-		case TCPv6Str:
-			GlobalTCPv6Records[record.Inode] = record
-		case UDPv4Str:
-			GlobalUDPv4Records[record.Inode] = record
-		case UDPv6Str:
-			GlobalUDPv6Records[record.Inode] = record
-		case RAWv4Str:
-			GlobalRAWv4Records[record.Inode] = record
-		case RAWv6Str:
-			GlobalRAWv6Records[record.Inode] = record
-		}
+		Records[GlobalRecordsKey][record.Inode] = record
 	}
 	return nil
 }
@@ -837,88 +791,58 @@ func GetSocketCount(fields []string) (int, error) {
 }
 
 // IPv6:versionFlag = true; IPv4:versionFlag = false
-func GenericReadSockstat(versionFlag bool) (err error) {
+func GenericReadSockstat() {
 	var (
 		file   *os.File
 		line   string
 		fields []string
+		err    error
 	)
-	if versionFlag {
-		file, err = os.Open(Sockstat6Path)
-	} else {
-		file, err = os.Open(Sockstat4Path)
-	}
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		if err = scanner.Err(); err != nil {
+
+	for _, v := range []string{"sockstat4", "sockstat6"} {
+		if file, err = os.Open(procFilePath[v]); err != nil {
 			fmt.Println(err)
-			return err
+			return
 		}
-		line = scanner.Text()
-		fields = strings.Fields(line)
-		switch fields[0] {
-		case "sockets:":
-			continue
-		case "TCP:":
-			if Summary["TCP"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			if err = scanner.Err(); err != nil {
 				fmt.Println(err)
-				return err
+				return
 			}
-		case "TCP6:":
-			if Summary["TCP"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
+			line = scanner.Text()
+			fields = strings.Fields(line)
+			switch fields[0] {
+			case "sockets:":
+				continue
+			case "TCP:":
+				Summary["TCP"][IPv4String], err = GetSocketCount(fields[1:])
+			case "TCP6:":
+				Summary["TCP"][IPv6String], err = GetSocketCount(fields[1:])
+			case "UDP:":
+				Summary["UDP"][IPv4String], err = GetSocketCount(fields[1:])
+			case "UDP6:":
+				Summary["UDP"][IPv6String], err = GetSocketCount(fields[1:])
+			case "UDPLITE:":
+				Summary["UDPLITE"][IPv4String], err = GetSocketCount(fields[1:])
+			case "UDPLITE6:":
+				Summary["UDPLITE"][IPv6String], err = GetSocketCount(fields[1:])
+			case "RAW:":
+				Summary["RAW"][IPv4String], err = GetSocketCount(fields[1:])
+			case "RAW6:":
+				Summary["RAW"][IPv6String], err = GetSocketCount(fields[1:])
+			case "FRAG:":
+				Summary["FRAG"][IPv4String], err = GetSocketCount(fields[1:])
+			case "FRAG6:":
+				Summary["FRAG"][IPv6String], err = GetSocketCount(fields[1:])
+			default:
+				continue
+			}
+			if err != nil {
 				fmt.Println(err)
-				return err
+				return
 			}
-		case "UDP:":
-			if Summary["UDP"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
-				fmt.Println(err)
-				return err
-			}
-		case "UDP6:":
-			if Summary["UDP"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
-				fmt.Println(err)
-				return err
-			}
-		// case "UDPLITE:":
-		// 	if tempCount, err = GetSocketCount(fields[1:]); err != nil {
-		// 		fmt.Println(err)
-		// 		return err
-		// 	}
-		// 	Summary["UDP"][IPv4String] += tempCount
-		// case "UDPLITE6:":
-		// 	if tempCount, err = GetSocketCount(fields[1:]); err != nil {
-		// 		fmt.Println(err)
-		// 		return err
-		// 	}
-		// 	Summary["UDP"][IPv6String] += tempCount
-		case "RAW:":
-			if Summary["RAW"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
-				fmt.Println(err)
-				return err
-			}
-		case "RAW6:":
-			if Summary["RAW"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
-				fmt.Println(err)
-				return err
-			}
-		case "FRAG:":
-			if Summary["FRAG"][IPv4String], err = GetSocketCount(fields[1:]); err != nil {
-				fmt.Println(err)
-				return err
-			}
-		case "FRAG6:":
-			if Summary["FRAG"][IPv6String], err = GetSocketCount(fields[1:]); err != nil {
-				fmt.Println(err)
-				return err
-			}
-		default:
-			continue
 		}
 	}
-	return nil
 }

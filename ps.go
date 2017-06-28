@@ -49,30 +49,6 @@ func (p *ProcInfo) GetStatus() (err error) {
 	return nil
 }
 
-func GetProcFiles(pid int) (files []*FileInfo, err error) {
-	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", pid)
-	fd, err := os.Open(fdPath)
-	if err != nil {
-		fmt.Println(err)
-		return files, err
-	}
-	defer fd.Close()
-	names, err := fd.Readdirnames(0)
-	if err != nil {
-		fmt.Println(err)
-		return files, err
-	}
-	files = make([]*FileInfo, 0, 0)
-	for _, v := range names {
-		var file *FileInfo
-		if file, err = GetFileStat(fdPath, v); err != nil {
-			continue
-		}
-		files = append(files, file)
-	}
-	return files, nil
-}
-
 func GetProcInfo() {
 	var tempPid int
 	fd, err := os.Open(ProcRoot)
@@ -101,64 +77,58 @@ func GetProcInfo() {
 		}
 		GlobalProcInfo = append(GlobalProcInfo, proc)
 	}
+	SetUpRelation()
 }
 
-func findRecordUser(records map[uint32]*GenericRecord) {
-	for _, record := range records {
-		for proc := range record.Procs {
-			for _, fd := range proc.Fd {
-				if record.Inode == uint32(fd.SysStat.Ino) {
-					record.UserName = proc.Name
-					goto found
-				}
-			}
-		}
-	found:
+func GetProcFiles(pid int) (files []*FileInfo, err error) {
+	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", pid)
+	fd, err := os.Open(fdPath)
+	if err != nil {
+		fmt.Println(err)
+		return files, err
 	}
+	defer fd.Close()
+	names, err := fd.Readdirnames(0)
+	if err != nil {
+		fmt.Println(err)
+		return files, err
+	}
+	files = make([]*FileInfo, 0, 0)
+	for _, v := range names {
+		var file *FileInfo
+		if file, err = GetFileStat(fdPath, v); err != nil {
+			continue
+		}
+		files = append(files, file)
+	}
+	return files, nil
 }
 
 func SetUpRelation() {
-	var (
-		record *GenericRecord
-		ok     bool
-	)
 	for _, proc := range GlobalProcInfo {
 		for _, fd := range proc.Fd {
-			if record, ok = GlobalTCPv4Records[uint32(fd.SysStat.Ino)]; ok {
-				record.Procs[proc] = true
-				GlobalTCPv4Records[uint32(fd.SysStat.Ino)] = record
-			}
-			if record, ok = GlobalTCPv6Records[uint32(fd.SysStat.Ino)]; ok {
-				record.Procs[proc] = true
-				GlobalTCPv6Records[uint32(fd.SysStat.Ino)] = record
-			}
-			if record, ok = GlobalUDPv4Records[uint32(fd.SysStat.Ino)]; ok {
-				record.Procs[proc] = true
-				GlobalUDPv4Records[uint32(fd.SysStat.Ino)] = record
-			}
-			if record, ok = GlobalUDPv6Records[uint32(fd.SysStat.Ino)]; ok {
-				record.Procs[proc] = true
-				GlobalUDPv6Records[uint32(fd.SysStat.Ino)] = record
-			}
-			if record, ok = GlobalRAWv4Records[uint32(fd.SysStat.Ino)]; ok {
-				record.Procs[proc] = true
-				GlobalRAWv4Records[uint32(fd.SysStat.Ino)] = record
-			}
-			if record, ok = GlobalRAWv6Records[uint32(fd.SysStat.Ino)]; ok {
-				record.Procs[proc] = true
-				GlobalRAWv6Records[uint32(fd.SysStat.Ino)] = record
-			}
-			if record, ok = GlobalUnixRecords[uint32(fd.SysStat.Ino)]; ok {
-				record.Procs[proc] = true
-				GlobalUnixRecords[uint32(fd.SysStat.Ino)] = record
+			for key, records := range GlobalRecords {
+				if record, ok := records[uint32(fd.SysStat.Ino)]; ok {
+					GlobalRecords[key][record.Inode].Procs[proc] = true
+				}
 			}
 		}
 	}
-	findRecordUser(GlobalTCPv4Records)
-	findRecordUser(GlobalTCPv6Records)
-	findRecordUser(GlobalUDPv4Records)
-	findRecordUser(GlobalUDPv6Records)
-	findRecordUser(GlobalRAWv4Records)
-	findRecordUser(GlobalRAWv6Records)
-	findRecordUser(GlobalUnixRecords)
+	findRecordUser()
+}
+
+func findRecordUser() {
+	for _, records := range GlobalRecords {
+		for _, record := range records {
+			for proc := range record.Procs {
+				for _, fd := range proc.Fd {
+					if record.Inode == uint32(fd.SysStat.Ino) {
+						record.UserName = proc.Name
+						goto found
+					}
+				}
+			}
+		found:
+		}
+	}
 }
