@@ -36,7 +36,7 @@ func SocketShowInit() {
 func SocketShow() {
 	if protocalFilter&ProtocalUnix != 0 {
 		SocketShowInit()
-		UnixRecordRead()
+		GlobalRecords[GlobalRecordsKey] = UnixRecordRead()
 		GenericShow(ProtocalUnix, unix.AF_UNIX)
 	}
 	if protocalFilter&ProtocalRAW != 0 && afFilter&(1<<unix.AF_INET) != 0 {
@@ -76,7 +76,7 @@ func GenericShow(protocal int, af int) {
 	if *flagProcess {
 		GetProcInfo()
 	}
-	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
+	fmt.Printf("\nNetid\tState\t\tRecv-Q\tSend-Q\t")
 	fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, "LocalAddress:Port", MaxRemoteAddrLength, "RemoteAddress:Port")
 	if *flagProcess {
 		fmt.Printf("Users")
