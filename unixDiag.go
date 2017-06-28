@@ -154,12 +154,12 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 					MaxRemoteAddrLength = len(record.RemoteAddr.String())
 				}
 			case UNIX_DIAG_ICONS:
-				if nlAttr.Len > 4 {
-					ssu.Icons = make([]uint32, 0)
-					for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
-						ssu.Icons = append(ssu.Icons, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
-					}
-				}
+				// if nlAttr.Len > 4 {
+				// 	icons := make([]uint32, 0)
+				// 	for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
+				// 		icons = append(icons, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
+				// 	}
+				// }
 			case UNIX_DIAG_RQLEN:
 				rqlen := *(*UnixDiagRQlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 				record.RxQueue = rqlen.RQ

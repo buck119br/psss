@@ -184,7 +184,7 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 					}
 				}
 			case INET_DIAG_SHUTDOWN:
-				ssi.Shutdown = *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// shutdown := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
 				fmt.Println("invalid NlAttr Type")
 			}
@@ -192,13 +192,13 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 		}
 		records[record.Inode] = &record
 	}
-	return multi, nil
+	return nil
 }
 
 func RecvInetDiagMsgAll(skfd int) (records map[uint32]*GenericRecord) {
 	records = make(map[uint32]*GenericRecord)
 	for {
-		if err = RecvInetDiagMsgMulti(skfd, records); err != nil {
+		if err := RecvInetDiagMsgMulti(skfd, records); err != nil {
 			if err == ErrorDone {
 				break
 			}
