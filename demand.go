@@ -42,6 +42,8 @@ func (d *demand) data() {
 	localAddrs["127.0.1.1"] = true
 	localAddrs["0.0.0.0"] = true
 	localAddrs["::0.0.0.0"] = true
+	localAddrs["::127.0.0.1"] = true
+	localAddrs["::10.10.89.32"] = true
 	for _, v := range netAddrs {
 		localAddrs[strings.Split(v.String(), "/")[0]] = true
 	}
