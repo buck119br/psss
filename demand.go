@@ -65,7 +65,7 @@ func (d *demand) data() {
 				d.Listen[record.UserName].ports[record.LocalAddr] = true
 				for _, gRecords := range GlobalRecords {
 					for _, gRecord := range gRecords {
-						if gRecord.RemoteAddr.Port == record.Port {
+						if gRecord.RemoteAddr.Port == record.LocalAddr.Port {
 							d.Listen[record.UserName].employer[gRecord.UserName] = true
 						}
 					}
