@@ -80,10 +80,18 @@ func (d *demand) show() {
 			if isLocal {
 				fmt.Println("\t\tLocal")
 				for record := range records {
-					if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
-						fmt.Println("\t\t\t", record.RemoteAddr.String())
-						serviceSet[record.RemoteAddr.String()] = true
+					for _, gRecords := range GlobalRecords {
+						for _, gRecord := range gRecords {
+							if record.RemoteAddr == gRecord.LocalAddr {
+								if _, ok = serviceSet[gRecord.UserName]; !ok {
+									fmt.Println("\t\t\t", gRecord.UserName)
+									serviceSet[gRecord.UserName] = true
+									goto next
+								}
+							}
+						}
 					}
+				next:
 				}
 			} else {
 				fmt.Println("\t\tRemote")
