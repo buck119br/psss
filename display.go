@@ -119,8 +119,8 @@ func GenericShow(protocal, af int) {
 		}
 		if *flagInfo && protocal == ProtocalTCP {
 			record.TCPInfoPrint()
-			fmt.Printf("\n")
 		}
+		fmt.Printf("\n")
 	}
 	fmt.Printf("\n")
 }
