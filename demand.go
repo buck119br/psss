@@ -104,27 +104,10 @@ func (d *demand) show() {
 			fmt.Println("\t\tEmployees")
 			serviceSet := make(map[string]bool)
 			for isLocal, records := range d.Estab[name] {
-				if isLocal {
-					fmt.Println("\t\t\tLocal")
-					for record := range records {
-						for _, gRecords := range GlobalRecords {
-							for _, gRecord := range gRecords {
-								if record.RemoteAddr == gRecord.LocalAddr {
-									if _, ok = serviceSet[gRecord.UserName]; !ok {
-										fmt.Println("\t\t\t\t", gRecord.UserName)
-										serviceSet[gRecord.UserName] = true
-										goto next1
-									}
-								}
-							}
-						}
-					next1:
-					}
-				} else {
-					fmt.Println("\t\t\tRemote")
+				if !isLocal {
 					for record := range records {
 						if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
-							fmt.Println("\t\t\t\t", record.RemoteAddr.String())
+							fmt.Println("\t\t\t", record.RemoteAddr.String())
 							serviceSet[record.RemoteAddr.String()] = true
 						}
 					}
