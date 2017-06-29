@@ -30,10 +30,11 @@ var (
 	flagHelp    = flag.Bool("h", false, "help message")               // ok
 	flagVersion = flag.Bool("v", false, "output version information") // ok
 
-	flagAll        = flag.Bool("a", false, "display all sockets")              // ok
+	flagAll    = flag.Bool("a", false, "display all sockets")       // ok
+	flagListen = flag.Bool("l", false, "display listening sockets") // ok
+
 	flagExtended   = flag.Bool("e", false, "show detailed socket information") // ok
 	flagInfo       = flag.Bool("i", false, "show internal TCP information")    // ok
-	flagListen     = flag.Bool("l", false, "display listening sockets")        // ok
 	flagMemory     = flag.Bool("m", false, "show socket memory usage")         // ok
 	flagNotResolve = flag.Bool("n", false, "don't resolve service names")      // born to be
 	flagOption     = flag.Bool("o", false, "show timer information")           // ok
@@ -84,14 +85,14 @@ func main() {
 		return
 	}
 	// sock state
-	if *flagListen {
-		ssFilter |= 1<<SsLISTEN | 1<<SsUNCONN
-	}
 	if *flagAll {
-		ssFilter |= (1 << SsMAX) - 1
+		ssFilter = (1 << SsMAX) - 1
+	}
+	if *flagListen {
+		ssFilter = 1<<SsLISTEN | 1<<SsUNCONN
 	}
 	if ssFilter == 0 {
-		ssFilter |= 1 << SsESTAB
+		ssFilter = 1 << SsESTAB
 	}
 
 	if *flagUnix {
