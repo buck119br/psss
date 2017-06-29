@@ -122,7 +122,7 @@ func (d *demand) show() {
 		serviceSet := make(map[string]bool)
 		for isLocal, records := range procmap {
 			if isLocal {
-				fmt.Println("\t\tLocal")
+				fmt.Println("\t\tLocal", len(records))
 				for record := range records {
 					for _, gRecords := range GlobalRecords {
 						for _, gRecord := range gRecords {
@@ -138,7 +138,7 @@ func (d *demand) show() {
 				next:
 				}
 			} else {
-				fmt.Println("\t\tRemote")
+				fmt.Println("\t\tRemote", len(records))
 				for record := range records {
 					if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
 						fmt.Println("\t\t\t", record.RemoteAddr.String())
