@@ -87,17 +87,23 @@ func GenericShow(protocal, af int) {
 	for _, record := range GlobalRecords[GlobalRecordsKey] {
 		switch protocal {
 		case ProtocalTCP:
-			fmt.Printf("tcp\t")
+			fmt.Printf("tcp")
 		case ProtocalUDP:
-			fmt.Printf("udp\t")
+			fmt.Printf("udp")
 		case ProtocalRAW:
-			fmt.Printf("raw\t")
+			fmt.Printf("raw")
 		case ProtocalUnix:
 			if _, ok = SocketType[record.Type]; !ok {
 				fmt.Printf("dgr\t")
 			} else {
 				fmt.Printf("%s\t", SocketType[record.Type])
 			}
+		}
+		switch af {
+		case unix.AF_INET:
+			fmt.Printf("4\t")
+		case unix.AF_INET6:
+			fmt.Printf("6\t")
 		}
 		record.GenericInfoPrint()
 		if *flagProcess && len(record.UserName) > 0 {
