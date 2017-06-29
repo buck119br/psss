@@ -99,14 +99,7 @@ func GenericShow(protocal, af int) {
 				fmt.Printf("%s\t", SocketType[record.Type])
 			}
 		}
-		if len(Sstate[record.Status]) >= 8 {
-			fmt.Printf("%s\t", Sstate[record.Status])
-		} else {
-			fmt.Printf("%s\t\t", Sstate[record.Status])
-		}
-		fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
-		fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
-		// Process Info
+		record.GenericInfoPrint()
 		if *flagProcess && len(record.UserName) > 0 {
 			record.ProcInfoPrint()
 		}
@@ -114,24 +107,20 @@ func GenericShow(protocal, af int) {
 			fmt.Printf("\n")
 		}
 		if protocal != ProtocalUnix {
-			// Timer Info
 			if *flagOption && record.Timer != 0 {
 				record.TimerInfoPrint()
 			}
-			// Detailed Info
 			if *flagExtended {
 				record.ExtendInfoPrint()
 			}
 		}
-		// Meminfo
 		if *flagMemory && len(record.Meminfo) == 8 {
 			record.MeminfoPrint()
 		}
-		// internal TCP info
 		if *flagInfo && protocal == ProtocalTCP {
 			record.TCPInfoPrint()
+			fmt.Printf("\n")
 		}
-		fmt.Printf("\n")
 	}
 	fmt.Printf("\n")
 }

@@ -154,6 +154,16 @@ func NewGenericRecord() GenericRecord {
 	return *t
 }
 
+func (record *GenericRecord) GenericInfoPrint() {
+	if len(Sstate[record.Status]) >= 8 {
+		fmt.Printf("%s\t", Sstate[record.Status])
+	} else {
+		fmt.Printf("%s\t\t", Sstate[record.Status])
+	}
+	fmt.Printf("%d\t%d\t", record.RxQueue, record.TxQueue)
+	fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, record.LocalAddr.String(), MaxRemoteAddrLength, record.RemoteAddr.String())
+}
+
 func (record *GenericRecord) ProcInfoPrint() {
 	fmt.Printf(`["%s"`, record.UserName)
 	for proc := range record.Procs {
