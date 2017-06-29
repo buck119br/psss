@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -74,7 +73,6 @@ func (p *ProcInfo) GetFds() (err error) {
 }
 
 func GetProcInfo() {
-	start := time.Now()
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
 		fmt.Println(err)
@@ -107,11 +105,9 @@ func GetProcInfo() {
 		}
 		GlobalProcInfo[proc.Name][proc.Pid] = proc
 	}
-	fmt.Println("GetProcInfo cost ", time.Since(start))
 }
 
 func SetUpRelation() {
-	start := time.Now()
 	var ok bool
 	for key, records := range GlobalRecords {
 		for ino := range records {
@@ -125,5 +121,4 @@ func SetUpRelation() {
 			}
 		}
 	}
-	fmt.Println("SetUpRelation cost ", time.Since(start))
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"golang.org/x/sys/unix"
 )
@@ -36,66 +35,38 @@ func SocketShowInit() {
 func SocketShow() {
 	if protocalFilter&ProtocalUnix != 0 {
 		SocketShowInit()
-		start := time.Now()
 		GlobalRecords[GlobalRecordsKey] = UnixRecordRead()
-		fmt.Println("DataRead cost", time.Since(start))
-		start = time.Now()
 		GenericShow(ProtocalUnix, unix.AF_UNIX)
-		fmt.Println("DataShow cost", time.Since(start))
 	}
 	if protocalFilter&ProtocalRAW != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		start := time.Now()
 		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalRAW, unix.AF_INET)
-		fmt.Println("DataRead cost", time.Since(start))
-		start = time.Now()
 		GenericShow(ProtocalRAW, unix.AF_INET)
-		fmt.Println("DataShow cost", time.Since(start))
 	}
 	if protocalFilter&ProtocalRAW != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		start := time.Now()
 		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalRAW, unix.AF_INET6)
-		fmt.Println("DataRead cost", time.Since(start))
-		start = time.Now()
 		GenericShow(ProtocalRAW, unix.AF_INET6)
-		fmt.Println("DataShow cost", time.Since(start))
 	}
 	if protocalFilter&ProtocalUDP != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		start := time.Now()
 		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalUDP, unix.AF_INET)
-		fmt.Println("DataRead cost", time.Since(start))
-		start = time.Now()
 		GenericShow(ProtocalUDP, unix.AF_INET)
-		fmt.Println("DataShow cost", time.Since(start))
 	}
 	if protocalFilter&ProtocalUDP != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		start := time.Now()
 		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalUDP, unix.AF_INET6)
-		fmt.Println("DataRead cost", time.Since(start))
-		start = time.Now()
 		GenericShow(ProtocalUDP, unix.AF_INET6)
-		fmt.Println("DataShow cost", time.Since(start))
 	}
 	if protocalFilter&ProtocalTCP != 0 && afFilter&(1<<unix.AF_INET) != 0 {
 		SocketShowInit()
-		start := time.Now()
 		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
-		fmt.Println("DataRead cost", time.Since(start))
-		start = time.Now()
 		GenericShow(ProtocalTCP, unix.AF_INET)
-		fmt.Println("DataShow cost", time.Since(start))
 	}
 	if protocalFilter&ProtocalTCP != 0 && afFilter&(1<<unix.AF_INET6) != 0 {
 		SocketShowInit()
-		start := time.Now()
 		GlobalRecords[GlobalRecordsKey] = GenericRecordRead(ProtocalTCP, unix.AF_INET6)
-		fmt.Println("DataRead cost", time.Since(start))
-		start = time.Now()
 		GenericShow(ProtocalTCP, unix.AF_INET6)
-		fmt.Println("DataShow cost", time.Since(start))
 	}
 }
 
