@@ -48,7 +48,7 @@ func (d *demand) data() {
 
 	GlobalRecords = make(map[string]map[uint32]*GenericRecord)
 	GlobalRecords["4"] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
-	GlobalRecords["6"] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
+	GlobalRecords["6"] = GenericRecordRead(ProtocalTCP, unix.AF_INET6)
 	SetUpRelation()
 
 	var ok, isLocal bool
