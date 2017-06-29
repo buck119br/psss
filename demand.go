@@ -119,8 +119,8 @@ func (d *demand) show() {
 	fmt.Println("Estab")
 	for name, procmap := range d.Estab {
 		fmt.Println("\t", name)
-		serviceSet := make(map[string]bool)
 		for isLocal, records := range procmap {
+			serviceSet := make(map[string]bool)
 			if isLocal {
 				fmt.Println("\t\tLocal", len(records))
 				for record := range records {
