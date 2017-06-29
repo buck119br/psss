@@ -8,8 +8,20 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+type topology struct {
+	employer map[string]bool
+	ports    map[IP]bool
+}
+
+func newtopology() *topology {
+	t := new(topology)
+	t.employer = make(map[string]bool)
+	t.ports = make(map[IP]bool)
+	return t
+}
+
 type demand struct {
-	Listen map[string]map[IP]bool
+	Listen map[string]*topology
 	Estab  map[string]map[bool]map[*GenericRecord]bool
 }
 
@@ -48,9 +60,18 @@ func (d *demand) data() {
 			switch record.Status {
 			case SsLISTEN:
 				if _, ok = d.Listen[record.UserName]; !ok {
-					d.Listen[record.UserName] = make(map[IP]bool)
+					d.Listen[record.UserName] = newtopology()
 				}
-				d.Listen[record.UserName][record.LocalAddr] = true
+				d.Listen[record.UserName].ports[record.LocalAddr] = true
+				for _, gRecords := range GlobalRecords {
+					for _, gRecord := range gRecords {
+						for ip := range ipmap.ports {
+							if gRecord.RemoteAddr.Port == ip.Port {
+								d.Listen[record.UserName].employer[gRecord.UserName] = true
+							}
+						}
+					}
+				}
 			case SsESTAB:
 				if _, ok = d.Estab[record.UserName]; !ok {
 					d.Estab[record.UserName] = make(map[bool]map[*GenericRecord]bool)
@@ -67,15 +88,54 @@ func (d *demand) data() {
 
 func (d *demand) show() {
 	d.data()
+	var ok bool
 	fmt.Println("Listen")
 	for name, ipmap := range d.Listen {
 		fmt.Println("\t", name)
-		for ip := range ipmap {
-			fmt.Println("\t\t", ip.String())
+		fmt.Println("\t\tPorts")
+		for ip := range ipmap.ports {
+			fmt.Println("\t\t\t", ip.String())
+		}
+		if len(ipmap.employer) > 0 {
+			fmt.Println("\t\tEmployers")
+			for employer := range ipmap.employer {
+				fmt.Println("\t\t\t", employer)
+			}
+		}
+		if _, ok = d.Estab[name]; ok {
+			fmt.Println("\t\tEmployees")
+			serviceSet := make(map[string]bool)
+			for isLocal, records := range d.Estab[name] {
+				if isLocal {
+					fmt.Println("\t\t\tLocal")
+					for record := range records {
+						for _, gRecords := range GlobalRecords {
+							for _, gRecord := range gRecords {
+								if record.RemoteAddr == gRecord.LocalAddr {
+									if _, ok = serviceSet[gRecord.UserName]; !ok {
+										fmt.Println("\t\t\t\t", gRecord.UserName)
+										serviceSet[gRecord.UserName] = true
+										goto next1
+									}
+								}
+							}
+						}
+					next1:
+					}
+				} else {
+					fmt.Println("\t\t\tRemote")
+					for record := range records {
+						if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
+							fmt.Println("\t\t\t\t", record.RemoteAddr.String())
+							serviceSet[record.RemoteAddr.String()] = true
+						}
+					}
+				}
+			}
+			delete(d.Estab, name)
 		}
 	}
 	fmt.Println("Estab")
-	var ok bool
 	for name, procmap := range d.Estab {
 		fmt.Println("\t", name)
 		serviceSet := make(map[string]bool)
