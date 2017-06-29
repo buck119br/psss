@@ -75,7 +75,6 @@ func (p *ProcInfo) GetFds() (err error) {
 
 func GetProcInfo() {
 	start := time.Now()
-	defer fmt.Println("GetProcInfo cost ", time.Since(start).Nanoseconds()/1000)
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
 		fmt.Println(err)
@@ -108,11 +107,11 @@ func GetProcInfo() {
 		}
 		GlobalProcInfo[proc.Name][proc.Pid] = proc
 	}
+	fmt.Println("GetProcInfo cost ", time.Since(start))
 }
 
 func SetUpRelation() {
 	start := time.Now()
-	defer fmt.Println("SetUpRelation cost ", time.Since(start).Nanoseconds()/1000)
 	var ok bool
 	for key, records := range GlobalRecords {
 		for ino := range records {
@@ -126,4 +125,5 @@ func SetUpRelation() {
 			}
 		}
 	}
+	fmt.Println("SetUpRelation cost ", time.Since(start))
 }
