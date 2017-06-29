@@ -42,6 +42,9 @@ func (d *demand) data() {
 	var ok, isLocal bool
 	for _, records := range GlobalRecords {
 		for _, record := range records {
+			if len(record.UserName) == 0 {
+				record.UserName = record.LocalAddr.String()
+			}
 			switch record.Status {
 			case SsLISTEN:
 				if _, ok = d.Listen[record.UserName]; !ok {
