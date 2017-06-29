@@ -1,121 +1,96 @@
 package main
 
-// import (
-// 	"fmt"
-// 	"net"
-// 	"strings"
-// )
+import (
+	"fmt"
+	"net"
+	"strings"
 
-// var (
-// 	demandData = make(map[string]map[string]map[bool]map[string]bool)
-// 	localIP    = make([]string, 0, 0)
-// )
+	"golang.org/x/sys/unix"
+)
 
-// func demandRecordHandler(r *GenericRecord) {
-// 	var (
-// 		status            = mynet.Sstate[r.Status]
-// 		procMap           map[string]map[bool]map[string]bool
-// 		local             bool
-// 		locOrRmtMap       map[bool]map[string]bool
-// 		remoteRecord      *GenericRecord
-// 		remoteServiceName string
-// 		remoteServiceMap  map[string]bool
-// 		ok                bool
-// 	)
-// 	if status != "LISTEN" && status != "ESTAB" {
-// 		return
-// 	}
-// 	if len(r.UserName) == 0 {
-// 		return
-// 	}
-// 	if procMap, ok = demandData[status]; !ok {
-// 		procMap = make(map[string]map[bool]map[string]bool)
-// 	}
-// 	if locOrRmtMap, ok = procMap[r.UserName]; !ok {
-// 		locOrRmtMap = make(map[bool]map[string]bool)
-// 	}
-// 	switch status {
-// 	case "LISTEN":
-// 		local = true
-// 		if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
-// 			remoteServiceMap = make(map[string]bool)
-// 		}
-// 		remoteServiceMap[r.LocalAddr.String()] = true
-// 	case "ESTAB":
-// 		local = false
-// 		for _, ip := range localIP {
-// 			if strings.Contains(r.RemoteAddr.Host, ip) {
-// 				local = true
-// 				break
-// 			}
-// 		}
-// 		if remoteServiceMap, ok = locOrRmtMap[local]; !ok {
-// 			remoteServiceMap = make(map[string]bool)
-// 		}
-// 		if local {
-// 			for _, remoteRecord = range GlobalTCPv4Records {
-// 				if (mynet.Sstate[remoteRecord.Status] == "LISTEN" || mynet.Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
-// 					remoteServiceName = remoteRecord.UserName
-// 					break
-// 				}
-// 			}
-// 			for _, remoteRecord = range GlobalTCPv6Records {
-// 				if (mynet.Sstate[remoteRecord.Status] == "LISTEN" || mynet.Sstate[remoteRecord.Status] == "ESTAB") && remoteRecord.LocalAddr.Port == r.RemoteAddr.Port {
-// 					remoteServiceName = remoteRecord.UserName
-// 					break
-// 				}
-// 			}
-// 			if len(remoteServiceName) != 0 {
-// 				remoteServiceMap[remoteServiceName] = true
-// 			} else {
-// 				remoteServiceMap[r.RemoteAddr.String()] = true
-// 			}
-// 		} else {
-// 			remoteServiceMap[r.RemoteAddr.String()] = true
-// 		}
-// 	}
-// 	locOrRmtMap[local] = remoteServiceMap
-// 	procMap[r.UserName] = locOrRmtMap
-// 	demandData[status] = procMap
-// }
+type demand struct {
+	Listen map[string]map[IP]bool
+	Estab  map[string]map[bool]map[*GenericRecord]bool
+}
 
-// func DemandShow() {
-// 	var stringBuff []string
-// 	localAddr, err := net.InterfaceAddrs()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-// 	for _, v := range localAddr {
-// 		stringBuff = strings.Split(v.String(), "/")
-// 		localIP = append(localIP, stringBuff[0])
-// 	}
-// 	if Family&FbTCPv4 != 0 {
-// 		for _, record := range GlobalTCPv4Records {
-// 			demandRecordHandler(record)
-// 		}
-// 	}
-// 	if Family&FbTCPv6 != 0 {
-// 		for _, record := range GlobalTCPv6Records {
-// 			demandRecordHandler(record)
-// 		}
-// 	}
-// 	for status, localServiceMap := range demandData {
-// 		fmt.Println(status)
-// 		for procName, locOrRmtMap := range localServiceMap {
-// 			fmt.Println("\t" + procName)
-// 			for local, remoteServiceMap := range locOrRmtMap {
-// 				if status == "ESTAB" {
-// 					if local {
-// 						fmt.Println("\t\tLocal")
-// 					} else {
-// 						fmt.Println("\t\tRemote")
-// 					}
-// 				}
-// 				for addr := range remoteServiceMap {
-// 					fmt.Println("\t\t\t" + addr)
-// 				}
-// 			}
-// 		}
-// 	}
-// }
+func newdemand() *demand {
+	d := new(demand)
+	d.Listen = make(map[string]map[IP]bool)
+	d.Estab = make(map[string]map[bool]map[*GenericRecord]bool)
+	return d
+}
+
+func (d *demand) data() {
+	netAddrs, err := net.InterfaceAddrs()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	localAddrs := make(map[string]bool)
+	localAddrs["127.0.1.1"] = true
+	localAddrs["0.0.0.0"] = true
+	localAddrs["::0.0.0.0"] = true
+	for _, v := range netAddrs {
+		localAddrs[strings.Split(v.String(), "/")[0]] = true
+	}
+
+	GlocalRecords = make(map[string]map[uint32]*GenericRecord)
+	GlobalRecords["4"] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
+	GlobalRecords["6"] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
+	SetUpRelation()
+
+	var ok, isLocal bool
+	for key, records := range GlobalRecords {
+		for ino, record := range records {
+			switch record.Status {
+			case SsLISTEN:
+				if _, ok = d.Listen[record.UserName]; !ok {
+					d.Listen[record.UserName] = make(map[IP]bool)
+				}
+				d.Listen[record.UserName][record.LocalAddr] = true
+			case SsESTAB:
+				if _, ok = d.Estab[record.UserName]; !ok {
+					d.Estab[record.UserName] = make(map[bool]map[*GenericRecord]bool)
+				}
+				_, isLocal = localAddrs[record.RemoteAddr.Host]
+				if _, ok = d.Estab[record.UserName][isLocal]; !ok {
+					d.Estab[record.UserName][isLocal] = make(map[*GenericRecord]bool)
+				}
+				d.Estab[record.UserName][isLocal][record] = true
+			}
+		}
+	}
+}
+
+func (d *demand) show() {
+	d.data()
+	fmt.Println("Listen")
+	for name, ipmap := range d.Listen {
+		fmt.Println("\t", name)
+		for ip := range ipmap {
+			fmt.Println("\t\t", ip.String())
+		}
+	}
+	fmt.Println("Estab")
+	var ok bool
+	for name, procmap := range d.Estab {
+		fmt.Println("\t", name)
+		localService := make(map[string]bool)
+		for isLocal, records := range procmap {
+			if isLocal {
+				fmt.Println("\t\tLocal")
+				for record := range records {
+					if _, ok = localService[record.UserName]; !ok {
+						fmt.Println("\t\t\t", record.UserName)
+						localService[record.UserName] = true
+					}
+				}
+			} else {
+				fmt.Println("\t\tRemote")
+				for record := range records {
+					fmt.Println("\t\t\t", record.RemoteAddr.String())
+				}
+			}
+		}
+	}
+}

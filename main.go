@@ -141,7 +141,8 @@ func main() {
 	}
 
 	if *flagDemand {
-		// DemandShow()
+		d := newdemand()
+		d.show()
 		return
 	}
 	SocketShow()
