@@ -124,12 +124,12 @@ func (d *demand) show() {
 			if isLocal {
 				fmt.Println("\t\tLocal", len(records))
 				for record := range records {
-					for _, gRecords := range GlobalRecords {
-						for _, gRecord := range gRecords {
-							if record.RemoteAddr == gRecord.LocalAddr {
-								if _, ok = serviceSet[gRecord.UserName]; !ok {
-									fmt.Println("\t\t\t", gRecord.UserName)
-									serviceSet[gRecord.UserName] = true
+					for name, ipmap := range d.Listen {
+						for ip := range ipmap.ports {
+							if record.RemoteAddr.Port == ip.Port {
+								if _, ok = serviceSet[name]; !ok {
+									fmt.Println("\t\t\t", name)
+									serviceSet[name] = true
 									goto next
 								}
 							}
