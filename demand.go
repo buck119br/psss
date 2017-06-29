@@ -34,7 +34,7 @@ func (d *demand) data() {
 		localAddrs[strings.Split(v.String(), "/")[0]] = true
 	}
 
-	GlocalRecords = make(map[string]map[uint32]*GenericRecord)
+	GlobalRecords = make(map[string]map[uint32]*GenericRecord)
 	GlobalRecords["4"] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
 	GlobalRecords["6"] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
 	SetUpRelation()
