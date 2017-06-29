@@ -39,11 +39,11 @@ func (d *demand) data() {
 		return
 	}
 	localAddrs := make(map[string]bool)
-	localAddrs["127.0.1.1"] = true
 	localAddrs["0.0.0.0"] = true
 	localAddrs["::0.0.0.0"] = true
 	localAddrs["::127.0.0.1"] = true
 	localAddrs["::10.10.89.32"] = true
+	localAddrs["127.0.1.1"] = true
 	for _, v := range netAddrs {
 		localAddrs[strings.Split(v.String(), "/")[0]] = true
 	}
@@ -105,14 +105,10 @@ func (d *demand) show() {
 		if _, ok = d.Estab[name]; ok {
 			fmt.Println("\t\tEmployees")
 			serviceSet := make(map[string]bool)
-			for isLocal, records := range d.Estab[name] {
-				if !isLocal {
-					for record := range records {
-						if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
-							fmt.Println("\t\t\t", record.RemoteAddr.String())
-							serviceSet[record.RemoteAddr.String()] = true
-						}
-					}
+			for record := range d.Estab[name][false] {
+				if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
+					fmt.Println("\t\t\t", record.RemoteAddr.String())
+					serviceSet[record.RemoteAddr.String()] = true
 				}
 			}
 			delete(d.Estab, name)
