@@ -95,11 +95,6 @@ func main() {
 		ssFilter = 1 << SsESTAB
 	}
 
-	if *flagUnix {
-		afFilter |= 1 << unix.AF_UNIX
-		protocalFilter |= ProtocalUnix
-	}
-
 	if *flagIPv4 {
 		afFilter |= 1 << unix.AF_INET
 		if !*flagTCP && !*flagUDP && !*flagRAW {
@@ -128,6 +123,10 @@ func main() {
 	}
 	if *flagRAW {
 		protocalFilter |= ProtocalRAW
+	}
+	if *flagUnix {
+		afFilter |= 1 << unix.AF_UNIX
+		protocalFilter |= ProtocalUnix
 	}
 	if protocalFilter == 0 {
 		protocalFilter |= ProtocalMax - 1
