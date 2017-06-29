@@ -74,9 +74,8 @@ func GenericShow(protocal, af int) {
 	if len(GlobalRecords[GlobalRecordsKey]) == 0 {
 		return
 	}
-	var ok bool
 	if *flagProcess {
-		GetProcInfo()
+		SetUpRelation()
 	}
 	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
 	fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, "LocalAddress:Port", MaxRemoteAddrLength, "RemoteAddress:Port")
@@ -84,6 +83,7 @@ func GenericShow(protocal, af int) {
 		fmt.Printf("Users")
 	}
 	fmt.Printf("\n")
+	var ok bool
 	for _, record := range GlobalRecords[GlobalRecordsKey] {
 		switch protocal {
 		case ProtocalTCP:

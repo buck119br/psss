@@ -4,8 +4,6 @@ package main
 // 	"fmt"
 // 	"net"
 // 	"strings"
-
-// 	mynet "github.com/buck119br/psss/net"
 // )
 
 // var (

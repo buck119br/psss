@@ -65,6 +65,7 @@ func init() {
 	}
 
 	GlobalRecords = make(map[string]map[uint32]*GenericRecord)
+	GlobalProcInfo = make(map[string]map[int]*ProcInfo)
 }
 
 func main() {
@@ -82,6 +83,17 @@ func main() {
 		ShowSummary()
 		return
 	}
+	// sock state
+	if *flagListen {
+		ssFilter |= 1<<SsLISTEN | 1<<SsUNCONN
+	}
+	if *flagAll {
+		ssFilter |= (1 << SsMAX) - 1
+	}
+	if ssFilter == 0 {
+		ssFilter |= 1 << SsESTAB
+	}
+
 	if *flagUnix {
 		afFilter |= 1 << unix.AF_UNIX
 		protocalFilter |= ProtocalUnix
@@ -120,18 +132,12 @@ func main() {
 		protocalFilter |= ProtocalMax - 1
 	}
 
-	if *flagListen {
-		ssFilter |= 1<<SsLISTEN | 1<<SsUNCONN
-	}
-	if *flagAll {
-		ssFilter |= (1 << SsMAX) - 1
-	}
-	if ssFilter == 0 {
-		ssFilter |= 1 << SsESTAB
-	}
-
 	if *flagExtended || *flagOption || *flagMemory || *flagInfo {
 		NewlineFlag = true
+	}
+
+	if *flagProcess {
+		GetProcInfo()
 	}
 
 	if *flagDemand {

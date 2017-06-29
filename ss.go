@@ -356,8 +356,7 @@ func UnixRecordRead() (records map[uint32]*GenericRecord) {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	records = RecvUnixDiagMsgAll(skfd)
-	return
+	return RecvUnixDiagMsgAll(skfd)
 
 readProc:
 	// In this way, so much information cannot get.
@@ -488,8 +487,7 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	records = RecvInetDiagMsgAll(skfd)
-	return
+	return RecvInetDiagMsgAll(skfd)
 
 readProc:
 	var (

@@ -12,18 +12,18 @@ const (
 	ProcRoot = "/proc"
 )
 
-var GlobalProcInfo []*ProcInfo
+var GlobalProcInfo map[string]map[int]*ProcInfo
 
 type ProcInfo struct {
 	Name string
 	Pid  int
-	Fd   []*FileInfo
+	Fd   map[uint32]*FileInfo
 }
 
 func NewProcInfo() *ProcInfo {
-	pi := new(ProcInfo)
-	pi.Fd = make([]*FileInfo, 0, 0)
-	return pi
+	p := new(ProcInfo)
+	p.Fd = make(map[uint32]*FileInfo, 0)
+	return p
 }
 
 func (p *ProcInfo) GetStatus() (err error) {
@@ -49,8 +49,30 @@ func (p *ProcInfo) GetStatus() (err error) {
 	return nil
 }
 
+func (p *ProcInfo) GetFds() (err error) {
+	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", p.Pid)
+	fd, err := os.Open(fdPath)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer fd.Close()
+	names, err := fd.Readdirnames(0)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	for _, v := range names {
+		fi := NewFileInfo()
+		if err = fi.GetStat(fdPath, v); err != nil {
+			continue
+		}
+		p.Fd[uint32(fi.SysStat.Ino)] = fi
+	}
+	return nil
+}
+
 func GetProcInfo() {
-	var tempPid int
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
 		fmt.Println(err)
@@ -62,73 +84,41 @@ func GetProcInfo() {
 		fmt.Println(err)
 		return
 	}
-	GlobalProcInfo = make([]*ProcInfo, 0, 0)
+	var (
+		tempInt int
+		ok      bool
+	)
 	for _, v := range names {
-		if tempPid, err = strconv.Atoi(v); err != nil {
+		if tempInt, err = strconv.Atoi(v); err != nil {
 			continue
 		}
 		proc := NewProcInfo()
-		proc.Pid = tempPid
-		if proc.Fd, err = GetProcFiles(tempPid); err != nil {
+		proc.Pid = tempInt
+		if err = proc.GetFds(); err != nil {
 			continue
 		}
 		if err = proc.GetStatus(); err != nil {
 			continue
 		}
-		GlobalProcInfo = append(GlobalProcInfo, proc)
-	}
-	SetUpRelation()
-}
-
-func GetProcFiles(pid int) (files []*FileInfo, err error) {
-	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", pid)
-	fd, err := os.Open(fdPath)
-	if err != nil {
-		fmt.Println(err)
-		return files, err
-	}
-	defer fd.Close()
-	names, err := fd.Readdirnames(0)
-	if err != nil {
-		fmt.Println(err)
-		return files, err
-	}
-	files = make([]*FileInfo, 0, 0)
-	for _, v := range names {
-		var file *FileInfo
-		if file, err = GetFileStat(fdPath, v); err != nil {
-			continue
+		if _, ok = GlobalProcInfo[proc.Name]; !ok {
+			GlobalProcInfo[proc.Name] = make(map[int]*ProcInfo)
 		}
-		files = append(files, file)
+		GlobalProcInfo[proc.Name][proc.Pid] = proc
 	}
-	return files, nil
 }
 
 func SetUpRelation() {
-	for _, proc := range GlobalProcInfo {
-		for _, fd := range proc.Fd {
-			for key, records := range GlobalRecords {
-				if record, ok := records[uint32(fd.SysStat.Ino)]; ok {
-					GlobalRecords[key][record.Inode].Procs[proc] = true
-				}
-			}
-		}
-	}
-	findRecordUser()
-}
-
-func findRecordUser() {
-	for _, records := range GlobalRecords {
-		for _, record := range records {
-			for proc := range record.Procs {
-				for _, fd := range proc.Fd {
-					if record.Inode == uint32(fd.SysStat.Ino) {
-						record.UserName = proc.Name
-						goto found
+	var ok bool
+	for key, records := range GlobalRecords {
+		for ino := range records {
+			for _, procMap := range GlobalProcInfo {
+				for _, proc := range procMap {
+					if _, ok = proc.Fd[ino]; ok {
+						GlobalRecords[key][ino].UserName = proc.Name
+						GlobalRecords[key][ino].Procs[proc] = true
 					}
 				}
 			}
-		found:
 		}
 	}
 }
