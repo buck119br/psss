@@ -75,20 +75,23 @@ func (d *demand) show() {
 	var ok bool
 	for name, procmap := range d.Estab {
 		fmt.Println("\t", name)
-		localService := make(map[string]bool)
+		serviceSet := make(map[string]bool)
 		for isLocal, records := range procmap {
 			if isLocal {
 				fmt.Println("\t\tLocal")
 				for record := range records {
-					if _, ok = localService[record.UserName]; !ok {
-						fmt.Println("\t\t\t", record.UserName)
-						localService[record.UserName] = true
+					if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
+						fmt.Println("\t\t\t", record.RemoteAddr.String())
+						serviceSet[record.RemoteAddr.String()] = true
 					}
 				}
 			} else {
 				fmt.Println("\t\tRemote")
 				for record := range records {
-					fmt.Println("\t\t\t", record.RemoteAddr.String())
+					if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
+						fmt.Println("\t\t\t", record.RemoteAddr.String())
+						serviceSet[record.RemoteAddr.String()] = true
+					}
 				}
 			}
 		}
