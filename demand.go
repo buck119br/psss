@@ -40,8 +40,8 @@ func (d *demand) data() {
 	SetUpRelation()
 
 	var ok, isLocal bool
-	for key, records := range GlobalRecords {
-		for ino, record := range records {
+	for _, records := range GlobalRecords {
+		for _, record := range records {
 			switch record.Status {
 			case SsLISTEN:
 				if _, ok = d.Listen[record.UserName]; !ok {
