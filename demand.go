@@ -27,7 +27,7 @@ type demand struct {
 
 func newdemand() *demand {
 	d := new(demand)
-	d.Listen = make(map[string]map[IP]bool)
+	d.Listen = make(map[string]*topology)
 	d.Estab = make(map[string]map[bool]map[*GenericRecord]bool)
 	return d
 }
@@ -65,10 +65,8 @@ func (d *demand) data() {
 				d.Listen[record.UserName].ports[record.LocalAddr] = true
 				for _, gRecords := range GlobalRecords {
 					for _, gRecord := range gRecords {
-						for ip := range ipmap.ports {
-							if gRecord.RemoteAddr.Port == ip.Port {
-								d.Listen[record.UserName].employer[gRecord.UserName] = true
-							}
+						if gRecord.RemoteAddr.Port == record.Port {
+							d.Listen[record.UserName].employer[gRecord.UserName] = true
 						}
 					}
 				}
