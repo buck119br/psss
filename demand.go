@@ -35,13 +35,13 @@ func newtopology() *topology {
 
 type demand struct {
 	Listen map[string]*topology
-	Estab  map[string]map[bool]map[*GenericRecord]bool
+	Estab  map[string]map[*GenericRecord]bool
 }
 
 func newdemand() *demand {
 	d := new(demand)
 	d.Listen = make(map[string]*topology)
-	d.Estab = make(map[string]map[bool]map[*GenericRecord]bool)
+	d.Estab = make(map[string]map[*GenericRecord]bool)
 	return d
 }
 
@@ -94,10 +94,7 @@ func (d *demand) data() {
 		}
 	}
 
-	var (
-		isLocalListening bool
-		isRemoteLocal    bool
-	)
+	var isLocalListening bool
 	for _, records := range GlobalRecords {
 		for _, record := range records {
 			if record.Status == SsESTAB {
@@ -123,18 +120,15 @@ func (d *demand) data() {
 					goto next
 				}
 
-				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
+				if isHostLocal(record.RemoteAddr.Host) {
 					if ok, _ = d.isPortListening(record.RemoteAddr.Port); ok {
 						continue
 					}
 				}
 				if _, ok = d.Estab[record.UserName]; !ok {
-					d.Estab[record.UserName] = make(map[bool]map[*GenericRecord]bool)
+					d.Estab[record.UserName] = make(map[*GenericRecord]bool)
 				}
-				if _, ok = d.Estab[record.UserName][isRemoteLocal]; !ok {
-					d.Estab[record.UserName][isRemoteLocal] = make(map[*GenericRecord]bool)
-				}
-				d.Estab[record.UserName][isRemoteLocal][record] = true
+				d.Estab[record.UserName][record] = true
 			next:
 			}
 		}
@@ -170,22 +164,15 @@ func (d *demand) show() {
 		}
 	}
 	fmt.Println("Estab")
-	for name, procmap := range d.Estab {
+	for name, records := range d.Estab {
 		fmt.Println("\t", name)
-		for isLocal, records := range procmap {
-			if isLocal {
-				fmt.Println("\t\tLocal", len(records))
-			} else {
-				fmt.Println("\t\tRemote", len(records))
-			}
+		for record := range procmap {
 			serviceSet := make(map[string]bool)
-			for record := range records {
-				if _, ok = serviceSet[record.RemoteAddr.String()]; ok {
-					continue
-				}
-				serviceSet[record.RemoteAddr.String()] = true
-				fmt.Println("\t\t\t", record.RemoteAddr.String())
+			if _, ok = serviceSet[record.RemoteAddr.String()]; ok {
+				continue
 			}
+			serviceSet[record.RemoteAddr.String()] = true
+			fmt.Println("\t\t", record.LocalAddr.String(), "<->", record.RemoteAddr.String())
 		}
 	}
 }
