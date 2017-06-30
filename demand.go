@@ -94,7 +94,11 @@ func (d *demand) data() {
 		}
 	}
 
-	var isLocalListening, isRemoteLocal bool
+	var (
+		name             string
+		isLocalListening bool
+		isRemoteLocal    bool
+	)
 	for _, records := range GlobalRecords {
 		for _, record := range records {
 			if record.Status == SsESTAB {
