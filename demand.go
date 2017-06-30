@@ -170,7 +170,7 @@ func (d *demand) show() {
 		}
 	}
 	fmt.Println("Estab")
-	for name, procmap := range d.Estab {
+	for _, procmap := range d.Estab {
 		fmt.Println("\t", name)
 		for isLocal, records := range procmap {
 			if isLocal {
