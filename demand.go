@@ -82,6 +82,7 @@ func (d *demand) data() {
 	GlobalRecords["6"] = GenericRecordRead(ProtocalTCP, unix.AF_INET6)
 	SetUpRelation()
 
+	var ok bool
 	for _, records := range GlobalRecords {
 		for _, record := range records {
 			if record.Status == SsLISTEN {
@@ -94,17 +95,18 @@ func (d *demand) data() {
 	}
 
 	var (
-		name              string
-		ok, isRemoteLocal bool
+		name          string
+		isRemoteLocal bool
 	)
 	for _, records := range GlobalRecords {
 		for _, record := range records {
 			if record.Status == SsESTAB {
-				if isUserListening(record.UserName) {
+				if d.isUserListening(record.UserName) {
 					d.Listen[record.UserName].employee[record.RemoteAddr.String()] = true
+					continue
 				}
 				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
-					if ok, name = d.isPortListening(record.Port); ok {
+					if ok, name = d.isPortListening(record.RemoteAddr.Port); ok {
 						d.Listen[name].employer[record.UserName] = true
 						continue
 					}
@@ -137,9 +139,9 @@ func (d *demand) show() {
 				fmt.Println("\t\t\t", v)
 			}
 		}
-		if len(ipmap.employeer) > 0 {
+		if len(ipmap.employee) > 0 {
 			fmt.Println("\t\tEmployees")
-			for v := range ipmap.employeer {
+			for v := range ipmap.employee {
 				fmt.Println("\t\t\t", v)
 			}
 		}
