@@ -8,14 +8,27 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+var localAddrs = make(map[string]bool)
+
+func isHostLocal(host string) bool {
+	for v := range localAddrs {
+		if strings.Contains(host, v) {
+			return true
+		}
+	}
+	return false
+}
+
 type topology struct {
 	employer map[string]bool
+	employee map[string]bool
 	ports    map[IP]bool
 }
 
 func newtopology() *topology {
 	t := new(topology)
 	t.employer = make(map[string]bool)
+	t.employee = make(map[string]bool)
 	t.ports = make(map[IP]bool)
 	return t
 }
@@ -32,63 +45,85 @@ func newdemand() *demand {
 	return d
 }
 
+func (d *demand) isPortListening(port string) (bool, string) {
+	for name, topo := range d.Listen {
+		for ip := range topo.ports {
+			if port == ip.Port {
+				return true, name
+			}
+		}
+	}
+	return false, ""
+}
+
+func (d *demand) isUserListening(user string) bool {
+	for name := range d.Listen {
+		if user == name {
+			return true
+		}
+	}
+	return false
+}
+
 func (d *demand) data() {
 	netAddrs, err := net.InterfaceAddrs()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	localAddrs := make(map[string]bool)
-	localAddrs["0.0.0.0"] = true
-	localAddrs["::0.0.0.0"] = true
-	localAddrs["::127.0.0.1"] = true
-	localAddrs["::10.10.89.32"] = true
-	localAddrs["127.0.1.1"] = true
 	for _, v := range netAddrs {
 		localAddrs[strings.Split(v.String(), "/")[0]] = true
 	}
+	localAddrs["127.0.1.1"] = true
 
+	ssFilter = 1<<SsESTAB | 1<<SsLISTEN
 	GlobalRecords = make(map[string]map[uint32]*GenericRecord)
 	GlobalRecords["4"] = GenericRecordRead(ProtocalTCP, unix.AF_INET)
 	GlobalRecords["6"] = GenericRecordRead(ProtocalTCP, unix.AF_INET6)
 	SetUpRelation()
 
-	var ok, isLocal bool
 	for _, records := range GlobalRecords {
 		for _, record := range records {
-			if len(record.UserName) == 0 {
-				record.UserName = record.LocalAddr.String()
-			}
-			switch record.Status {
-			case SsLISTEN:
+			if record.Status == SsLISTEN {
 				if _, ok = d.Listen[record.UserName]; !ok {
 					d.Listen[record.UserName] = newtopology()
 				}
 				d.Listen[record.UserName].ports[record.LocalAddr] = true
-				for _, gRecords := range GlobalRecords {
-					for _, gRecord := range gRecords {
-						if gRecord.RemoteAddr.Port == record.LocalAddr.Port {
-							d.Listen[record.UserName].employer[gRecord.UserName] = true
-						}
-					}
-				}
-			case SsESTAB:
-				if _, ok = d.Estab[record.UserName]; !ok {
-					d.Estab[record.UserName] = make(map[bool]map[*GenericRecord]bool)
-				}
-				_, isLocal = localAddrs[record.RemoteAddr.Host]
-				if _, ok = d.Estab[record.UserName][isLocal]; !ok {
-					d.Estab[record.UserName][isLocal] = make(map[*GenericRecord]bool)
-				}
-				d.Estab[record.UserName][isLocal][record] = true
 			}
 		}
 	}
+
+	var (
+		name              string
+		ok, isRemoteLocal bool
+	)
+	for _, records := range GlobalRecords {
+		for _, record := range records {
+			if record.Status == SsESTAB {
+				if isUserListening(record.UserName) {
+					d.Listen[record.UserName].employee[record.RemoteAddr.String()] = true
+				}
+				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
+					if ok, name = d.isPortListening(record.Port); ok {
+						d.Listen[name].employer[record.UserName] = true
+						continue
+					}
+				}
+				if _, ok = d.Estab[record.UserName]; !ok {
+					d.Estab[record.UserName] = make(map[bool]map[*GenericRecord]bool)
+				}
+				if _, ok = d.Estab[record.UserName][isRemoteLocal]; !ok {
+					d.Estab[record.UserName][isRemoteLocal] = make(map[*GenericRecord]bool)
+				}
+				d.Estab[record.UserName][isRemoteLocal][record] = true
+			}
+		}
+	}
+
 }
 
 func (d *demand) show() {
 	d.data()
-	var ok bool
 	fmt.Println("Listen")
 	for name, ipmap := range d.Listen {
 		fmt.Println("\t", name)
@@ -98,51 +133,29 @@ func (d *demand) show() {
 		}
 		if len(ipmap.employer) > 0 {
 			fmt.Println("\t\tEmployers")
-			for employer := range ipmap.employer {
-				fmt.Println("\t\t\t", employer)
+			for v := range ipmap.employer {
+				fmt.Println("\t\t\t", v)
 			}
 		}
-		if _, ok = d.Estab[name]; ok {
+		if len(ipmap.employeer) > 0 {
 			fmt.Println("\t\tEmployees")
-			serviceSet := make(map[string]bool)
-			for record := range d.Estab[name][false] {
-				if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
-					fmt.Println("\t\t\t", record.RemoteAddr.String())
-					serviceSet[record.RemoteAddr.String()] = true
-				}
+			for v := range ipmap.employeer {
+				fmt.Println("\t\t\t", v)
 			}
-			delete(d.Estab, name)
 		}
 	}
 	fmt.Println("Estab")
 	for name, procmap := range d.Estab {
 		fmt.Println("\t", name)
 		for isLocal, records := range procmap {
-			serviceSet := make(map[string]bool)
 			if isLocal {
 				fmt.Println("\t\tLocal", len(records))
-				for record := range records {
-					for name, ipmap := range d.Listen {
-						for ip := range ipmap.ports {
-							if record.RemoteAddr.Port == ip.Port {
-								if _, ok = serviceSet[name]; !ok {
-									fmt.Println("\t\t\t", name)
-									serviceSet[name] = true
-									goto next
-								}
-							}
-						}
-					}
-				next:
-				}
 			} else {
 				fmt.Println("\t\tRemote", len(records))
-				for record := range records {
-					if _, ok = serviceSet[record.RemoteAddr.String()]; !ok {
-						fmt.Println("\t\t\t", record.RemoteAddr.String())
-						serviceSet[record.RemoteAddr.String()] = true
-					}
-				}
+			}
+			for record := range records {
+				fmt.Println("\t\t\t", record.RemoteAddr.String())
+
 			}
 		}
 	}
