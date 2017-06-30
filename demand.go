@@ -102,8 +102,8 @@ func (d *demand) data() {
 							goto next
 						}
 					}
-				next:
 					d.Listen[record.UserName].employee[record.RemoteAddr.String()] = true
+				next:
 					continue
 				}
 				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
