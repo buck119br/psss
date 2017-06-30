@@ -95,7 +95,6 @@ func (d *demand) data() {
 	}
 
 	var (
-		name             string
 		isLocalListening bool
 		isRemoteLocal    bool
 	)
@@ -125,7 +124,7 @@ func (d *demand) data() {
 				}
 
 				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
-					if ok, name = d.isPortListening(record.RemoteAddr.Port); ok {
+					if ok, _ = d.isPortListening(record.RemoteAddr.Port); ok {
 						continue
 					}
 				}
