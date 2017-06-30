@@ -169,7 +169,7 @@ func (record *GenericRecord) ProcInfoPrint() {
 	for proc := range record.Procs {
 		for _, fd := range proc.Fd {
 			if fd.SysStat.Ino == uint64(record.Inode) {
-				fmt.Printf(`(pid=%d,fd=%s)`, proc.Stat.Pid, fd.Stat.Name)
+				fmt.Printf(`(pid=%d,fd=%s)`, proc.Stat.Pid, fd.Name)
 			}
 		}
 	}
