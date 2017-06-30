@@ -35,13 +35,13 @@ func newtopology() *topology {
 
 type demand struct {
 	Listen map[string]*topology
-	Estab  map[string]map[*GenericRecord]bool
+	Estab  map[string]map[IP]int
 }
 
 func newdemand() *demand {
 	d := new(demand)
 	d.Listen = make(map[string]*topology)
-	d.Estab = make(map[string]map[*GenericRecord]bool)
+	d.Estab = make(map[string]map[IP]int)
 	return d
 }
 
@@ -126,9 +126,9 @@ func (d *demand) data() {
 					}
 				}
 				if _, ok = d.Estab[record.UserName]; !ok {
-					d.Estab[record.UserName] = make(map[*GenericRecord]bool)
+					d.Estab[record.UserName] = make(map[IP]int)
 				}
-				d.Estab[record.UserName][record] = true
+				d.Estab[record.UserName][record.RemoteAddr] = d.Estab[record.UserName][record.RemoteAddr] + 1
 			next:
 			}
 		}
@@ -146,13 +146,13 @@ func (d *demand) show() {
 			fmt.Println("\t\t\t", ip.String())
 		}
 		if len(ipmap.employer) > 0 {
-			fmt.Println("\t\tEmployers")
+			fmt.Println("\t\tClients")
 			for v := range ipmap.employer {
 				fmt.Println("\t\t\t", v)
 			}
 		}
 		if len(ipmap.employee) > 0 {
-			fmt.Println("\t\tEmployees")
+			fmt.Println("\t\tUpstream")
 			serviceSet := make(map[string]bool)
 			for v := range ipmap.employee {
 				if _, ok = serviceSet[v]; ok {
@@ -164,15 +164,10 @@ func (d *demand) show() {
 		}
 	}
 	fmt.Println("Estab")
-	for name, records := range d.Estab {
+	for name, ips := range d.Estab {
 		fmt.Println("\t", name)
-		for record := range records {
-			serviceSet := make(map[string]bool)
-			if _, ok = serviceSet[record.RemoteAddr.String()]; ok {
-				continue
-			}
-			serviceSet[record.RemoteAddr.String()] = true
-			fmt.Println("\t\t", record.LocalAddr.String(), "<->", record.RemoteAddr.String())
+		for ip, count := range ips {
+			fmt.Printf("\t\t%s (count:%d)", ip.String(), count)
 		}
 	}
 }
