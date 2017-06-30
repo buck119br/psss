@@ -106,9 +106,9 @@ func (p *ProcInfo) GetStatus() (err error) {
 			"%d %d %d "+
 			"%d %d %d "+
 			"%d %d "+
-			// "%d %d %d %d "+
+			"%d %d %d %d "+
 			"%d "+
-			// "%d %d "+
+			"%d %d "+
 			"%d %d "+
 			"%d %d "+
 			"%d %d %d "+
@@ -116,7 +116,7 @@ func (p *ProcInfo) GetStatus() (err error) {
 			"%d "+
 			"%d %d "+
 			"%d %d "+
-			"%d",
+			"%d\n",
 		&p.Stat.Pid, &p.Stat.Name,
 		&p.Stat.State,
 		&p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid,
@@ -127,9 +127,9 @@ func (p *ProcInfo) GetStatus() (err error) {
 		&p.Stat.Vsize, &p.Stat.Rss, &p.Stat.Rsslim,
 		&p.Stat.Startcode, &p.Stat.Endcode, &p.Stat.Startstack,
 		&p.Stat.Kstkesp, &p.Stat.Kstkeip,
-		// &p.Stat.Signal, &p.Stat.Blocked, &p.Stat.Sigignore, &p.Stat.Sigcatch, /* can't use */
+		&p.Stat.Signal, &p.Stat.Blocked, &p.Stat.Sigignore, &p.Stat.Sigcatch, /* can't use */
 		&p.Stat.Wchan,
-		// &p.Stat.Nswap, &p.Stat.Cnswap, /* nswap and cnswap dead for 2.4.xx and up */
+		&p.Stat.Nswap, &p.Stat.Cnswap, /* nswap and cnswap dead for 2.4.xx and up */
 		/* -- Linux 2.0.35 ends here -- */
 		&p.Stat.ExitSignal, &p.Stat.Processor,
 		/* -- Linux 2.2.8 to 2.5.17 end here -- */
