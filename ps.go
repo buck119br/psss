@@ -82,7 +82,7 @@ func NewProcInfo() *ProcInfo {
 }
 
 func (p *ProcInfo) GetStatus() (err error) {
-	fd, err := os.Open(ProcRoot + fmt.Sprintf("/%d/stat", p.Pid))
+	fd, err := os.Open(ProcRoot + fmt.Sprintf("/%d/stat", p.Stat.Pid))
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -118,7 +118,7 @@ func (p *ProcInfo) GetStatus() (err error) {
 }
 
 func (p *ProcInfo) GetFds() (err error) {
-	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", p.Pid)
+	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
 	fd, err := os.Open(fdPath)
 	if err != nil {
 		fmt.Println(err)
@@ -161,7 +161,7 @@ func GetProcInfo() {
 			continue
 		}
 		proc := NewProcInfo()
-		proc.Pid = tempInt
+		proc.Stat.Pid = tempInt
 		if err = proc.GetFds(); err != nil {
 			continue
 		}
@@ -171,7 +171,7 @@ func GetProcInfo() {
 		if _, ok = GlobalProcInfo[proc.Stat.Name]; !ok {
 			GlobalProcInfo[proc.Stat.Name] = make(map[int]*ProcInfo)
 		}
-		GlobalProcInfo[proc.Stat.Name][proc.Pid] = proc
+		GlobalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
 	}
 }
 
