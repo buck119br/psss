@@ -167,7 +167,7 @@ func (d *demand) show() {
 	for name, ips := range d.Estab {
 		fmt.Println("\t", name)
 		for ip, count := range ips {
-			fmt.Printf("\t\t%s (count:%d)", ip.String(), count)
+			fmt.Printf("\t\t%s (count:%d)\n", ip.String(), count)
 		}
 	}
 }
