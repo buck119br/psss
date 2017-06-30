@@ -94,10 +94,7 @@ func (d *demand) data() {
 		}
 	}
 
-	var (
-		name                            string
-		isLocalListening, isRemoteLocal bool
-	)
+	var isLocalListening, isRemoteLocal bool
 	for _, records := range GlobalRecords {
 		for _, record := range records {
 			if record.Status == SsESTAB {
@@ -170,7 +167,7 @@ func (d *demand) show() {
 		}
 	}
 	fmt.Println("Estab")
-	for _, procmap := range d.Estab {
+	for name, procmap := range d.Estab {
 		fmt.Println("\t", name)
 		for isLocal, records := range procmap {
 			if isLocal {
