@@ -97,49 +97,49 @@ func (p *ProcInfo) GetStatus() (err error) {
 	fmt.Println(string(statBuf))
 	n, err := fmt.Sscanf(string(statBuf),
 		"%d (%s) "+
-			"%c "+
-			"%d %d %d %d %d "+
-			"%d %d %d %d %d "+
-			"%d %d %d %d "+
-			"%d %d "+
-			"%d %d %d "+
-			"%d %d %d "+
-			"%d %d %d "+
-			"%d %d "+
-			"%d %d %d %d "+
-			"%d "+
-			"%d %d "+
-			"%d %d "+
-			"%d %d "+
-			"%d %d %d "+
-			"%d %d "+
-			"%d "+
-			"%d %d "+
-			"%d %d "+
-			"%d\n",
+			"%c ",
+		// "%d %d %d %d %d "+
+		// "%d %d %d %d %d "+
+		// "%d %d %d %d "+
+		// "%d %d "+
+		// "%d %d %d "+
+		// "%d %d %d "+
+		// "%d %d %d "+
+		// "%d %d "+
+		// "%d %d %d %d "+
+		// "%d "+
+		// "%d %d "+
+		// "%d %d "+
+		// "%d %d "+
+		// "%d %d %d "+
+		// "%d %d "+
+		// "%d "+
+		// "%d %d "+
+		// "%d %d "+
+		// "%d\n",
 		&p.Stat.Pid, &p.Stat.Name,
 		&p.Stat.State,
-		&p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid,
-		&p.Stat.Flags, &p.Stat.Minflt, &p.Stat.Cminflt, &p.Stat.Majflt, &p.Stat.Cmajflt,
-		&p.Stat.Utime, &p.Stat.Stime, &p.Stat.Cutime, &p.Stat.Cstime,
-		&p.Stat.Priority, &p.Stat.Nice,
-		&p.Stat.NumThreads, &p.Stat.Itrealvalue, &p.Stat.Starttime,
-		&p.Stat.Vsize, &p.Stat.Rss, &p.Stat.Rsslim,
-		&p.Stat.Startcode, &p.Stat.Endcode, &p.Stat.Startstack,
-		&p.Stat.Kstkesp, &p.Stat.Kstkeip,
-		&p.Stat.Signal, &p.Stat.Blocked, &p.Stat.Sigignore, &p.Stat.Sigcatch, /* can't use */
-		&p.Stat.Wchan,
-		&p.Stat.Nswap, &p.Stat.Cnswap, /* nswap and cnswap dead for 2.4.xx and up */
-		/* -- Linux 2.0.35 ends here -- */
-		&p.Stat.ExitSignal, &p.Stat.Processor,
-		/* -- Linux 2.2.8 to 2.5.17 end here -- */
-		&p.Stat.RtPriority, &p.Stat.Policy, // /* both added to 2.5.18 */
-		&p.Stat.DelayacctBlkioTicks, &p.Stat.GuestTime, &p.Stat.CguestTime,
-		&p.Stat.StartData, &p.Stat.EndData,
-		&p.Stat.StartBrk,
-		&p.Stat.ArgStart, &p.Stat.ArgEnd,
-		&p.Stat.EnvStart, &p.Stat.EnvEnd,
-		&p.Stat.ExitCode,
+		// &p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid,
+		// &p.Stat.Flags, &p.Stat.Minflt, &p.Stat.Cminflt, &p.Stat.Majflt, &p.Stat.Cmajflt,
+		// &p.Stat.Utime, &p.Stat.Stime, &p.Stat.Cutime, &p.Stat.Cstime,
+		// &p.Stat.Priority, &p.Stat.Nice,
+		// &p.Stat.NumThreads, &p.Stat.Itrealvalue, &p.Stat.Starttime,
+		// &p.Stat.Vsize, &p.Stat.Rss, &p.Stat.Rsslim,
+		// &p.Stat.Startcode, &p.Stat.Endcode, &p.Stat.Startstack,
+		// &p.Stat.Kstkesp, &p.Stat.Kstkeip,
+		// &p.Stat.Signal, &p.Stat.Blocked, &p.Stat.Sigignore, &p.Stat.Sigcatch, /* can't use */
+		// &p.Stat.Wchan,
+		// &p.Stat.Nswap, &p.Stat.Cnswap, /* nswap and cnswap dead for 2.4.xx and up */
+		// /* -- Linux 2.0.35 ends here -- */
+		// &p.Stat.ExitSignal, &p.Stat.Processor,
+		// /* -- Linux 2.2.8 to 2.5.17 end here -- */
+		// &p.Stat.RtPriority, &p.Stat.Policy, // /* both added to 2.5.18 */
+		// &p.Stat.DelayacctBlkioTicks, &p.Stat.GuestTime, &p.Stat.CguestTime,
+		// &p.Stat.StartData, &p.Stat.EndData,
+		// &p.Stat.StartBrk,
+		// &p.Stat.ArgStart, &p.Stat.ArgEnd,
+		// &p.Stat.EnvStart, &p.Stat.EnvEnd,
+		// &p.Stat.ExitCode,
 	)
 	if err != nil {
 		fmt.Println(err)
