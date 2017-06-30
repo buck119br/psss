@@ -102,7 +102,7 @@ func (d *demand) data() {
 					isLocalListening, _ = d.isPortListening(record.LocalAddr.Port)
 					for _, grecords := range GlobalRecords {
 						for _, grecord := range grecords {
-							if grecord.LocalAddr.Port == record.RemoteAddr.Port {
+							if grecord.LocalAddr.Port == record.RemoteAddr.Port && isHostLocal(record.RemoteAddr.Host) {
 								if isLocalListening {
 									d.Listen[record.UserName].employer[grecord.UserName] = true
 								} else {
