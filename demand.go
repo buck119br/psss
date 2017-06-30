@@ -141,7 +141,12 @@ func (d *demand) show() {
 		}
 		if len(ipmap.employee) > 0 {
 			fmt.Println("\t\tEmployees")
+			serviceSet := make(map[string]bool)
 			for v := range ipmap.employee {
+				if _, ok = serviceSet[v]; ok {
+					continue
+				}
+				serivceSet[v] = true
 				fmt.Println("\t\t\t", v)
 			}
 		}
@@ -155,9 +160,13 @@ func (d *demand) show() {
 			} else {
 				fmt.Println("\t\tRemote", len(records))
 			}
+			serviceSet := make(map[string]bool)
 			for record := range records {
+				if _, ok = serviceSet[record.RemoteAddr.String()]; ok {
+					continue
+				}
+				serviceSet[record.RemoteAddr.String()] = true
 				fmt.Println("\t\t\t", record.RemoteAddr.String())
-
 			}
 		}
 	}
