@@ -125,7 +125,6 @@ func (d *demand) data() {
 
 				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
 					if ok, name = d.isPortListening(record.RemoteAddr.Port); ok {
-						d.Listen[name].employer[record.UserName] = true
 						continue
 					}
 				}
