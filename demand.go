@@ -102,8 +102,13 @@ func (d *demand) data() {
 		for _, record := range records {
 			if record.Status == SsESTAB {
 				if d.isUserListening(record.UserName) {
+					if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
+						if ok, name = d.isPortListening(record.RemoteAddr.Port); ok {
+							d.Listen[record.UserName].employee[name] = true
+							continue
+						}
+					}
 					d.Listen[record.UserName].employee[record.RemoteAddr.String()] = true
-					continue
 				}
 				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
 					if ok, name = d.isPortListening(record.RemoteAddr.Port); ok {
