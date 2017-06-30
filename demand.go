@@ -103,12 +103,18 @@ func (d *demand) data() {
 			if record.Status == SsESTAB {
 				if d.isUserListening(record.UserName) {
 					if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
-						if ok, name = d.isPortListening(record.RemoteAddr.Port); ok {
-							d.Listen[record.UserName].employee[name] = true
-							continue
+						// find remote username
+						for _, grecords := range GlobalRecords {
+							for _, grecord := range grecords {
+								if grecord.LocalAddr.Port == record.RemoteAddr.Port {
+									d.Listen[record.UserName].employee[grecord.UserName] = true
+									continue
+								}
+							}
 						}
 					}
 					d.Listen[record.UserName].employee[record.RemoteAddr.String()] = true
+					continue
 				}
 				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
 					if ok, name = d.isPortListening(record.RemoteAddr.Port); ok {
