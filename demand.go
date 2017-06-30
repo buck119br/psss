@@ -166,7 +166,7 @@ func (d *demand) show() {
 	fmt.Println("Estab")
 	for name, records := range d.Estab {
 		fmt.Println("\t", name)
-		for record := range procmap {
+		for record := range records {
 			serviceSet := make(map[string]bool)
 			if _, ok = serviceSet[record.RemoteAddr.String()]; ok {
 				continue
