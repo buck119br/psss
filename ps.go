@@ -94,6 +94,7 @@ func (p *ProcInfo) GetStatus() (err error) {
 		fmt.Println(err)
 		return err
 	}
+	fmt.Println(string(statBuf))
 	n, err := fmt.Sscanf(string(statBuf),
 		"%d (%s) %c %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
 		&p.Stat.Pid, &p.Stat.Name, &p.Stat.State, &p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid, &p.Stat.Flags,
