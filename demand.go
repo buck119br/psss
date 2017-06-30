@@ -92,7 +92,7 @@ func (d *demand) data() {
 	for _, records := range GlobalRecords {
 		for _, record := range records {
 			if record.Status == SsESTAB {
-				if d.isPortListening(record.LocalAddr.Port) {
+				if ok, _ = d.isPortListening(record.LocalAddr.Port); ok {
 					for _, grecords := range GlobalRecords {
 						for _, grecord := range grecords {
 							if grecord.LocalAddr.Port == record.RemoteAddr.Port {
