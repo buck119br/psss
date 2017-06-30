@@ -125,6 +125,7 @@ func (d *demand) data() {
 }
 
 func (d *demand) show() {
+	var ok bool
 	d.data()
 	fmt.Println("Listen")
 	for name, ipmap := range d.Listen {
@@ -146,7 +147,7 @@ func (d *demand) show() {
 				if _, ok = serviceSet[v]; ok {
 					continue
 				}
-				serivceSet[v] = true
+				serviceSet[v] = true
 				fmt.Println("\t\t\t", v)
 			}
 		}
