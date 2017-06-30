@@ -95,28 +95,34 @@ func (d *demand) data() {
 	}
 
 	var (
-		name          string
-		isRemoteLocal bool
+		name                            string
+		isLocalListening, isRemoteLocal bool
 	)
 	for _, records := range GlobalRecords {
 		for _, record := range records {
 			if record.Status == SsESTAB {
 				if d.idUserListening(record.UserName) {
-					if ok, _ = d.isPortListening(record.LocalAddr.Port); ok {
-						for _, grecords := range GlobalRecords {
-							for _, grecord := range grecords {
-								if grecord.LocalAddr.Port == record.RemoteAddr.Port {
+					isLocalListening, _ = d.isPortListening(record.LocalAddr.Port)
+					for _, grecords := range GlobalRecords {
+						for _, grecord := range grecords {
+							if grecord.LocalAddr.Port == record.RemoteAddr.Port {
+								if isLocalListening {
 									d.Listen[record.UserName].employer[grecord.UserName] = true
-									goto next
+								} else {
+									d.Listen[record.UserName].employee[grecord.UserName] = true
 								}
+								goto next
 							}
 						}
-						d.Listen[record.UserName].employer[record.RemoteAddr.String()] = true
-						goto next
 					}
-					d.Listen[record.UserName].employee[record.RemoteAddr.String()] = true
+					if isLocalListening {
+						d.Listen[record.UserName].employer[record.RemoteAddr.String()] = true
+					} else {
+						d.Listen[record.UserName].employee[record.RemoteAddr.String()] = true
+					}
 					goto next
 				}
+
 				if isRemoteLocal = isHostLocal(record.RemoteAddr.Host); isRemoteLocal {
 					if ok, name = d.isPortListening(record.RemoteAddr.Port); ok {
 						d.Listen[name].employer[record.UserName] = true
