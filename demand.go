@@ -96,13 +96,13 @@ func (d *demand) data() {
 					for _, grecords := range GlobalRecords {
 						for _, grecord := range grecords {
 							if grecord.LocalAddr.Port == record.RemoteAddr.Port {
-								d.Listen[record.UserName].employee[grecord.UserName] = true
+								d.Listen[record.UserName].employer[grecord.UserName] = true
 								continue
 							}
 							goto next
 						}
 					}
-					d.Listen[record.UserName].employee[record.RemoteAddr.String()] = true
+					d.Listen[record.UserName].employer[record.RemoteAddr.String()] = true
 				next:
 					continue
 				}
