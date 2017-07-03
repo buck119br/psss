@@ -145,10 +145,10 @@ func main() {
 		GlobalSystemInfo.GetStat()
 		d := newdemand()
 		d.show()
-		fmt.Println(*GlobalSystemInfo.Stat)
-		for k, v := range GlobalSystemInfo.Stat.CPUTimes {
-			fmt.Println(k, *v)
-		}
+		// fmt.Println(*GlobalSystemInfo.Stat)
+		// for k, v := range GlobalSystemInfo.Stat.CPUTimes {
+		// 	fmt.Println(k, *v)
+		// }
 		return
 	}
 	SocketShow()
