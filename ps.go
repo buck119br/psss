@@ -94,29 +94,30 @@ func (p *ProcInfo) GetStat() (err error) {
 		fmt.Println(err)
 		return err
 	}
+	statBuf = statBuf[:len(statBuf)-1]
 	fmt.Println(statBuf)
 	n, err := fmt.Sscanf(string(statBuf),
-		"%d %s "+
-			"%c "+
-			"%d %d %d %d %d "+
-			"%d %d %d %d %d "+
-			"%d %d %d %d "+
-			"%d %d "+
-			"%d %d %d "+
-			"%d %d %d "+
-			"%d %d %d "+
-			"%d %d "+
-			"%d %d %d %d "+
-			"%d "+
-			"%d %d "+
-			"%d %d "+
-			"%d %d "+
-			"%d %d %d "+
-			"%d %d "+
-			"%d "+
-			"%d %d "+
-			"%d %d "+
-			"%d\n",
+		`%d (%s) `+
+			`%c `+
+			`%d %d %d %d %d `+
+			`%d %d %d %d %d `+
+			`%d %d %d %d `+
+			`%d %d `+
+			`%d %d %d `+
+			`%d %d %d `+
+			`%d %d %d `+
+			`%d %d `+
+			`%d %d %d %d `+
+			`%d `+
+			`%d %d `+
+			`%d %d `+
+			`%d %d `+
+			`%d %d %d `+
+			`%d %d `+
+			`%d `+
+			`%d %d `+
+			`%d %d `+
+			`%d`,
 		&p.Stat.Pid, &p.Stat.Name,
 		&p.Stat.State,
 		&p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid,
