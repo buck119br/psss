@@ -176,8 +176,19 @@ func (d *demand) show() {
 	fmt.Println("Estab")
 	for name, ips := range d.Estab {
 		fmt.Println("\t", name)
+		fmt.Println("\t\tProcInfo")
+		for _, proc := range GlobalProcInfo[name] {
+			fmt.Printf("\t\t\tPid:%d\n", proc.Stat.Pid)
+			fmt.Printf("\t\t\t\t")
+			proc.Stat.GenericInfoPrint()
+			fmt.Printf("\t\t\t\t")
+			proc.Stat.LoadInfoPrint()
+			fmt.Printf("\t\t\t\t")
+			proc.Stat.MeminfoPrint()
+		}
+		fmt.Println("\t\tRemote")
 		for ip, count := range ips {
-			fmt.Printf("\t\t%s (count:%d)\n", ip.String(), count)
+			fmt.Printf("\t\t\t%s (count:%d)\n", ip.String(), count)
 		}
 	}
 }
