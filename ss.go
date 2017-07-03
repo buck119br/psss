@@ -165,7 +165,7 @@ func (record *GenericRecord) GenericInfoPrint() {
 }
 
 func (record *GenericRecord) ProcInfoPrint() {
-	fmt.Printf(`["%s"`, record.UserName)
+	fmt.Printf(`["%s":`, record.UserName)
 	for proc := range record.Procs {
 		for _, fd := range proc.Fd {
 			if fd.SysStat.Ino == uint64(record.Inode) {

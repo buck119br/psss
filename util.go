@@ -1,11 +1,20 @@
 package main
 
+/*
+#include <unistd.h>
+*/
+import "C"
+
 import (
 	"bufio"
 	"fmt"
 	"math"
 	"os"
 	"syscall"
+)
+
+var (
+	SC_CLK_TCK = uint64(C.sysconf(C._SC_CLK_TCK))
 )
 
 func ReadLine(reader *bufio.Reader) (line []byte, err error) {
