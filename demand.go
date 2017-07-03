@@ -144,11 +144,11 @@ func (d *demand) show() {
 		fmt.Println("\t\tProcInfo")
 		for _, proc := range GlobalProcInfo[name] {
 			fmt.Printf("\t\t\tPid:%d\n", proc.Stat.Pid)
-			fmt.Println("\t\t\t\t")
+			fmt.Printf("\t\t\t\t")
 			proc.Stat.GenericInfoPrint()
-			fmt.Println("\t\t\t\t")
+			fmt.Printf("\t\t\t\t")
 			proc.Stat.LoadInfoPrint()
-			fmt.Println("\t\t\t\t")
+			fmt.Printf("\t\t\t\t")
 			proc.Stat.MeminfoPrint()
 		}
 		fmt.Println("\t\tPorts")
