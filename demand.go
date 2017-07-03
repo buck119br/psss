@@ -142,15 +142,14 @@ func (d *demand) show() {
 	for name, ipmap := range d.Listen {
 		fmt.Println("\t", name)
 		fmt.Println("\t\tProcInfo")
-		for _, procs := range GlobalProcInfo[name] {
-			for _, proc := range procs {
-				fmt.Println("\t\t\t")
-				proc.Stat.GenericInfoPrint()
-				fmt.Println("\t\t\t")
-				proc.Stat.LoadInfoPrint()
-				fmt.Println("\t\t\t")
-				proc.Stat.MeminfoPrint()
-			}
+		for _, proc := range GlobalProcInfo[name] {
+			fmt.Printf("\t\t\tPid:%d\n", proc.Stat.Pid)
+			fmt.Println("\t\t\t\t")
+			proc.Stat.GenericInfoPrint()
+			fmt.Println("\t\t\t\t")
+			proc.Stat.LoadInfoPrint()
+			fmt.Println("\t\t\t\t")
+			proc.Stat.MeminfoPrint()
 		}
 		fmt.Println("\t\tPorts")
 		for ip := range ipmap.ports {
