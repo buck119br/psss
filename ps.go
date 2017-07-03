@@ -150,7 +150,7 @@ func (p *ProcInfo) GetStat() (err error) {
 	if n < 52 {
 		fmt.Println("not enough param read")
 	}
-	p.Name = strings.TrimSuffix(strings.TrimPrefix(p.Name, "("), ")")
+	p.Stat.Name = strings.TrimSuffix(strings.TrimPrefix(p.Stat.Name, "("), ")")
 	return nil
 }
 
