@@ -141,10 +141,10 @@ func main() {
 	}
 
 	if *flagDemand {
-		d := newdemand()
-		d.show()
 		GlobalSystemInfo = NewSystemInfo()
 		GlobalSystemInfo.GetStat()
+		d := newdemand()
+		d.show()
 		fmt.Println(*GlobalSystemInfo.Stat)
 		for k, v := range GlobalSystemInfo.Stat.CPUTimes {
 			fmt.Println(k, *v)

@@ -34,6 +34,7 @@ type CPUTime struct {
 	Steal     uint64 // Stolen time, which is the time spent in other operating systems when running in a virtualized environment
 	Guest     uint64 // Time spent running a virtual CPU for guest operating systems under the control of the Linux kernel.
 	GuestNice uint64 // Time spent running a niced guest (virtual CPU for guest operating ystems under the control of the Linux kernel).
+	Total     uint64 // not specified in /proc/stat
 }
 
 type SystemStat struct {
@@ -106,10 +107,8 @@ func (si *SystemInfo) GetStat() {
 					return
 				}
 			}
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+			cputime.Total = cputime.User + cputime.Nice + cputime.System + cputime.Idle + cputime.Iowait +
+				cputime.Irq + cputime.Softirq + cputime.Steal + cputime.Guest + cputime.GuestNice
 			si.Stat.CPUTimes[cpunr] = cputime
 		case strings.Contains(line, "page"):
 			if n, err = fmt.Sscanf(line, "page %d %d", &si.Stat.PageIn, &si.Stat.PageOut); err != nil {
@@ -175,6 +174,10 @@ func (si *SystemInfo) GetStat() {
 				fmt.Println("not enough param read")
 				return
 			}
+		}
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
 	}
 }

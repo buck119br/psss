@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -87,7 +88,7 @@ func (ps *ProcStat) GenericInfoPrint() {
 }
 
 func (ps *ProcStat) LoadInfoPrint() {
-	fmt.Printf("Start:%ds\n", ps.Starttime/SC_CLK_TCK)
+	fmt.Printf("Avg:%.3g%%\n", float64(ps.Utime+ps.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total))
 }
 
 func (ps *ProcStat) MeminfoPrint() {
