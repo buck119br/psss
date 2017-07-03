@@ -17,7 +17,7 @@ var GlobalProcInfo map[string]map[int]*ProcInfo
 type ProcStat struct {
 	Pid                 int
 	Name                string
-	State               byte   // single-char code for process state
+	State               string // single-char code for process state
 	Ppid                int    // pid of parent process
 	Pgrp                int    // process group id
 	Session             int    // process group id
@@ -98,7 +98,7 @@ func (p *ProcInfo) GetStat() (err error) {
 	fmt.Println(string(statBuf))
 	n, err := fmt.Sscanf(string(statBuf),
 		`%d (%s) `+
-			`%c `+
+			`%s `+
 			`%d %d %d %d %d `+
 			`%d %d %d %d %d `+
 			`%d %d %d %d `+
