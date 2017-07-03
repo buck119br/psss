@@ -96,7 +96,7 @@ func (p *ProcInfo) GetStat() (err error) {
 	}
 	fmt.Println(statBuf)
 	n, err := fmt.Sscanf(string(statBuf),
-		"%d (%s) "+
+		"%d %s "+
 			"%c "+
 			"%d %d %d %d %d "+
 			"%d %d %d %d %d "+
