@@ -62,7 +62,7 @@ type demand struct {
 func newdemand() *demand {
 	d := new(demand)
 	d.Listen = make(map[string]*ListenTopology)
-	d.Estab = make(map[string]map[IP]*EstabTopology)
+	d.Estab = make(map[string]*EstabTopology)
 	return d
 }
 
@@ -147,7 +147,6 @@ func (d *demand) data() {
 					}
 				}
 				if _, ok = d.Estab[record.UserName]; !ok {
-					d.Estab[record.UserName] = make(map[IP]*DemandProcInfo)
 					d.Estab[record.UserName] = newEstabTopology()
 				}
 				d.Estab[record.UserName].Ports[record.RemoteAddr] = d.Estab[record.UserName].Ports[record.RemoteAddr] + 1
@@ -215,5 +214,5 @@ func (d *demand) show() {
 		}
 	}
 
-	fmt.Println(json.Marshal(*demand))
+	fmt.Println(json.Marshal(*d))
 }
