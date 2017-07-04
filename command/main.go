@@ -116,12 +116,12 @@ func main() {
 		psss.GetProcInfo()
 	}
 
-	// if *flagDemand {
-	// 	GlobalSystemInfo = NewSystemInfo()
-	// 	GlobalSystemInfo.GetStat()
-	// 	d := newdemand()
-	// 	d.show()
-	// 	return
-	// }
+	if *flagDemand {
+		psss.GlobalSystemInfo = NewSystemInfo()
+		psss.GlobalSystemInfo.GetStat()
+		d := newdemand()
+		d.show()
+		return
+	}
 	SocketShow()
 }
