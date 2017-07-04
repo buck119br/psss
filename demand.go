@@ -24,7 +24,7 @@ func isHostLocal(host string) bool {
 
 type DemandProcInfo struct {
 	State     string  `json:"state"`
-	StartTime string  `json:"starttime"`
+	StartTime int64   `json:"starttime"`
 	LoadAvg   float64 `json:"loadavg"`
 	VmSize    uint64  `json:"vmsize"`
 	VmRSS     uint64  `json:"vmrss"`
@@ -162,20 +162,22 @@ func (d *demand) data() {
 	for name, topo := range d.Listen {
 		for pid, proc := range GlobalProcInfo[name] {
 			topo.ProcInfo[pid] = DemandProcInfo{
-				State:   ProcState[proc.Stat.State],
-				LoadAvg: math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
-				VmSize:  proc.Stat.Vsize,
-				VmRSS:   uint64(proc.Stat.Rss) * uint64(os.Getpagesize()),
+				State:     ProcState[proc.Stat.State],
+				StartTime: int64(GlobalSystemInfo.Stat.Btime + proc.Stat.Starttime/SC_CLK_TCK),
+				LoadAvg:   math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
+				VmSize:    proc.Stat.Vsize,
+				VmRSS:     uint64(proc.Stat.Rss) * uint64(os.Getpagesize()),
 			}
 		}
 	}
 	for name, topo := range d.Estab {
 		for pid, proc := range GlobalProcInfo[name] {
 			topo.ProcInfo[pid] = DemandProcInfo{
-				State:   ProcState[proc.Stat.State],
-				LoadAvg: math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
-				VmSize:  proc.Stat.Vsize,
-				VmRSS:   uint64(proc.Stat.Rss) * uint64(os.Getpagesize()),
+				State:     ProcState[proc.Stat.State],
+				StartTime: int64(GlobalSystemInfo.Stat.Btime + proc.Stat.Starttime/SC_CLK_TCK),
+				LoadAvg:   math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
+				VmSize:    proc.Stat.Vsize,
+				VmRSS:     uint64(proc.Stat.Rss) * uint64(os.Getpagesize()),
 			}
 		}
 	}
