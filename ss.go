@@ -79,11 +79,11 @@ func NewIPset() IPset {
 }
 
 func (i IPset) MarshalJSON() ([]byte, error) {
-	tempset := make(map[string]bool)
+	temp := make([]string, 0)
 	for ip := range i {
-		tempset[ip.String()] = true
+		temp = append(temp, ip.String())
 	}
-	return json.Marshal(tempset)
+	return json.Marshal(temp)
 }
 
 type IPCounter map[IP]int

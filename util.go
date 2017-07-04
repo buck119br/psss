@@ -2,11 +2,26 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
 	"syscall"
 )
+
+type StringSet map[string]bool
+
+func NewStringSet() StringSet {
+	return make(map[string]bool)
+}
+
+func (s StringSet) MarshalJSON() ([]byte, error) {
+	temp := make([]string, 0)
+	for str := range s {
+		temp = append(temp, str)
+	}
+	return json.Marshal(temp)
+}
 
 func ReadLine(reader *bufio.Reader) (line []byte, err error) {
 	var buffer []byte

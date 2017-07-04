@@ -32,29 +32,29 @@ type DemandProcInfo struct {
 
 type ListenTopology struct {
 	ProcInfo map[int]DemandProcInfo `json:"procinfo"`
-	Clients  map[string]bool        `json:"clients"`
-	Upstream map[string]bool        `json:"upstream"`
-	Ports    IPset                  `json:"ports"`
+	Clients  StringSet              `json:"clients,omitempty"`
+	Upstream StringSet              `json:"upstream,omitempty"`
+	Addrs    IPset                  `json:"addrs"`
 }
 
 func newListenTopology() *ListenTopology {
 	t := new(ListenTopology)
 	t.ProcInfo = make(map[int]DemandProcInfo)
-	t.Clients = make(map[string]bool)
-	t.Upstream = make(map[string]bool)
-	t.Ports = NewIPset()
+	t.Clients = NewStringSet()
+	t.Upstream = NewStringSet()
+	t.Addrs = NewIPset()
 	return t
 }
 
 type EstabTopology struct {
 	ProcInfo map[int]DemandProcInfo `json:"procinfo"`
-	Ports    IPCounter              `json:"ports"`
+	Addrs    IPCounter              `json:"upstream"`
 }
 
 func newEstabTopology() *EstabTopology {
 	t := new(EstabTopology)
 	t.ProcInfo = make(map[int]DemandProcInfo)
-	t.Ports = NewIPCounter()
+	t.Addrs = NewIPCounter()
 	return t
 }
 
@@ -72,7 +72,7 @@ func newdemand() *demand {
 
 func (d *demand) isPortListening(port string) (bool, string) {
 	for name, topo := range d.Listen {
-		for ip := range topo.Ports {
+		for ip := range topo.Addrs {
 			if port == ip.Port {
 				return true, name
 			}
@@ -114,7 +114,7 @@ func (d *demand) data() {
 				if _, ok = d.Listen[record.UserName]; !ok {
 					d.Listen[record.UserName] = newListenTopology()
 				}
-				d.Listen[record.UserName].Ports[record.LocalAddr] = true
+				d.Listen[record.UserName].Addrs[record.LocalAddr] = true
 			}
 		}
 	}
@@ -153,7 +153,7 @@ func (d *demand) data() {
 				if _, ok = d.Estab[record.UserName]; !ok {
 					d.Estab[record.UserName] = newEstabTopology()
 				}
-				d.Estab[record.UserName].Ports[record.RemoteAddr] = d.Estab[record.UserName].Ports[record.RemoteAddr] + 1
+				d.Estab[record.UserName].Addrs[record.RemoteAddr] = d.Estab[record.UserName].Addrs[record.RemoteAddr] + 1
 			next:
 			}
 		}
@@ -199,8 +199,8 @@ func (d *demand) show() {
 			fmt.Printf("\t\t\t\t")
 			proc.Stat.MeminfoPrint()
 		}
-		fmt.Println("\t\tPorts")
-		for ip := range ipmap.Ports {
+		fmt.Println("\t\tAddrs")
+		for ip := range ipmap.Addrs {
 			fmt.Println("\t\t\t", ip.String())
 		}
 		if len(ipmap.Clients) > 0 {
@@ -235,7 +235,7 @@ func (d *demand) show() {
 			proc.Stat.MeminfoPrint()
 		}
 		fmt.Println("\t\tRemote")
-		for ip, count := range topo.Ports {
+		for ip, count := range topo.Addrs {
 			fmt.Printf("\t\t\t%s (count:%d)\n", ip.String(), count)
 		}
 	}
