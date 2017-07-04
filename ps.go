@@ -88,7 +88,7 @@ func (ps *ProcStat) GenericInfoPrint() {
 }
 
 func (ps *ProcStat) LoadInfoPrint() {
-	fmt.Printf("Avg:%.3f%%\n", float64(ps.Utime+ps.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*100)
+	fmt.Printf("AvgLoad:%.3f%%\n", float64(ps.Utime+ps.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*100)
 }
 
 func (ps *ProcStat) MeminfoPrint() {

@@ -74,6 +74,13 @@ type TCPVegasInfo struct {
 	Minrtt  uint32
 }
 
+type InetDiagMeminfo struct {
+	IdiagRmem uint32
+	IdiagWmem uint32
+	IdiagFmem uint32
+	IdiagTmem uint32
+}
+
 func SendInetDiagMsg(af uint8, protocal uint8, exts uint8, states uint32) (skfd int, err error) {
 	if skfd, err = unix.Socket(unix.AF_NETLINK, unix.SOCK_RAW, unix.NETLINK_SOCK_DIAG); err != nil {
 		return -1, err
@@ -169,6 +176,8 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			}
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&v.Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
+			case INET_DIAG_MEMINFO:
+				// meminfo := *(*InetDiagMeminfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_INFO:
 				record.TCPInfo = *(*TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_VEGASINFO:
@@ -176,6 +185,10 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			case INET_DIAG_CONG:
 				record.CONG = make([]byte, 0)
 				record.CONG = append(record.CONG, v.Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
+			case INET_DIAG_TOS:
+				// tos := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+			case INET_DIAG_TCLASS:
+				// tclass := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_SKMEMINFO:
 				if nlAttr.Len > 4 {
 					record.Meminfo = make([]uint32, 0, 8)
