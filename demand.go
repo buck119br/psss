@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"net"
+	"os"
 	"strings"
 
-	"encoding/json"
 	"golang.org/x/sys/unix"
 )
 
@@ -155,6 +157,20 @@ func (d *demand) data() {
 		}
 	}
 
+	for name, topo := range d.Listen {
+		topo.ProcInfo.State = ProcState[GlobalProcInfo[name].Stat.State]
+		topo.ProcInfo.LoadAvg =
+			math.Trunc(float64(GlobalProcInfo[name].Stat.Utime+GlobalProcInfo[name].Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000
+		topo.ProcInfo.VmSize = GlobalProcInfo[name].Stat.Vsize
+		topo.ProcInfo.VmRSS = GlobalProcInfo[name].Stat.RSS * os.Getpagesize()
+	}
+	for name, topo := range d.Estab {
+		topo.ProcInfo.State = ProcState[GlobalProcInfo[name].Stat.State]
+		topo.ProcInfo.LoadAvg =
+			math.Trunc(float64(GlobalProcInfo[name].Stat.Utime+GlobalProcInfo[name].Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000
+		topo.ProcInfo.VmSize = GlobalProcInfo[name].Stat.Vsize
+		topo.ProcInfo.VmRSS = GlobalProcInfo[name].Stat.RSS * os.Getpagesize()
+	}
 }
 
 func (d *demand) show() {
@@ -214,5 +230,6 @@ func (d *demand) show() {
 		}
 	}
 
-	fmt.Println(json.Marshal(*d))
+	buf, err := json.Marshal(*d)
+	fmt.Println(string(buf), err)
 }
