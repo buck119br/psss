@@ -5,6 +5,10 @@ package psss
 */
 import "C"
 
+import (
+	"fmt"
+)
+
 const (
 	ProtocalUnknown = 1 << iota
 	ProtocalDCCP

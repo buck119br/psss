@@ -470,11 +470,9 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 	switch protocal {
 	case ProtocalTCP:
 		ipproto = unix.IPPROTO_TCP
-		if *flagInfo {
-			exts |= 1 << (INET_DIAG_INFO - 1)
-			exts |= 1 << (INET_DIAG_VEGASINFO - 1)
-			exts |= 1 << (INET_DIAG_CONG - 1)
-		}
+		exts |= 1 << (INET_DIAG_INFO - 1)
+		exts |= 1 << (INET_DIAG_VEGASINFO - 1)
+		exts |= 1 << (INET_DIAG_CONG - 1)
 	case ProtocalUDP:
 		ipproto = unix.IPPROTO_UDP
 	case ProtocalRAW:
@@ -483,9 +481,7 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord) {
 		fmt.Println("invalid protocal")
 		return
 	}
-	if *flagMemory {
-		exts |= 1 << (INET_DIAG_SKMEMINFO - 1)
-	}
+	exts |= 1 << (INET_DIAG_SKMEMINFO - 1)
 	if skfd, err = SendInetDiagMsg(uint8(af), ipproto, exts, SsFilter); err != nil {
 		goto readProc
 	}
@@ -615,7 +611,7 @@ readProc:
 			continue
 		}
 		record.Timeout = int(tempInt64)
-		record.Timeout = (record.Timeout*1000 + UserHz - 1) / UserHz
+		record.Timeout = (record.Timeout*1000 + int(SC_CLK_TCK) - 1) / int(SC_CLK_TCK)
 		fieldsIndex++
 		// Retransmit
 		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
@@ -662,7 +658,7 @@ readProc:
 					fmt.Println(err)
 					continue
 				}
-				record.ATO = record.ATO / float64(UserHz)
+				record.ATO = record.ATO / float64(SC_CLK_TCK)
 				fieldsIndex++
 				if record.QACK, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					fmt.Println(err)
@@ -689,7 +685,7 @@ readProc:
 			if record.SlowStartThreshold == -1 {
 				record.SlowStartThreshold = 0
 			}
-			if record.RTO == float64(3*UserHz) {
+			if record.RTO == float64(3*SC_CLK_TCK) {
 				record.RTO = 0
 			}
 			if record.Timer != 1 {
