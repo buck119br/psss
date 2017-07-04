@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"encoding/json"
 	"golang.org/x/sys/unix"
 )
 
@@ -69,6 +70,34 @@ type IP struct {
 
 func (i IP) String() (str string) {
 	return i.Host + ":" + i.Port
+}
+
+type IPset map[IP]bool
+
+func NewIPset() IPset {
+	return make(map[IP]bool)
+}
+
+func (i *IPset) MarshalJSON() ([]byte, error) {
+	tempset := make(map[string]bool)
+	for ip := range i {
+		tempset[ip.String()] = true
+	}
+	return json.Marshal(tempset)
+}
+
+type IPCounter map[IP]int
+
+func NewIPCounter() IPCounter {
+	return make(map[IP]int)
+}
+
+func (i *IPCounter) MarshalJSON() ([]byte, error) {
+	tempset := make(map[string]int)
+	for ip, count := range i {
+		tempset[ip.String()] = count
+	}
+	return json.Marshal(tempset)
 }
 
 func IPv4HexToString(ipHex string) (ip string, err error) {

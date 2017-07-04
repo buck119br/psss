@@ -32,25 +32,25 @@ type ListenTopology struct {
 	ProcInfo DemandProcInfo  `json:"procinfo"`
 	Clients  map[string]bool `json:"clients"`
 	Upstream map[string]bool `json:"upstream"`
-	Ports    map[IP]bool     `json:"ports"`
+	Ports    IPset           `json:"ports"`
 }
 
 func newListenTopology() *ListenTopology {
 	t := new(ListenTopology)
 	t.Clients = make(map[string]bool)
 	t.Upstream = make(map[string]bool)
-	t.Ports = make(map[IP]bool)
+	t.Ports = NewIPset()
 	return t
 }
 
 type EstabTopology struct {
 	ProcInfo DemandProcInfo `json:"procinfo"`
-	Ports    map[IP]int     `json:"ports"`
+	Ports    IPCounter      `json:"ports"`
 }
 
 func newEstabTopology() *EstabTopology {
 	t := new(EstabTopology)
-	t.Ports = make(map[IP]int)
+	t.Ports = NewIPCounter
 	return t
 }
 
