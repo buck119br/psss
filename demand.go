@@ -175,7 +175,7 @@ func (d *demand) data() {
 			topo.ProcInfo[pid] = DemandProcInfo{
 				State:     ProcState[proc.Stat.State],
 				StartTime: int64(GlobalSystemInfo.Stat.Btime + proc.Stat.Starttime/SC_CLK_TCK),
-				LoadAvg:   math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
+				LoadAvg:   math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*100000) / 100000,
 				VmSize:    proc.Stat.Vsize,
 				VmRSS:     uint64(proc.Stat.Rss) * uint64(os.Getpagesize()),
 			}
