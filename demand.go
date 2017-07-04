@@ -165,7 +165,7 @@ func (d *demand) data() {
 				State:   ProcState[proc.Stat.State],
 				LoadAvg: math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
 				VmSize:  proc.Stat.Vsize,
-				VmRSS:   proc.Stat.RSS * os.Getpagesize(),
+				VmRSS:   proc.Stat.Rss * os.Getpagesize(),
 			}
 		}
 	}
@@ -175,7 +175,7 @@ func (d *demand) data() {
 				State:   ProcState[proc.Stat.State],
 				LoadAvg: math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
 				VmSize:  proc.Stat.Vsize,
-				VmRSS:   proc.Stat.RSS * os.Getpagesize(),
+				VmRSS:   proc.Stat.Rss * os.Getpagesize(),
 			}
 		}
 	}
