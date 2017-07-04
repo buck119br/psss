@@ -63,8 +63,8 @@ var (
 )
 
 type IP struct {
-	Host string
-	Port string
+	Host string `json:"host"`
+	Port string `json:"port"`
 }
 
 func (i IP) String() (str string) {
