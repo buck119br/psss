@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/buck119br/psss/psss"
 	"golang.org/x/sys/unix"
 )
 
@@ -11,19 +12,6 @@ const (
 	version = "ss utility, 0.0.1"
 	usage   = "Usage:\tss [ OPTIONS ]\n" +
 		"\tss [ OPTIONS ] [ FILTER ]\n"
-)
-
-const (
-	ProtocalUnknown = 1 << iota
-	ProtocalDCCP
-	ProtocalNetlink
-	ProtocalPacket
-	ProtocalRAW
-	ProtocalSCTP
-	ProtocalTCP
-	ProtocalUDP
-	ProtocalUnix
-	ProtocalMax
 )
 
 var (
@@ -54,20 +42,8 @@ var (
 
 	flagDemand = flag.Bool("demand", false, "my boss' demand") // ok
 
-	afFilter       uint64
-	protocalFilter uint64
-	ssFilter       uint32
+	NewlineFlag bool
 )
-
-func init() {
-	Summary = make(map[string]map[string]int)
-	for _, pf := range SummaryPF {
-		Summary[pf] = make(map[string]int)
-	}
-
-	GlobalRecords = make(map[string]map[uint32]*GenericRecord)
-	GlobalProcInfo = make(map[string]map[int]*ProcInfo)
-}
 
 func main() {
 	flag.Parse()
@@ -81,22 +57,22 @@ func main() {
 		return
 	}
 	if *flagSummary {
-		ShowSummary()
+		psss.ShowSummary()
 		return
 	}
 	// sock state
 	if *flagAll {
-		ssFilter = (1 << SsMAX) - 1
+		psss.SsFilter = (1 << psss.SsMAX) - 1
 	}
 	if *flagListen {
-		ssFilter = 1<<SsLISTEN | 1<<SsUNCONN
+		psss.SsFilter = 1<<psss.SsLISTEN | 1<<psss.SsUNCONN
 	}
-	if ssFilter == 0 {
-		ssFilter = 1 << SsESTAB
+	if psss.SsFilter == 0 {
+		psss.SsFilter = 1 << psss.SsESTAB
 	}
 
 	if *flagIPv4 {
-		afFilter |= 1 << unix.AF_INET
+		psss.AfFilter |= 1 << unix.AF_INET
 		if !*flagTCP && !*flagUDP && !*flagRAW {
 			*flagTCP = true
 			*flagUDP = true
@@ -104,32 +80,32 @@ func main() {
 		}
 	}
 	if *flagIPv6 {
-		afFilter |= 1 << unix.AF_INET6
+		psss.AfFilter |= 1 << unix.AF_INET6
 		if !*flagTCP && !*flagUDP && !*flagRAW {
 			*flagTCP = true
 			*flagUDP = true
 			*flagRAW = true
 		}
 	}
-	if afFilter == 0 {
-		afFilter |= 1<<unix.AF_INET | 1<<unix.AF_INET6
+	if psss.AfFilter == 0 {
+		psss.AfFilter |= 1<<unix.AF_INET | 1<<unix.AF_INET6
 	}
 
 	if *flagTCP {
-		protocalFilter |= ProtocalTCP
+		psss.ProtocalFilter |= psss.ProtocalTCP
 	}
 	if *flagUDP {
-		protocalFilter |= ProtocalUDP
+		psss.ProtocalFilter |= psss.ProtocalUDP
 	}
 	if *flagRAW {
-		protocalFilter |= ProtocalRAW
+		psss.ProtocalFilter |= psss.ProtocalRAW
 	}
 	if *flagUnix {
-		afFilter |= 1 << unix.AF_UNIX
-		protocalFilter |= ProtocalUnix
+		psss.AfFilter |= 1 << unix.AF_UNIX
+		psss.ProtocalFilter |= psss.ProtocalUnix
 	}
-	if protocalFilter == 0 {
-		protocalFilter |= ProtocalMax - 1
+	if psss.ProtocalFilter == 0 {
+		psss.ProtocalFilter |= psss.ProtocalMax - 1
 	}
 
 	if *flagExtended || *flagOption || *flagMemory || *flagInfo {
@@ -137,19 +113,15 @@ func main() {
 	}
 
 	if *flagProcess {
-		GetProcInfo()
+		psss.GetProcInfo()
 	}
 
-	if *flagDemand {
-		GlobalSystemInfo = NewSystemInfo()
-		GlobalSystemInfo.GetStat()
-		d := newdemand()
-		d.show()
-		// fmt.Println(*GlobalSystemInfo.Stat)
-		// for k, v := range GlobalSystemInfo.Stat.CPUTimes {
-		// 	fmt.Println(k, *v)
-		// }
-		return
-	}
+	// if *flagDemand {
+	// 	GlobalSystemInfo = NewSystemInfo()
+	// 	GlobalSystemInfo.GetStat()
+	// 	d := newdemand()
+	// 	d.show()
+	// 	return
+	// }
 	SocketShow()
 }
