@@ -117,7 +117,7 @@ func main() {
 	}
 
 	if *flagDemand {
-		psss.GlobalSystemInfo = NewSystemInfo()
+		psss.GlobalSystemInfo = psss.NewSystemInfo()
 		psss.GlobalSystemInfo.GetStat()
 		d := newdemand()
 		d.show()
