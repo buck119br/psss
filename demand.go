@@ -31,14 +31,15 @@ type DemandProcInfo struct {
 }
 
 type ListenTopology struct {
-	ProcInfo DemandProcInfo  `json:"procinfo"`
-	Clients  map[string]bool `json:"clients"`
-	Upstream map[string]bool `json:"upstream"`
-	Ports    IPset           `json:"ports"`
+	ProcInfo map[int]DemandProcInfo `json:"procinfo"`
+	Clients  map[string]bool        `json:"clients"`
+	Upstream map[string]bool        `json:"upstream"`
+	Ports    IPset                  `json:"ports"`
 }
 
 func newListenTopology() *ListenTopology {
 	t := new(ListenTopology)
+	t.ProcInfo = make(map[int]DemandProcInfo)
 	t.Clients = make(map[string]bool)
 	t.Upstream = make(map[string]bool)
 	t.Ports = NewIPset()
@@ -46,12 +47,13 @@ func newListenTopology() *ListenTopology {
 }
 
 type EstabTopology struct {
-	ProcInfo DemandProcInfo `json:"procinfo"`
-	Ports    IPCounter      `json:"ports"`
+	ProcInfo map[int]DemandProcInfo `json:"procinfo"`
+	Ports    IPCounter              `json:"ports"`
 }
 
 func newEstabTopology() *EstabTopology {
 	t := new(EstabTopology)
+	t.ProcInfo = make(map[int]DemandProcInfo)
 	t.Ports = NewIPCounter()
 	return t
 }
@@ -158,18 +160,24 @@ func (d *demand) data() {
 	}
 
 	for name, topo := range d.Listen {
-		topo.ProcInfo.State = ProcState[GlobalProcInfo[name].Stat.State]
-		topo.ProcInfo.LoadAvg =
-			math.Trunc(float64(GlobalProcInfo[name].Stat.Utime+GlobalProcInfo[name].Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000
-		topo.ProcInfo.VmSize = GlobalProcInfo[name].Stat.Vsize
-		topo.ProcInfo.VmRSS = GlobalProcInfo[name].Stat.RSS * os.Getpagesize()
+		for pid, proc := range GlobalProcInfo[name] {
+			topo.ProcInfo[pid] = DemandProcInfo{
+				State:   ProcState[proc.Stat.State],
+				LoadAvg: math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
+				VmSize:  proc.Stat.Vsize,
+				VmRSS:   proc.Stat.RSS * os.Getpagesize(),
+			}
+		}
 	}
 	for name, topo := range d.Estab {
-		topo.ProcInfo.State = ProcState[GlobalProcInfo[name].Stat.State]
-		topo.ProcInfo.LoadAvg =
-			math.Trunc(float64(GlobalProcInfo[name].Stat.Utime+GlobalProcInfo[name].Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000
-		topo.ProcInfo.VmSize = GlobalProcInfo[name].Stat.Vsize
-		topo.ProcInfo.VmRSS = GlobalProcInfo[name].Stat.RSS * os.Getpagesize()
+		for pid, proc := range GlobalProcInfo[name] {
+			topo.ProcInfo[pid] = DemandProcInfo{
+				State:   ProcState[proc.Stat.State],
+				LoadAvg: math.Trunc(float64(proc.Stat.Utime+proc.Stat.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*10000) / 10000,
+				VmSize:  proc.Stat.Vsize,
+				VmRSS:   proc.Stat.RSS * os.Getpagesize(),
+			}
+		}
 	}
 }
 
