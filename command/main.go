@@ -40,8 +40,6 @@ var (
 	flagRAW    = flag.Bool("w", false, "display only RAW sockets")          // ok
 	flagUnix   = flag.Bool("x", false, "display only Unix domain sockets")  // ok
 
-	flagDemand = flag.Bool("demand", false, "my boss' demand") // ok
-
 	NewlineFlag bool
 )
 
@@ -116,12 +114,5 @@ func main() {
 		psss.GetProcInfo()
 	}
 
-	if *flagDemand {
-		psss.GlobalSystemInfo = psss.NewSystemInfo()
-		psss.GlobalSystemInfo.GetStat()
-		d := newdemand()
-		d.show()
-		return
-	}
 	SocketShow()
 }
