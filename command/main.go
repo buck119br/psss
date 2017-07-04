@@ -57,7 +57,7 @@ func main() {
 		return
 	}
 	if *flagSummary {
-		psss.ShowSummary()
+		ShowSummary()
 		return
 	}
 	// sock state

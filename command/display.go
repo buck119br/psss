@@ -64,7 +64,7 @@ func GenericShow(protocal, af int) {
 		return
 	}
 	if *flagProcess {
-		SetUpRelation()
+		psss.SetUpRelation()
 	}
 	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
 	fmt.Printf("%-*s\t%-*s\t", psss.MaxLocalAddrLength, "LocalAddress:Port", psss.MaxRemoteAddrLength, "RemoteAddress:Port")
@@ -82,10 +82,10 @@ func GenericShow(protocal, af int) {
 		case psss.ProtocalRAW:
 			fmt.Printf("raw")
 		case psss.ProtocalUnix:
-			if _, ok = SocketType[record.Type]; !ok {
+			if _, ok = psss.SocketType[record.Type]; !ok {
 				fmt.Printf("dgr\t")
 			} else {
-				fmt.Printf("%s\t", SocketType[record.Type])
+				fmt.Printf("%s\t", psss.SocketType[record.Type])
 			}
 		}
 		switch af {
