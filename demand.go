@@ -50,7 +50,7 @@ type EstabTopology struct {
 
 func newEstabTopology() *EstabTopology {
 	t := new(EstabTopology)
-	t.Ports = NewIPCounter
+	t.Ports = NewIPCounter()
 	return t
 }
 
