@@ -199,7 +199,6 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			case INET_DIAG_SHUTDOWN:
 				// shutdown := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
-				fmt.Println("invalid NlAttr Type")
 			}
 			cursor += int(nlAttr.Len)
 		}

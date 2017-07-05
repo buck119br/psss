@@ -50,22 +50,20 @@ func NewSystemInfo() *SystemInfo {
 	return si
 }
 
-func (si *SystemInfo) GetStat() {
+func (si *SystemInfo) GetStat() (err error) {
 	var (
 		line     string
 		cpunr, n int
 	)
 	fd, err := os.Open(ProcRoot + "/stat")
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	defer fd.Close()
 	scanner := bufio.NewScanner(fd)
 	for scanner.Scan() {
 		if err = scanner.Err(); err != nil {
-			fmt.Println(err)
-			return
+			return err
 		}
 		line = scanner.Text()
 		switch {
@@ -78,8 +76,7 @@ func (si *SystemInfo) GetStat() {
 					&cputime.Irq, &cputime.Softirq, &cputime.Steal, &cputime.Guest, &cputime.GuestNice,
 				)
 				if n < 10 {
-					fmt.Println("not enough param read")
-					return
+					return fmt.Errorf("not enough param read")
 				}
 			} else {
 				n, err = fmt.Sscanf(line, "cpu%d %d %d %d %d %d %d %d %d %d %d",
@@ -88,8 +85,7 @@ func (si *SystemInfo) GetStat() {
 					&cputime.Irq, &cputime.Softirq, &cputime.Steal, &cputime.Guest, &cputime.GuestNice,
 				)
 				if n < 11 {
-					fmt.Println("not enough param read")
-					return
+					return fmt.Errorf("not enough param read")
 				}
 			}
 			cputime.Total = cputime.User + cputime.Nice + cputime.System + cputime.Idle + cputime.Iowait +
@@ -97,72 +93,58 @@ func (si *SystemInfo) GetStat() {
 			si.Stat.CPUTimes[cpunr] = cputime
 		case strings.Contains(line, "page"):
 			if n, err = fmt.Sscanf(line, "page %d %d", &si.Stat.PageIn, &si.Stat.PageOut); err != nil {
-				fmt.Println(err)
-				return
+				return err
 			}
 			if n < 2 {
-				fmt.Println("not enough param read")
-				return
+				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "swap"):
 			if n, err = fmt.Sscanf(line, "swap %d %d", &si.Stat.SwapIn, &si.Stat.SwapOut); err != nil {
-				fmt.Println(err)
-				return
+				return err
 			}
 			if n < 2 {
-				fmt.Println("not enough param read")
-				return
+				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "intr"):
 		case strings.Contains(line, "ctxt"):
 			if n, err = fmt.Sscanf(line, "ctxt %d", &si.Stat.Ctxt); err != nil {
-				fmt.Println(err)
-				return
+				return err
 			}
 			if n < 1 {
-				fmt.Println("not enough param read")
-				return
+				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "btime"):
 			if n, err = fmt.Sscanf(line, "btime %d", &si.Stat.Btime); err != nil {
-				fmt.Println(err)
-				return
+				return err
 			}
 			if n < 1 {
-				fmt.Println("not enough param read")
-				return
+				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "processes"):
 			if n, err = fmt.Sscanf(line, "processes %d", &si.Stat.Processes); err != nil {
-				fmt.Println(err)
-				return
+				return err
 			}
 			if n < 1 {
-				fmt.Println("not enough param read")
-				return
+				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "procs_running"):
 			if n, err = fmt.Sscanf(line, "procs_running %d", &si.Stat.ProcsRunning); err != nil {
-				fmt.Println(err)
-				return
+				return err
 			}
 			if n < 1 {
-				fmt.Println("not enough param read")
-				return
+				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "procs_blocked"):
 			if n, err = fmt.Sscanf(line, "procs_blocked %d", &si.Stat.ProcsRunning); err != nil {
-				fmt.Println(err)
-				return
+				return err
 			}
 			if n < 1 {
-				fmt.Println("not enough param read")
-				return
+				return fmt.Errorf("not enough param read")
 			}
 		}
 		if err != nil {
-			fmt.Println(err)
-			return
+			return err
 		}
 	}
+	return nil
 }

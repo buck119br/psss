@@ -21,14 +21,12 @@ func NewFileInfo() *FileInfo {
 func (fi *FileInfo) GetStat(path string, name string) (err error) {
 	stat, err := os.Stat(path + "/" + name)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	fi.Path = path
 	fi.Name = name
 	var ok bool
 	if fi.SysStat, ok = stat.Sys().(*syscall.Stat_t); !ok {
-		fmt.Printf("FileInfo.Sys:[%v] assertion failure\n", stat)
 		return fmt.Errorf("FileInfo.Sys:[%v] assertion failure", stat)
 	}
 	return nil

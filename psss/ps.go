@@ -106,14 +106,12 @@ func NewProcInfo() *ProcInfo {
 func (p *ProcInfo) GetStat() (err error) {
 	fd, err := os.Open(ProcRoot + fmt.Sprintf("/%d/stat", p.Stat.Pid))
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer fd.Close()
 	reader := bufio.NewReader(fd)
 	statBuf, err := ioutil.ReadAll(reader)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	statBuf = statBuf[:len(statBuf)-1]
@@ -147,11 +145,10 @@ func (p *ProcInfo) GetStat() (err error) {
 		&p.Stat.ArgStart, &p.Stat.ArgEnd, &p.Stat.EnvStart, &p.Stat.EnvEnd, &p.Stat.ExitCode,
 	)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	if n < 52 {
-		fmt.Println("not enough param read")
+		return fmt.Errorf("not enough param read")
 	}
 	p.Stat.Name = strings.TrimSuffix(strings.TrimPrefix(p.Stat.Name, "("), ")")
 	return nil
@@ -161,13 +158,11 @@ func (p *ProcInfo) GetFds() (err error) {
 	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
 	fd, err := os.Open(fdPath)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer fd.Close()
 	names, err := fd.Readdirnames(0)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	for _, v := range names {
@@ -180,17 +175,15 @@ func (p *ProcInfo) GetFds() (err error) {
 	return nil
 }
 
-func GetProcInfo() {
+func GetProcInfo() error {
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	defer fd.Close()
 	names, err := fd.Readdirnames(0)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	var (
 		tempInt int
@@ -213,6 +206,7 @@ func GetProcInfo() {
 		}
 		GlobalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
 	}
+	return nil
 }
 
 func SetUpRelation() {
