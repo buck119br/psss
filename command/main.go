@@ -125,19 +125,18 @@ func main() {
 		psss.ProcInfoInputChan <- psss.NewProcInfo()
 		for proc := range psss.ProcInfoOutputChan {
 			if proc == nil {
-				fmt.Println("haha")
 				break
 			}
 			if proc.Stat.Name == "NULL" {
-				continue
+				goto next
 			}
 			if _, ok = psss.GlobalProcInfo[proc.Stat.Name]; !ok {
 				psss.GlobalProcInfo[proc.Stat.Name] = make(map[int]*psss.ProcInfo)
 			}
 			psss.GlobalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
+		next:
 			psss.ProcInfoInputChan <- psss.NewProcInfo()
 		}
-		fmt.Println("hehe")
 	}
 
 	SocketShow()
