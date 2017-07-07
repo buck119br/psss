@@ -130,6 +130,9 @@ func main() {
 			if proc == nil {
 				break
 			}
+			if proc.Stat.Name == "NULL" {
+				continue
+			}
 			if _, ok = psss.GlobalProcInfo[proc.Stat.Name]; !ok {
 				psss.GlobalProcInfo[proc.Stat.Name] = make(map[int]*psss.ProcInfo)
 			}

@@ -165,15 +165,15 @@ func (p *ProcInfo) GetFds() (err error) {
 	return nil
 }
 
-func GetProcInfo() error {
+func GetProcInfo() {
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
-		return err
+		return
 	}
 	defer fd.Close()
 	names, err := fd.Readdirnames(0)
 	if err != nil {
-		return err
+		return
 	}
 	var (
 		tempInt int
@@ -185,16 +185,15 @@ func GetProcInfo() error {
 		}
 		proc = <-ProcInfoInputChan
 		proc.Stat.Pid = tempInt
-		if err = proc.GetFds(); err != nil {
-			fmt.Println(err)
-		}
 		if err = proc.GetStat(); err != nil {
-			fmt.Println(err)
+			proc.Stat.Name = "NULL"
+		}
+		if err = proc.GetFds(); err != nil {
+			proc.Stat.Name = "NULL"
 		}
 		ProcInfoOutputChan <- proc
 	}
 	ProcInfoOutputChan <- nil
-	return nil
 }
 
 func SetUpRelation() {
