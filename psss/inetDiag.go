@@ -107,7 +107,7 @@ func SendInetDiagMsg(af uint8, protocal uint8, exts uint8, states uint32) (skfd 
 	return skfd, nil
 }
 
-func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err error) {
+func RecvInetDiagMsgMulti(skfd int) (err error) {
 	var (
 		n      int
 		cursor int
