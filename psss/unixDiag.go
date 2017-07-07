@@ -174,6 +174,7 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 			cursor += int(nlAttr.Len)
 		}
 		RecordOutputChan <- record
+		fmt.Println("haha")
 	}
 	return nil
 }

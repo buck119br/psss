@@ -396,12 +396,11 @@ func UnixRecordRead() (records map[uint32]*GenericRecord, err error) {
 	go RecvUnixDiagMsgAll(skfd)
 	for record := range RecordOutputChan {
 		if record == nil {
-			break
+			return records, nil
 		}
 		records[record.Inode] = record
 		RecordInputChan <- NewGenericRecord()
 	}
-	return records, nil
 
 readProc:
 	// In this way, so much information cannot get.
