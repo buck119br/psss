@@ -189,8 +189,8 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			case INET_DIAG_SKMEMINFO:
 				if nlAttr.Len > 4 {
 					record.Meminfo = make([]uint32, 0, 8)
-					for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
-						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&raw[i].Data[i : i+4][0])))
+					for j := cursor + unix.SizeofNlAttr; j < cursor+int(nlAttr.Len); j = j + 4 {
+						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&raw[i].Data[j : j+4][0])))
 					}
 				}
 			case INET_DIAG_SHUTDOWN:
