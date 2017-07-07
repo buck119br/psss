@@ -751,6 +751,10 @@ func GenericReadSockstat() (err error) {
 		line   string
 		fields []string
 	)
+	Summary = make(map[string]map[string]int)
+	for _, pf := range SummaryPF {
+		Summary[pf] = make(map[string]int)
+	}
 
 	for _, v := range []string{"sockstat4", "sockstat6"} {
 		if file, err = os.Open(procFilePath[v]); err != nil {

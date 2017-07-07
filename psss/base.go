@@ -60,11 +60,6 @@ var (
 )
 
 func init() {
-	Summary = make(map[string]map[string]int)
-	for _, pf := range SummaryPF {
-		Summary[pf] = make(map[string]int)
-	}
-
 	GlobalProcInfo = make(map[string]map[int]*ProcInfo)
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	UnixDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
