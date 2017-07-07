@@ -112,7 +112,7 @@ func GenericShow(protocal, af int) {
 		if *flagMemory && len(record.Meminfo) == 8 {
 			record.MeminfoPrint()
 		}
-		if *flagInfo && protocal == psss.ProtocalTCP {
+		if *flagInfo && protocal == psss.ProtocalTCP && record.TCPInfo != nil {
 			record.TCPInfoPrint()
 		}
 		fmt.Printf("\n")
