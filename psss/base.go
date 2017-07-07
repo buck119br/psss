@@ -69,8 +69,8 @@ func init() {
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	UnixDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	InetDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
-	RecordInputChan = make(chan *GenericRecord, 3)
-	RecordOutputChan = make(chan *GenericRecord, 3)
+	RecordInputChan = make(chan *GenericRecord)
+	RecordOutputChan = make(chan *GenericRecord)
 }
 
 func AddrLengthInit() {
