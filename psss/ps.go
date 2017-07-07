@@ -183,7 +183,6 @@ func GetProcInfo() {
 		if tempInt, err = strconv.Atoi(names[i]); err != nil {
 			continue
 		}
-		fmt.Println("haha")
 		proc = <-ProcInfoInputChan
 		proc.Stat.Pid = tempInt
 		if err = proc.GetStat(); err != nil {
@@ -193,7 +192,6 @@ func GetProcInfo() {
 			proc.Stat.Name = "NULL"
 		}
 		ProcInfoOutputChan <- proc
-		fmt.Println("hehe")
 	}
 	ProcInfoOutputChan <- nil
 }
