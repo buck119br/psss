@@ -67,14 +67,14 @@ func (si *SystemInfo) GetStat() (err error) {
 		switch {
 		case strings.Contains(line, "cpu "):
 			n, err = fmt.Sscanf(line, "cpu %d %d %d %d %d %d %d %d %d %d",
-				&si.Stat.CPUTimes.User, &si.Stat.CPUTimes.Nice, &si.Stat.CPUTimes.System, &si.Stat.CPUTimes.Idle, &si.Stat.CPUTimes.Iowait,
-				&si.Stat.CPUTimes.Irq, &si.Stat.CPUTimes.Softirq, &si.Stat.CPUTimes.Steal, &si.Stat.CPUTimes.Guest, &si.Stat.CPUTimes.GuestNice,
+				&si.Stat.CPUTime.User, &si.Stat.CPUTime.Nice, &si.Stat.CPUTime.System, &si.Stat.CPUTime.Idle, &si.Stat.CPUTime.Iowait,
+				&si.Stat.CPUTime.Irq, &si.Stat.CPUTime.Softirq, &si.Stat.CPUTime.Steal, &si.Stat.CPUTime.Guest, &si.Stat.CPUTime.GuestNice,
 			)
 			if n < 10 {
 				return fmt.Errorf("not enough param read")
 			}
-			si.Stat.CPUTimes.Total = si.Stat.CPUTimes.User + si.Stat.CPUTimes.Nice + si.Stat.CPUTimes.System + si.Stat.CPUTimes.Idle + si.Stat.CPUTimes.Iowait +
-				si.Stat.CPUTimes.Irq + si.Stat.CPUTimes.Softirq + si.Stat.CPUTimes.Steal + si.Stat.CPUTimes.Guest + si.Stat.CPUTimes.GuestNice
+			si.Stat.CPUTime.Total = si.Stat.CPUTime.User + si.Stat.CPUTime.Nice + si.Stat.CPUTime.System + si.Stat.CPUTime.Idle + si.Stat.CPUTime.Iowait +
+				si.Stat.CPUTime.Irq + si.Stat.CPUTime.Softirq + si.Stat.CPUTime.Steal + si.Stat.CPUTime.Guest + si.Stat.CPUTime.GuestNice
 		case strings.Contains(line, "page"):
 			if n, err = fmt.Sscanf(line, "page %d %d", &si.Stat.PageIn, &si.Stat.PageOut); err != nil {
 				return err

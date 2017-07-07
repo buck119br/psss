@@ -79,18 +79,6 @@ type ProcStat struct {
 	ExitCode            int    // The thread's exit status.
 }
 
-func (ps *ProcStat) GenericInfoPrint() {
-	fmt.Printf("State:%s\n", ProcState[ps.State])
-}
-
-func (ps *ProcStat) LoadInfoPrint() {
-	fmt.Printf("AvgLoad:%.3f%%\n", float64(ps.Utime+ps.Stime)/float64(GlobalSystemInfo.Stat.CPUTimes[math.MaxInt16].Total)*100)
-}
-
-func (ps *ProcStat) MeminfoPrint() {
-	fmt.Printf("VmSize:%s VmRSS:%s\n", BwToStr(float64(ps.Vsize)), BwToStr(float64(ps.Rss)*float64(os.Getpagesize())))
-}
-
 type ProcInfo struct {
 	Stat *ProcStat
 	Fd   map[uint32]string
