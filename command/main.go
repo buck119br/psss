@@ -106,6 +106,14 @@ func main() {
 		psss.ProtocalFilter |= psss.ProtocalMax - 1
 	}
 
+	if *flagInfo {
+		psss.FlagInfo = true
+	}
+
+	if *flagMemory {
+		psss.FlagMemory = true
+	}
+
 	if *flagExtended || *flagOption || *flagMemory || *flagInfo {
 		NewlineFlag = true
 	}

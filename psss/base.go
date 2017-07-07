@@ -30,6 +30,11 @@ var (
 	ProtocalFilter uint64
 	SsFilter       uint32
 
+	FlagInfo   bool
+	FlagMemory bool
+)
+
+var (
 	Summary               map[string]map[string]int
 	GlobalRecords         map[uint32]*GenericRecord
 	GlobalProcInfo        map[string]map[int]*ProcInfo
@@ -41,12 +46,18 @@ var (
 	InetDiagRequestBuffer []byte
 	InetDiagInputChan     chan *GenericRecord
 	InetDiagOutputChan    chan *GenericRecord
+)
 
+var (
 	MaxLocalAddrLength  int
 	MaxRemoteAddrLength int
+)
 
+var (
 	SC_CLK_TCK = uint64(C.sysconf(C._SC_CLK_TCK))
+)
 
+var (
 	ErrorDone = fmt.Errorf("Done")
 )
 

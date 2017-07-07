@@ -307,12 +307,14 @@ func (record *GenericRecord) TCPInfoPrint() {
 
 	// DCTCP && BBRInfo
 
-	rtt := record.TCPInfo.Rtt
-	if record.VegasInfo.Enabled != 0 && record.VegasInfo.Rtt != 0 && record.VegasInfo.Rtt != 0x7fffffff {
-		rtt = record.VegasInfo.Rtt
-	}
-	if rtt > 0 && record.TCPInfo.Snd_mss != 0 && record.TCPInfo.Snd_cwnd != 0 {
-		fmt.Printf(" send:%sbps", BwToStr(float64(record.TCPInfo.Snd_cwnd)*float64(record.TCPInfo.Snd_mss)*8000000/float64(rtt)))
+	if record.VegasInfo != nil {
+		rtt := record.TCPInfo.Rtt
+		if record.VegasInfo.Enabled != 0 && record.VegasInfo.Rtt != 0 && record.VegasInfo.Rtt != 0x7fffffff {
+			rtt = record.VegasInfo.Rtt
+		}
+		if rtt > 0 && record.TCPInfo.Snd_mss != 0 && record.TCPInfo.Snd_cwnd != 0 {
+			fmt.Printf(" send:%sbps", BwToStr(float64(record.TCPInfo.Snd_cwnd)*float64(record.TCPInfo.Snd_mss)*8000000/float64(rtt)))
+		}
 	}
 
 	if record.TCPInfo.Last_data_sent != 0 {
@@ -492,9 +494,11 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord, err
 	switch protocal {
 	case ProtocalTCP:
 		ipproto = unix.IPPROTO_TCP
-		exts |= 1 << (INET_DIAG_INFO - 1)
-		exts |= 1 << (INET_DIAG_VEGASINFO - 1)
-		exts |= 1 << (INET_DIAG_CONG - 1)
+		if FlagInfo {
+			exts |= 1 << (INET_DIAG_INFO - 1)
+			exts |= 1 << (INET_DIAG_VEGASINFO - 1)
+			exts |= 1 << (INET_DIAG_CONG - 1)
+		}
 	case ProtocalUDP:
 		ipproto = unix.IPPROTO_UDP
 	case ProtocalRAW:
@@ -502,7 +506,9 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord, err
 	default:
 		return nil, fmt.Errorf("invalid protocal:[%d]", protocal)
 	}
-	exts |= 1 << (INET_DIAG_SKMEMINFO - 1)
+	if FlagMemory {
+		exts |= 1 << (INET_DIAG_SKMEMINFO - 1)
+	}
 	if skfd, err = SendInetDiagMsg(uint8(af), ipproto, exts, SsFilter); err != nil {
 		goto readProc
 	}
