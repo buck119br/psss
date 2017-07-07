@@ -167,17 +167,16 @@ func (p *ProcInfo) GetFds() (err error) {
 
 func GetProcInfo() {
 	defer func() {
+		<-ProcInfoInputChan
 		ProcInfoOutputChan <- nil
 	}()
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
-		<-ProcInfoInputChan
 		return
 	}
 	defer fd.Close()
 	names, err := fd.Readdirnames(0)
 	if err != nil {
-		<-ProcInfoInputChan
 		return
 	}
 	var (
@@ -197,9 +196,6 @@ func GetProcInfo() {
 			proc.Stat.Name = "NULL"
 		}
 		ProcInfoOutputChan <- proc
-		if i == len(names)-1 {
-			return
-		}
 	}
 }
 
