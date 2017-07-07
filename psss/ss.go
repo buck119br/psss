@@ -392,7 +392,9 @@ func UnixRecordRead() (records map[uint32]*GenericRecord, err error) {
 	}
 	defer unix.Close(skfd)
 	records = make(map[uint32]*GenericRecord)
+	fmt.Println("haha1")
 	RecordInputChan <- NewGenericRecord()
+	fmt.Println("haha2")
 	go RecvUnixDiagMsgAll(skfd)
 	for record := range RecordOutputChan {
 		if record == nil {
