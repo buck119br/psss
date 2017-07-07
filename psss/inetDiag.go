@@ -132,7 +132,7 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 	}
 	for i := range raw {
 		record := NewGenericRecord()
-		if v.Header.Type == unix.NLMSG_DONE {
+		if raw[i].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
 		msg = *(*InetDiagMessage)(unsafe.Pointer(&raw[i].Data[:SizeOfInetDiagMsg][0]))
@@ -167,8 +167,8 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 		record.RefCount = int(msg.ID.IdiagIF)
 		record.SK = uint64(msg.ID.IdiagCookie[1])<<32 | uint64(msg.ID.IdiagCookie[0])
 		cursor = SizeOfInetDiagMsg
-		for cursor+4 < len(v.Data) {
-			for v.Data[cursor] == byte(0) {
+		for cursor+4 < len(raw[i].Data) {
+			for raw[i].Data[cursor] == byte(0) {
 				cursor++
 			}
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[i].Data[cursor : cursor+unix.SizeofNlAttr][0]))
@@ -181,7 +181,7 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 				record.VegasInfo = (*TCPVegasInfo)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_CONG:
 				record.CONG = make([]byte, 0)
-				record.CONG = append(record.CONG, v.Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
+				record.CONG = append(record.CONG, raw[i].Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
 			case INET_DIAG_TOS:
 				// tos := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_TCLASS:
