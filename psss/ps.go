@@ -173,10 +173,12 @@ func GetProcInfo() {
 	)
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
+		<-ProcInfoInputChan
 		goto end
 	}
 	defer fd.Close()
 	if names, err = fd.Readdirnames(0); err != nil {
+		<-ProcInfoInputChan
 		goto end
 	}
 	for i := range names {
