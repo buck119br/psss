@@ -44,6 +44,8 @@ var (
 	InetDiagRequestBuffer []byte
 	RecordInputChan       chan *GenericRecord
 	RecordOutputChan      chan *GenericRecord
+	ProcInfoInputChan     chan *ProcInfo
+	ProcInfoOutputChan    chan *ProcInfo
 )
 
 var (
@@ -60,12 +62,13 @@ var (
 )
 
 func init() {
-	GlobalProcInfo = make(map[string]map[int]*ProcInfo)
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	UnixDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	InetDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)
 	RecordOutputChan = make(chan *GenericRecord)
+	ProcInfoInputChan = make(chan *ProcInfo)
+	ProcInfoOutputChan = make(chan *ProcInfo)
 }
 
 func AddrLengthInit() {

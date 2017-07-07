@@ -119,7 +119,20 @@ func main() {
 	}
 
 	if *flagProcess {
-		psss.GetProcInfo()
+		var proc *ProcInfo
+		psss.GlobalProcInfo = make(map[string]map[int]*ProcInfo)
+		go psss.GetProcInfo()
+		psss.ProcInfoInputChan <- psss.NewProcInfo()
+		for proc = range psss.ProcInfoOutputChan {
+			if proc == nil {
+				break
+			}
+			if _, ok = psss.GlobalProcInfo[proc.Stat.Name]; !ok {
+				psss.GlobalProcInfo[proc.Stat.Name] = make(map[int]*ProcInfo)
+			}
+			psss.GlobalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
+			psss.ProcInfoInputChan <- psss.NewProcInfo()
+		}
 	}
 
 	SocketShow()

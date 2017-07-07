@@ -90,6 +90,10 @@ func NewProcInfo() *ProcInfo {
 	return p
 }
 
+func (p *ProcInfo) Reset() {
+	p.Fd = make(map[uint32]string)
+}
+
 func (p *ProcInfo) GetStat() (err error) {
 	fd, err := os.Open(ProcRoot + fmt.Sprintf("/%d/stat", p.Stat.Pid))
 	if err != nil {
@@ -101,8 +105,7 @@ func (p *ProcInfo) GetStat() (err error) {
 	if err != nil {
 		return err
 	}
-	statBuf = statBuf[:len(statBuf)-1]
-	n, err := fmt.Sscanf(string(statBuf),
+	n, err := fmt.Sscanf(string(statBuf[:len(statBuf)-1]),
 		`%d %s %c %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d`,
 		&p.Stat.Pid, &p.Stat.Name, &p.Stat.State,
 		&p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid,
@@ -174,25 +177,24 @@ func GetProcInfo() error {
 	}
 	var (
 		tempInt int
+		proc    *ProcInfo
 		ok      bool
 	)
 	for _, v := range names {
 		if tempInt, err = strconv.Atoi(v); err != nil {
 			continue
 		}
-		proc := NewProcInfo()
+		proc = <-ProcInfoInputChan
 		proc.Stat.Pid = tempInt
 		if err = proc.GetFds(); err != nil {
-			continue
+			fmt.Println(err)
 		}
 		if err = proc.GetStat(); err != nil {
-			continue
+			fmt.Println(err)
 		}
-		if _, ok = GlobalProcInfo[proc.Stat.Name]; !ok {
-			GlobalProcInfo[proc.Stat.Name] = make(map[int]*ProcInfo)
-		}
-		GlobalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
+		ProcInfoOutputChan <- proc
 	}
+	ProcInfoOutputChan <- nil
 	return nil
 }
 
