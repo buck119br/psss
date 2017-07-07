@@ -130,12 +130,12 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 	if err != nil {
 		return err
 	}
-	for _, v := range raw {
+	for i := range raw {
 		record := NewGenericRecord()
 		if v.Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
-		msg = *(*InetDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfInetDiagMsg][0]))
+		msg = *(*InetDiagMessage)(unsafe.Pointer(&raw[i].Data[:SizeOfInetDiagMsg][0]))
 		switch msg.IdiagFamily {
 		case unix.AF_INET:
 			record.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagSrc[0]), "0x"))
@@ -171,30 +171,30 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			for v.Data[cursor] == byte(0) {
 				cursor++
 			}
-			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&v.Data[cursor : cursor+unix.SizeofNlAttr][0]))
+			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[i].Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case INET_DIAG_MEMINFO:
-				// meminfo := *(*InetDiagMeminfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// meminfo := *(*InetDiagMeminfo)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_INFO:
-				record.TCPInfo = (*TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.TCPInfo = (*TCPInfo)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_VEGASINFO:
-				record.VegasInfo = (*TCPVegasInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.VegasInfo = (*TCPVegasInfo)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_CONG:
 				record.CONG = make([]byte, 0)
 				record.CONG = append(record.CONG, v.Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
 			case INET_DIAG_TOS:
-				// tos := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// tos := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_TCLASS:
-				// tclass := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// tclass := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_SKMEMINFO:
 				if nlAttr.Len > 4 {
 					record.Meminfo = make([]uint32, 0, 8)
 					for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
-						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
+						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&raw[i].Data[i : i+4][0])))
 					}
 				}
 			case INET_DIAG_SHUTDOWN:
-				// shutdown := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// shutdown := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
 			}
 			cursor += int(nlAttr.Len)

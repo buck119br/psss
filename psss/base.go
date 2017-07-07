@@ -41,11 +41,9 @@ var (
 	GlobalSystemInfo      *SystemInfo
 	GlobalBuffer          []byte
 	UnixDiagRequestBuffer []byte
-	UnixDiagInputChan     chan *GenericRecord
-	UnixDiagOutputChan    chan *GenericRecord
 	InetDiagRequestBuffer []byte
-	InetDiagInputChan     chan *GenericRecord
-	InetDiagOutputChan    chan *GenericRecord
+	RecordInputChan       chan *GenericRecord
+	RecordOutputChan      chan *GenericRecord
 )
 
 var (
@@ -67,11 +65,12 @@ func init() {
 		Summary[pf] = make(map[string]int)
 	}
 
-	GlobalRecords = make(map[uint32]*GenericRecord)
 	GlobalProcInfo = make(map[string]map[int]*ProcInfo)
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	UnixDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	InetDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
+	RecordInputChan = make(chan *GenericRecord)
+	RecordOutputChan = make(chan *GenericRecord)
 }
 
 func AddrLengthInit() {

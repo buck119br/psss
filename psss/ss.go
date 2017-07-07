@@ -137,10 +137,10 @@ type GenericRecord struct {
 	UserName string
 }
 
-func NewGenericRecord() GenericRecord {
+func NewGenericRecord() *GenericRecord {
 	t := new(GenericRecord)
 	t.Procs = make(map[*ProcInfo]bool)
-	return *t
+	return t
 }
 
 func (record *GenericRecord) Reset() {
@@ -391,7 +391,17 @@ func UnixRecordRead() (records map[uint32]*GenericRecord, err error) {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	return RecvUnixDiagMsgAll(skfd), nil
+	records = make(map[uint32]*GenericRecord)
+	RecordInputChan <- NewGenericRecord()
+	go RecvUnixDiagMsgAll(skfd)
+	for record = range RecordOutputChan {
+		if record == nil {
+			break
+		}
+		records[record.Inode] = record
+		RecordInputChan <- NewGenericRecord()
+	}
+	return records, nil
 
 readProc:
 	// In this way, so much information cannot get.
@@ -480,7 +490,7 @@ readProc:
 		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
-		records[record.Inode] = &record
+		records[record.Inode] = record
 	}
 	return records, nil
 }
@@ -707,7 +717,7 @@ readProc:
 		if len(fields) > 17 {
 			record.Opt = fields[17:]
 		}
-		records[record.Inode] = &record
+		records[record.Inode] = record
 	}
 	return
 }

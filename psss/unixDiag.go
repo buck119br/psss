@@ -89,7 +89,7 @@ func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
 	return skfd, nil
 }
 
-func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err error) {
+func RecvUnixDiagMsgMulti(skfd int) (err error) {
 	var (
 		n      int
 		cursor int
@@ -113,12 +113,12 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 	if err != nil {
 		return err
 	}
-	for _, v := range raw {
-		record := NewGenericRecord()
+	for i := range raw {
+		record <- RecordInputChan
 		if v.Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
-		msg = *(*UnixDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfUnixDiagMsg][0]))
+		msg = *(*UnixDiagMessage)(unsafe.Pointer(&raw[i].Data[:SizeOfUnixDiagMsg][0]))
 		record.Inode = msg.UdiagIno
 		record.LocalAddr.Port = fmt.Sprintf("%d", msg.UdiagIno)
 		record.Status = msg.UdiagState
@@ -129,7 +129,7 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			for v.Data[cursor] == byte(0) {
 				cursor++
 			}
-			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&v.Data[cursor : cursor+unix.SizeofNlAttr][0]))
+			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[i].Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case UNIX_DIAG_NAME:
 				record.LocalAddr.Host = string(v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
@@ -140,10 +140,10 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 					MaxLocalAddrLength = len(record.LocalAddr.String())
 				}
 			case UNIX_DIAG_VFS:
-				// vfs := *(*UnixDiagVFS)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// vfs := *(*UnixDiagVFS)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case UNIX_DIAG_PEER:
 				record.RemoteAddr.Host = "*"
-				record.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
+				record.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
 				if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
 					MaxRemoteAddrLength = len(record.RemoteAddr.String())
 				}
@@ -151,41 +151,40 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 				// if nlAttr.Len > 4 {
 				// 	icons := make([]uint32, 0)
 				// 	for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
-				// 		icons = append(icons, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
+				// 		icons = append(icons, *(*uint32)(unsafe.Pointer(&raw[i].Data[i : i+4][0])))
 				// 	}
 				// }
 			case UNIX_DIAG_RQLEN:
-				rqlen = *(*UnixDiagRQlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				rqlen = *(*UnixDiagRQlen)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 				record.RxQueue = rqlen.RQ
 				record.TxQueue = rqlen.WQ
 			case UNIX_DIAG_MEMINFO:
 				if nlAttr.Len > 4 {
 					record.Meminfo = make([]uint32, 0, 8)
 					for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
-						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&v.Data[i : i+4][0])))
+						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&raw[i].Data[i : i+4][0])))
 					}
 				}
 			case UNIX_DIAG_SHUTDOWN:
-				// shutdown := *(*uint8)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// shutdown := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
 				fmt.Println("invalid NlAttr Type")
 			}
 			cursor += int(nlAttr.Len)
 		}
-		records[record.Inode] = &record
+		RecordOutputChan <- record
 	}
 	return nil
 }
 
-func RecvUnixDiagMsgAll(skfd int) (records map[uint32]*GenericRecord) {
-	records = make(map[uint32]*GenericRecord)
+func RecvUnixDiagMsgAll(skfd int) {
 	for {
-		if err := RecvUnixDiagMsgMulti(skfd, records); err != nil {
+		if err := RecvUnixDiagMsgMulti(skfd); err != nil {
 			if err == ErrorDone {
-				break
+				RecordOutputChan <- nil
+				return
 			}
 			continue
 		}
 	}
-	return
 }
