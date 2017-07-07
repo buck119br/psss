@@ -3,7 +3,6 @@ package psss
 import (
 	"bufio"
 	"fmt"
-	"math"
 	"os"
 	"strings"
 )
@@ -23,7 +22,7 @@ type CPUTime struct {
 }
 
 type SystemStat struct {
-	CPUTimes        map[int]*CPUTime
+	CPUTime         CPUTime
 	PageIn, PageOut uint64 // The number of pages the system paged in and the number that were paged out (from disk).
 	SwapIn, SwapOut uint64 // The number of swap pages that have been brought in and out.
 	Intr            uint64 // This line shows counts of interrupts serviced since boot time, for each of the possible system interrupts. The first column is the total of all interrupts serviced including unnumbered architecture specific interrupts; each subsequent column is the total for that particular numbered interrupt. Unnumbered interrupts are not shown, only summed into the total.
@@ -36,7 +35,6 @@ type SystemStat struct {
 
 func NewSystemStat() *SystemStat {
 	ss := new(SystemStat)
-	ss.CPUTimes = make(map[int]*CPUTime)
 	return ss
 }
 
@@ -52,8 +50,8 @@ func NewSystemInfo() *SystemInfo {
 
 func (si *SystemInfo) GetStat() (err error) {
 	var (
-		line     string
-		cpunr, n int
+		line string
+		n    int
 	)
 	fd, err := os.Open(ProcRoot + "/stat")
 	if err != nil {
@@ -67,30 +65,16 @@ func (si *SystemInfo) GetStat() (err error) {
 		}
 		line = scanner.Text()
 		switch {
-		case strings.Contains(line, "cpu"):
-			cputime := new(CPUTime)
-			if strings.Contains(line, "cpu ") {
-				cpunr = math.MaxInt16
-				n, err = fmt.Sscanf(line, "cpu %d %d %d %d %d %d %d %d %d %d",
-					&cputime.User, &cputime.Nice, &cputime.System, &cputime.Idle, &cputime.Iowait,
-					&cputime.Irq, &cputime.Softirq, &cputime.Steal, &cputime.Guest, &cputime.GuestNice,
-				)
-				if n < 10 {
-					return fmt.Errorf("not enough param read")
-				}
-			} else {
-				n, err = fmt.Sscanf(line, "cpu%d %d %d %d %d %d %d %d %d %d %d",
-					&cpunr,
-					&cputime.User, &cputime.Nice, &cputime.System, &cputime.Idle, &cputime.Iowait,
-					&cputime.Irq, &cputime.Softirq, &cputime.Steal, &cputime.Guest, &cputime.GuestNice,
-				)
-				if n < 11 {
-					return fmt.Errorf("not enough param read")
-				}
+		case strings.Contains(line, "cpu "):
+			n, err = fmt.Sscanf(line, "cpu %d %d %d %d %d %d %d %d %d %d",
+				&si.Stat.CPUTimes.User, &si.Stat.CPUTimes.Nice, &si.Stat.CPUTimes.System, &si.Stat.CPUTimes.Idle, &si.Stat.CPUTimes.Iowait,
+				&si.Stat.CPUTimes.Irq, &si.Stat.CPUTimes.Softirq, &si.Stat.CPUTimes.Steal, &si.Stat.CPUTimes.Guest, &si.Stat.CPUTimes.GuestNice,
+			)
+			if n < 10 {
+				return fmt.Errorf("not enough param read")
 			}
-			cputime.Total = cputime.User + cputime.Nice + cputime.System + cputime.Idle + cputime.Iowait +
-				cputime.Irq + cputime.Softirq + cputime.Steal + cputime.Guest + cputime.GuestNice
-			si.Stat.CPUTimes[cpunr] = cputime
+			si.Stat.CPUTimes.Total = si.Stat.CPUTimes.User + si.Stat.CPUTimes.Nice + si.Stat.CPUTimes.System + si.Stat.CPUTimes.Idle + si.Stat.CPUTimes.Iowait +
+				si.Stat.CPUTimes.Irq + si.Stat.CPUTimes.Softirq + si.Stat.CPUTimes.Steal + si.Stat.CPUTimes.Guest + si.Stat.CPUTimes.GuestNice
 		case strings.Contains(line, "page"):
 			if n, err = fmt.Sscanf(line, "page %d %d", &si.Stat.PageIn, &si.Stat.PageOut); err != nil {
 				return err

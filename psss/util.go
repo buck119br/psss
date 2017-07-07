@@ -8,7 +8,6 @@ import (
 )
 
 type FileInfo struct {
-	Path    string
 	Name    string
 	SysStat *syscall.Stat_t
 }
@@ -23,7 +22,6 @@ func (fi *FileInfo) GetStat(path string, name string) (err error) {
 	if err != nil {
 		return err
 	}
-	fi.Path = path
 	fi.Name = name
 	var ok bool
 	if fi.SysStat, ok = stat.Sys().(*syscall.Stat_t); !ok {

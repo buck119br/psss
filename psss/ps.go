@@ -93,13 +93,13 @@ func (ps *ProcStat) MeminfoPrint() {
 
 type ProcInfo struct {
 	Stat *ProcStat
-	Fd   map[uint32]*FileInfo
+	Fd   map[uint32]string
 }
 
 func NewProcInfo() *ProcInfo {
 	p := new(ProcInfo)
 	p.Stat = new(ProcStat)
-	p.Fd = make(map[uint32]*FileInfo, 0)
+	p.Fd = make(map[uint32]string)
 	return p
 }
 
@@ -165,12 +165,12 @@ func (p *ProcInfo) GetFds() (err error) {
 	if err != nil {
 		return err
 	}
-	for _, v := range names {
-		fi := NewFileInfo()
-		if err = fi.GetStat(fdPath, v); err != nil {
+	fi := NewFileInfo()
+	for i := range names {
+		if err = fi.GetStat(fdPath, names[i]); err != nil {
 			continue
 		}
-		p.Fd[uint32(fi.SysStat.Ino)] = fi
+		p.Fd[uint32(fi.SysStat.Ino)] = fi.Name
 	}
 	return nil
 }

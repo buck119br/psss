@@ -186,11 +186,15 @@ func (record *GenericRecord) GenericInfoPrint() {
 }
 
 func (record *GenericRecord) ProcInfoPrint() {
+	var (
+		inode uint32
+		name  string
+	)
 	fmt.Printf(`["%s":`, record.UserName)
 	for proc := range record.Procs {
-		for _, fd := range proc.Fd {
-			if fd.SysStat.Ino == uint64(record.Inode) {
-				fmt.Printf(`(pid=%d,fd=%s)`, proc.Stat.Pid, fd.Name)
+		for inode, name = range proc.Fd {
+			if inode == uint64(record.Inode) {
+				fmt.Printf(`(pid=%d,fd=%s)`, inode, name)
 			}
 		}
 	}
