@@ -111,6 +111,7 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 	var (
 		n      int
 		cursor int
+		record *GenericRecord
 		msg    InetDiagMessage
 		nlAttr unix.NlAttr
 	)
@@ -131,7 +132,7 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 		return err
 	}
 	for i := range raw {
-		record := NewGenericRecord()
+		record = <-RecordInputChan
 		if raw[i].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
@@ -199,20 +200,19 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			}
 			cursor += int(nlAttr.Len)
 		}
-		records[record.Inode] = record
+		RecordOutputChan <- record
 	}
 	return nil
 }
 
-func RecvInetDiagMsgAll(skfd int) (records map[uint32]*GenericRecord) {
-	records = make(map[uint32]*GenericRecord)
+func RecvInetDiagMsgAll(skfd int) {
 	for {
-		if err := RecvInetDiagMsgMulti(skfd, records); err != nil {
+		if err := RecvInetDiagMsgMulti(skfd); err != nil {
 			if err == ErrorDone {
-				break
+				RecordOutputChan <- nil
+				return
 			}
 			continue
 		}
 	}
-	return records
 }

@@ -522,7 +522,17 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord, err
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	return RecvInetDiagMsgAll(skfd), nil
+
+	records = make(map[uint32]*GenericRecord)
+	go RecvInetDiagMsgAll(skfd)
+	RecordInputChan <- NewGenericRecord()
+	for record := range RecordOutputChan {
+		if record == nil {
+			return records, nil
+		}
+		records[record.Inode] = record
+		RecordInputChan <- NewGenericRecord()
+	}
 
 readProc:
 	var (
