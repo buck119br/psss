@@ -199,7 +199,7 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			}
 			cursor += int(nlAttr.Len)
 		}
-		records[record.Inode] = &record
+		records[record.Inode] = record
 	}
 	return nil
 }

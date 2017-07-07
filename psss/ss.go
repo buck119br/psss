@@ -394,7 +394,7 @@ func UnixRecordRead() (records map[uint32]*GenericRecord, err error) {
 	records = make(map[uint32]*GenericRecord)
 	RecordInputChan <- NewGenericRecord()
 	go RecvUnixDiagMsgAll(skfd)
-	for record = range RecordOutputChan {
+	for record := range RecordOutputChan {
 		if record == nil {
 			break
 		}

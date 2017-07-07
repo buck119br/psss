@@ -93,6 +93,7 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 	var (
 		n      int
 		cursor int
+		record *GenericRecord
 		msg    UnixDiagMessage
 		nlAttr unix.NlAttr
 		rqlen  UnixDiagRQlen
@@ -114,8 +115,8 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 		return err
 	}
 	for i := range raw {
-		record <- RecordInputChan
-		if v.Header.Type == unix.NLMSG_DONE {
+		record = <-RecordInputChan
+		if raw[i].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
 		msg = *(*UnixDiagMessage)(unsafe.Pointer(&raw[i].Data[:SizeOfUnixDiagMsg][0]))
@@ -125,14 +126,14 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 		record.Type = msg.UdiagType
 		record.SK = uint64(msg.UdiagCookie[1])<<32 | uint64(msg.UdiagCookie[0])
 		cursor = SizeOfUnixDiagMsg
-		for cursor+4 < len(v.Data) {
-			for v.Data[cursor] == byte(0) {
+		for cursor+4 < len(raw[i].Data) {
+			for raw[i].Data[cursor] == byte(0) {
 				cursor++
 			}
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[i].Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case UNIX_DIAG_NAME:
-				record.LocalAddr.Host = string(v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
+				record.LocalAddr.Host = string(raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
 				if len(record.LocalAddr.Host) == 0 {
 					record.LocalAddr.Host = "*"
 				}
