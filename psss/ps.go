@@ -166,23 +166,26 @@ func (p *ProcInfo) GetFds() (err error) {
 }
 
 func GetProcInfo() {
-	var (
-		names   []string
-		tempInt int
-		proc    *ProcInfo
-	)
+	defer func() {
+		ProcInfoOutputChan <- nil
+	}()
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
 		<-ProcInfoInputChan
-		goto end
+		return
 	}
 	defer fd.Close()
-	if names, err = fd.Readdirnames(0); err != nil {
+	names, err := fd.Readdirnames(0)
+	if err != nil {
 		<-ProcInfoInputChan
-		goto end
+		return
 	}
-	for i := range names {
-		if tempInt, err = strconv.Atoi(names[i]); err != nil {
+	var (
+		tempInt int
+		proc    *ProcInfo
+	)
+	for v := range names {
+		if tempInt, err = strconv.Atoi(v); err != nil {
 			continue
 		}
 		proc = <-ProcInfoInputChan
@@ -195,8 +198,6 @@ func GetProcInfo() {
 		}
 		ProcInfoOutputChan <- proc
 	}
-end:
-	ProcInfoOutputChan <- nil
 }
 
 func SetUpRelation() {
