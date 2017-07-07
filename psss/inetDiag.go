@@ -2,7 +2,6 @@ package psss
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"syscall"
 	"unsafe"
