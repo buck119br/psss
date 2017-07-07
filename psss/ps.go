@@ -211,14 +211,12 @@ func GetProcInfo() error {
 
 func SetUpRelation() {
 	var ok bool
-	for key, records := range GlobalRecords {
-		for ino := range records {
-			for _, procMap := range GlobalProcInfo {
-				for _, proc := range procMap {
-					if _, ok = proc.Fd[ino]; ok {
-						GlobalRecords[key][ino].UserName = proc.Stat.Name
-						GlobalRecords[key][ino].Procs[proc] = true
-					}
+	for ino := range GlobalRecords {
+		for _, procMap := range GlobalProcInfo {
+			for _, proc := range procMap {
+				if _, ok = proc.Fd[ino]; ok {
+					GlobalRecords[ino].UserName = proc.Stat.Name
+					GlobalRecords[ino].Procs[proc] = true
 				}
 			}
 		}
