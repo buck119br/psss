@@ -120,10 +120,10 @@ func main() {
 
 	if *flagProcess {
 		var (
-			proc *ProcInfo
+			proc *psss.ProcInfo
 			ok   bool
 		)
-		psss.GlobalProcInfo = make(map[string]map[int]*ProcInfo)
+		psss.GlobalProcInfo = make(map[string]map[int]*psss.ProcInfo)
 		go psss.GetProcInfo()
 		psss.ProcInfoInputChan <- psss.NewProcInfo()
 		for proc = range psss.ProcInfoOutputChan {
@@ -131,7 +131,7 @@ func main() {
 				break
 			}
 			if _, ok = psss.GlobalProcInfo[proc.Stat.Name]; !ok {
-				psss.GlobalProcInfo[proc.Stat.Name] = make(map[int]*ProcInfo)
+				psss.GlobalProcInfo[proc.Stat.Name] = make(map[int]*psss.ProcInfo)
 			}
 			psss.GlobalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
 			psss.ProcInfoInputChan <- psss.NewProcInfo()
