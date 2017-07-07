@@ -3,8 +3,10 @@ package psss
 const (
 	SOCK_DIAG_BY_FAMILY = 20
 
-	SizeOfUnixDiagMsg = 16
-	SizeOfInetDiagMsg = 72
+	SizeOfUnixDiagRequest = 40
+	SizeOfUnixDiagMsg     = 16
+	SizeOfInetDiagRequest = 72
+	SizeOfInetDiagMsg     = 72
 )
 
 const (

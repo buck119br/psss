@@ -24,43 +24,43 @@ func ShowSummary() {
 func SocketShow() {
 	if psss.ProtocalFilter&psss.ProtocalUnix != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords[psss.GlobalRecordsKey], _ = psss.UnixRecordRead()
+		psss.GlobalRecords, _ = psss.UnixRecordRead()
 		GenericShow(psss.ProtocalUnix, unix.AF_UNIX)
 	}
 	if psss.ProtocalFilter&psss.ProtocalRAW != 0 && psss.AfFilter&(1<<unix.AF_INET) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords[psss.GlobalRecordsKey], _ = psss.GenericRecordRead(psss.ProtocalRAW, unix.AF_INET)
+		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalRAW, unix.AF_INET)
 		GenericShow(psss.ProtocalRAW, unix.AF_INET)
 	}
 	if psss.ProtocalFilter&psss.ProtocalRAW != 0 && psss.AfFilter&(1<<unix.AF_INET6) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords[psss.GlobalRecordsKey], _ = psss.GenericRecordRead(psss.ProtocalRAW, unix.AF_INET6)
+		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalRAW, unix.AF_INET6)
 		GenericShow(psss.ProtocalRAW, unix.AF_INET6)
 	}
 	if psss.ProtocalFilter&psss.ProtocalUDP != 0 && psss.AfFilter&(1<<unix.AF_INET) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords[psss.GlobalRecordsKey], _ = psss.GenericRecordRead(psss.ProtocalUDP, unix.AF_INET)
+		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalUDP, unix.AF_INET)
 		GenericShow(psss.ProtocalUDP, unix.AF_INET)
 	}
 	if psss.ProtocalFilter&psss.ProtocalUDP != 0 && psss.AfFilter&(1<<unix.AF_INET6) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords[psss.GlobalRecordsKey], _ = psss.GenericRecordRead(psss.ProtocalUDP, unix.AF_INET6)
+		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalUDP, unix.AF_INET6)
 		GenericShow(psss.ProtocalUDP, unix.AF_INET6)
 	}
 	if psss.ProtocalFilter&psss.ProtocalTCP != 0 && psss.AfFilter&(1<<unix.AF_INET) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords[psss.GlobalRecordsKey], _ = psss.GenericRecordRead(psss.ProtocalTCP, unix.AF_INET)
+		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalTCP, unix.AF_INET)
 		GenericShow(psss.ProtocalTCP, unix.AF_INET)
 	}
 	if psss.ProtocalFilter&psss.ProtocalTCP != 0 && psss.AfFilter&(1<<unix.AF_INET6) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords[psss.GlobalRecordsKey], _ = psss.GenericRecordRead(psss.ProtocalTCP, unix.AF_INET6)
+		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalTCP, unix.AF_INET6)
 		GenericShow(psss.ProtocalTCP, unix.AF_INET6)
 	}
 }
 
 func GenericShow(protocal, af int) {
-	if len(psss.GlobalRecords[psss.GlobalRecordsKey]) == 0 {
+	if len(psss.GlobalRecords) == 0 {
 		return
 	}
 	if *flagProcess {
@@ -73,7 +73,7 @@ func GenericShow(protocal, af int) {
 	}
 	fmt.Printf("\n")
 	var ok bool
-	for _, record := range psss.GlobalRecords[psss.GlobalRecordsKey] {
+	for _, record := range psss.GlobalRecords {
 		switch protocal {
 		case psss.ProtocalTCP:
 			fmt.Printf("tcp")

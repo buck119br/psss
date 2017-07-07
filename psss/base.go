@@ -7,6 +7,7 @@ import "C"
 
 import (
 	"fmt"
+	"os"
 )
 
 const (
@@ -22,21 +23,24 @@ const (
 	ProtocalMax
 )
 
-const (
-	GlobalRecordsKey = "GlobalRecords"
-
-	ProcRoot = "/proc"
-)
+const ProcRoot = "/proc"
 
 var (
 	AfFilter       uint64
 	ProtocalFilter uint64
 	SsFilter       uint32
 
-	Summary          map[string]map[string]int
-	GlobalRecords    map[string]map[uint32]*GenericRecord
-	GlobalProcInfo   map[string]map[int]*ProcInfo
-	GlobalSystemInfo *SystemInfo
+	Summary               map[string]map[string]int
+	GlobalRecords         map[uint32]*GenericRecord
+	GlobalProcInfo        map[string]map[int]*ProcInfo
+	GlobalSystemInfo      *SystemInfo
+	GlobalBuffer          []byte
+	UnixDiagRequestBuffer []byte
+	UnixDiagInputChan     chan *GenericRecord
+	UnixDiagOutputChan    chan *GenericRecord
+	InetDiagRequestBuffer []byte
+	InetDiagInputChan     chan *GenericRecord
+	InetDiagOutputChan    chan *GenericRecord
 
 	MaxLocalAddrLength  int
 	MaxRemoteAddrLength int
@@ -52,8 +56,11 @@ func init() {
 		Summary[pf] = make(map[string]int)
 	}
 
-	GlobalRecords = make(map[string]map[uint32]*GenericRecord)
+	GlobalRecords = make(map[uint32]*GenericRecord)
 	GlobalProcInfo = make(map[string]map[int]*ProcInfo)
+	GlobalBuffer = make([]byte, os.Getpagesize())
+	UnixDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
+	InetDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 }
 
 func AddrLengthInit() {

@@ -125,8 +125,8 @@ type GenericRecord struct {
 	SlowStartThreshold int      // slow start size threshold, or -1 if the threshold is >= 0xFFFF
 	Opt                []string // Option Info
 	// Internal TCP information
-	TCPInfo   TCPInfo
-	VegasInfo TCPVegasInfo
+	TCPInfo   *TCPInfo
+	VegasInfo *TCPVegasInfo
 	CONG      []byte
 	// Extended Info
 	Drops   int   // Generic like UDP, RAW specific
@@ -141,6 +141,38 @@ func NewGenericRecord() GenericRecord {
 	t := new(GenericRecord)
 	t.Procs = make(map[*ProcInfo]bool)
 	return *t
+}
+
+func (record *GenericRecord) Reset() {
+	record.LocalAddr.Host = ""
+	record.LocalAddr.Port = ""
+	record.RemoteAddr.Host = ""
+	record.RemoteAddr.Port = ""
+	record.Status = 0
+	record.TxQueue = 0
+	record.RxQueue = 0
+	record.Timer = 0
+	record.Timeout = 0
+	record.Retransmit = 0
+	record.UID = 0
+	record.Probes = 0
+	record.Inode = 0
+	record.RefCount = 0
+	record.SK = 0
+	record.RTO = 0
+	record.ATO = 0
+	record.QACK = 0
+	record.CongestionWindow = 0
+	record.SlowStartThreshold = 0
+	record.Opt = nil
+	record.TCPInfo = nil
+	record.VegasInfo = nil
+	record.CONG = nil
+	record.Drops = 0
+	record.Type = 0
+	record.Meminfo = nil
+	record.Procs = make(map[*ProcInfo]bool)
+	record.UserName = ""
 }
 
 func (record *GenericRecord) GenericInfoPrint() {

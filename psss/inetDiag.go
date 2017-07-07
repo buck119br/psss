@@ -101,9 +101,8 @@ func SendInetDiagMsg(af uint8, protocal uint8, exts uint8, states uint32) (skfd 
 		},
 	}
 	inDiagReq.Header.Len = uint32(unsafe.Sizeof(inDiagReq))
-	p := make([]byte, unsafe.Sizeof(inDiagReq))
-	*(*InetDiagRequest)(unsafe.Pointer(&p[0])) = inDiagReq
-	if err = unix.Sendmsg(skfd, p, nil, &sockAddrNl, 0); err != nil {
+	*(*InetDiagRequest)(unsafe.Pointer(&InetDiagRequestBuffer[0])) = inDiagReq
+	if err = unix.Sendmsg(skfd, InetDiagRequestBuffer, nil, &sockAddrNl, 0); err != nil {
 		return -1, err
 	}
 	return skfd, nil
@@ -113,23 +112,22 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 	var (
 		n      int
 		cursor int
+		msg    InetDiagMessage
 		nlAttr unix.NlAttr
 	)
-	p := make([]byte, os.Getpagesize())
 	for {
-		if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, unix.MSG_PEEK); err != nil {
+		if n, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, unix.MSG_PEEK); err != nil {
 			return err
 		}
-		if n < len(p) {
+		if n < len(GlobalBuffer) {
 			break
 		}
-		p = make([]byte, 2*len(p))
+		GlobalBuffer = make([]byte, 2*len(GlobalBuffer))
 	}
-	if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, 0); err != nil {
+	if n, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, 0); err != nil {
 		return err
 	}
-	p = p[:n]
-	raw, err := syscall.ParseNetlinkMessage(p)
+	raw, err := syscall.ParseNetlinkMessage(GlobalBuffer[:n])
 	if err != nil {
 		return err
 	}
@@ -138,7 +136,7 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 		if v.Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
-		msg := *(*InetDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfInetDiagMsg][0]))
+		msg = *(*InetDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfInetDiagMsg][0]))
 		switch msg.IdiagFamily {
 		case unix.AF_INET:
 			record.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", msg.ID.IdiagSrc[0]), "0x"))
@@ -179,9 +177,9 @@ func RecvInetDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 			case INET_DIAG_MEMINFO:
 				// meminfo := *(*InetDiagMeminfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_INFO:
-				record.TCPInfo = *(*TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.TCPInfo = (*TCPInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_VEGASINFO:
-				record.VegasInfo = *(*TCPVegasInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.VegasInfo = (*TCPVegasInfo)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_CONG:
 				record.CONG = make([]byte, 0)
 				record.CONG = append(record.CONG, v.Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)

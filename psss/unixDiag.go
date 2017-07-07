@@ -2,7 +2,6 @@ package psss
 
 import (
 	"fmt"
-	"os"
 	"syscall"
 	"unsafe"
 
@@ -83,9 +82,8 @@ func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
 		},
 	}
 	unDiagReq.Header.Len = uint32(unsafe.Sizeof(unDiagReq))
-	p := make([]byte, unsafe.Sizeof(unDiagReq))
-	*(*UnixDiagRequest)(unsafe.Pointer(&p[0])) = unDiagReq
-	if err = unix.Sendmsg(skfd, p, nil, &sockAddrNl, 0); err != nil {
+	*(*UnixDiagRequest)(unsafe.Pointer(&UnixDiagRequestBuffer[0])) = unDiagReq
+	if err = unix.Sendmsg(skfd, UnixDiagRequestBuffer, nil, &sockAddrNl, 0); err != nil {
 		return -1, err
 	}
 	return skfd, nil
@@ -95,23 +93,23 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 	var (
 		n      int
 		cursor int
+		msg    UnixDiagMessage
 		nlAttr unix.NlAttr
+		rqlen  UnixDiagRQlen
 	)
-	p := make([]byte, os.Getpagesize())
 	for {
-		if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, unix.MSG_PEEK); err != nil {
+		if n, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, unix.MSG_PEEK); err != nil {
 			return err
 		}
-		if n < len(p) {
+		if n < len(GlobalBuffer) {
 			break
 		}
-		p = make([]byte, 2*len(p))
+		GlobalBuffer = make([]byte, 2*len(GlobalBuffer))
 	}
-	if n, _, _, _, err = unix.Recvmsg(skfd, p, nil, 0); err != nil {
+	if n, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, 0); err != nil {
 		return err
 	}
-	p = p[:n]
-	raw, err := syscall.ParseNetlinkMessage(p)
+	raw, err := syscall.ParseNetlinkMessage(GlobalBuffer[:n])
 	if err != nil {
 		return err
 	}
@@ -120,7 +118,7 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 		if v.Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
-		msg := *(*UnixDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfUnixDiagMsg][0]))
+		msg = *(*UnixDiagMessage)(unsafe.Pointer(&v.Data[:SizeOfUnixDiagMsg][0]))
 		record.Inode = msg.UdiagIno
 		record.LocalAddr.Port = fmt.Sprintf("%d", msg.UdiagIno)
 		record.Status = msg.UdiagState
@@ -157,7 +155,7 @@ func RecvUnixDiagMsgMulti(skfd int, records map[uint32]*GenericRecord) (err erro
 				// 	}
 				// }
 			case UNIX_DIAG_RQLEN:
-				rqlen := *(*UnixDiagRQlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				rqlen = *(*UnixDiagRQlen)(unsafe.Pointer(&v.Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 				record.RxQueue = rqlen.RQ
 				record.TxQueue = rqlen.WQ
 			case UNIX_DIAG_MEMINFO:
