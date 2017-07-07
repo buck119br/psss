@@ -184,7 +184,7 @@ func GetProcInfo() {
 		tempInt int
 		proc    *ProcInfo
 	)
-	for v := range names {
+	for _, v := range names {
 		if tempInt, err = strconv.Atoi(v); err != nil {
 			continue
 		}
