@@ -184,8 +184,8 @@ func GetProcInfo() {
 		tempInt int
 		proc    *ProcInfo
 	)
-	for _, v := range names {
-		if tempInt, err = strconv.Atoi(v); err != nil {
+	for i := range names {
+		if tempInt, err = strconv.Atoi(names[i]); err != nil {
 			continue
 		}
 		proc = <-ProcInfoInputChan
@@ -197,6 +197,9 @@ func GetProcInfo() {
 			proc.Stat.Name = "NULL"
 		}
 		ProcInfoOutputChan <- proc
+		if i == len(names)-1 {
+			return
+		}
 	}
 }
 
