@@ -178,10 +178,9 @@ func GetProcInfo() error {
 	var (
 		tempInt int
 		proc    *ProcInfo
-		ok      bool
 	)
-	for _, v := range names {
-		if tempInt, err = strconv.Atoi(v); err != nil {
+	for i := range names {
+		if tempInt, err = strconv.Atoi(names[i]); err != nil {
 			continue
 		}
 		proc = <-ProcInfoInputChan
