@@ -197,10 +197,7 @@ func (record *GenericRecord) GenericInfoPrint() {
 }
 
 func (record *GenericRecord) ProcInfoPrint() {
-	var (
-		inode uint32
-		ok    bool
-	)
+	var ok bool
 	fmt.Printf(`["%s":`, record.UserName)
 	for pid, proc := range GlobalProcInfo[record.UserName] {
 		if _, ok = proc.Fd[record.Inode]; ok {
