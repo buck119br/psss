@@ -6,6 +6,7 @@ package psss
 import "C"
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 )
@@ -41,6 +42,7 @@ var (
 	GlobalProcInfo        map[string]map[int]*ProcInfo
 	GlobalSystemInfo      *SystemInfo
 	GlobalBuffer          []byte
+	FileContentBuffer     *bytes.Buffer
 	UnixDiagRequestBuffer []byte
 	InetDiagRequestBuffer []byte
 	RecordInputChan       chan *GenericRecord
@@ -64,6 +66,7 @@ var (
 
 func init() {
 	GlobalBuffer = make([]byte, os.Getpagesize())
+	FileContentBuffer = bytes.NewBuffer(make([]byte, os.Getpagesize()))
 	UnixDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	InetDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)

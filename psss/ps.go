@@ -1,9 +1,7 @@
 package psss
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -100,12 +98,11 @@ func (p *ProcInfo) GetStat() (err error) {
 		return err
 	}
 	defer fd.Close()
-	reader := bufio.NewReader(fd)
-	statBuf, err := ioutil.ReadAll(reader)
-	if err != nil {
+	FileContentBuffer.Reset()
+	if _, err = FileContentBuffer.ReadFrom(fd); err != nil {
 		return err
 	}
-	n, err := fmt.Sscanf(string(statBuf[:len(statBuf)-1]),
+	n, err := fmt.Sscanf(FileContentBuffer.String()[:FileContentBuffer.Len()-1],
 		`%d %s %c %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d`,
 		&p.Stat.Pid, &p.Stat.Name, &p.Stat.State,
 		&p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid,
