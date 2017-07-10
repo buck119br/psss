@@ -166,7 +166,7 @@ func (p *ProcInfo) GetFds() (err error) {
 		if _, err = fmt.Sscanf(link, "socket:[%d]", &inode); err != nil {
 			continue
 		}
-		p.Fd[inode] = name[i]
+		p.Fd[inode] = names[i]
 	}
 	return nil
 }
