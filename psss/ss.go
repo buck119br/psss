@@ -194,7 +194,7 @@ func (record *GenericRecord) ProcInfoPrint() {
 	for proc := range record.Procs {
 		for inode, name = range proc.Fd {
 			if inode == record.Inode {
-				fmt.Printf(`(pid=%d,fd=%s)`, inode, name)
+				fmt.Printf(`(pid=%d,fd=%s)`, proc.Stat.Pid, name)
 			}
 		}
 	}
