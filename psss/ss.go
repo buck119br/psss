@@ -417,6 +417,9 @@ func UnixRecordRead() (records map[uint32]*GenericRecord, err error) {
 		if record == nil {
 			return records, nil
 		}
+		if FlagProcess {
+			record.SetUpRelation()
+		}
 		records[record.Inode] = record
 		RecordInputChan <- NewGenericRecord()
 	}
@@ -508,6 +511,9 @@ readProc:
 		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
+		if FlagProcess {
+			record.SetUpRelation()
+		}
 		records[record.Inode] = record
 	}
 	return records, nil
@@ -548,6 +554,9 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord, err
 	for record := range RecordOutputChan {
 		if record == nil {
 			return records, nil
+		}
+		if FlagProcess {
+			record.SetUpRelation()
 		}
 		records[record.Inode] = record
 		RecordInputChan <- NewGenericRecord()
@@ -744,6 +753,9 @@ readProc:
 		}
 		if len(fields) > 17 {
 			record.Opt = fields[17:]
+		}
+		if FlagProcess {
+			record.SetUpRelation()
 		}
 		records[record.Inode] = record
 	}
