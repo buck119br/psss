@@ -3,32 +3,7 @@ package psss
 import (
 	"fmt"
 	"math"
-	"os"
-	"syscall"
 )
-
-type FileInfo struct {
-	Name    string
-	SysStat *syscall.Stat_t
-}
-
-func NewFileInfo() *FileInfo {
-	fi := new(FileInfo)
-	return fi
-}
-
-func (fi *FileInfo) GetStat(path string, name string) (err error) {
-	stat, err := os.Stat(path + "/" + name)
-	if err != nil {
-		return err
-	}
-	fi.Name = name
-	var ok bool
-	if fi.SysStat, ok = stat.Sys().(*syscall.Stat_t); !ok {
-		return fmt.Errorf("FileInfo.Sys:[%v] assertion failure", stat)
-	}
-	return nil
-}
 
 func BwToStr(bw float64) string {
 	switch {

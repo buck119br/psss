@@ -155,12 +155,18 @@ func (p *ProcInfo) GetFds() (err error) {
 	if err != nil {
 		return err
 	}
-	fi := NewFileInfo()
+	var (
+		link  string
+		inode uint32
+	)
 	for i := range names {
-		if err = fi.GetStat(fdPath, names[i]); err != nil {
+		if link, err = os.Readlink(fdPath + "/" + names[i]); err != nil {
 			continue
 		}
-		p.Fd[uint32(fi.SysStat.Ino)] = fi.Name
+		if _, err = fmt.Sscanf(link, "socket:[%d]", &inode); err != nil {
+			continue
+		}
+		p.Fd[inode] = name[i]
 	}
 	return nil
 }
