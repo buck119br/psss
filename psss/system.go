@@ -48,6 +48,30 @@ func NewSystemInfo() *SystemInfo {
 	return si
 }
 
+func (si *SystemInfo) Reset() {
+	si.Stat.CPUTime.User = 0
+	si.Stat.CPUTime.Nice = 0
+	si.Stat.CPUTime.System = 0
+	si.Stat.CPUTime.Idle = 0
+	si.Stat.CPUTime.Iowait = 0
+	si.Stat.CPUTime.Irq = 0
+	si.Stat.CPUTime.Softirq = 0
+	si.Stat.CPUTime.Steal = 0
+	si.Stat.CPUTime.Guest = 0
+	si.Stat.CPUTime.GuestNice = 0
+	si.Stat.CPUTime.Total = 0
+	si.Stat.PageIn = 0
+	si.Stat.PageOut = 0
+	si.Stat.SwapIn = 0
+	si.Stat.SwapOut = 0
+	si.Stat.Intr = 0
+	si.Stat.Ctxt = 0
+	si.Stat.Btime = 0
+	si.Stat.Processes = 0
+	si.Stat.ProcsRunning = 0
+	si.Stat.ProcsBlocked = 0
+}
+
 func (si *SystemInfo) GetStat() (err error) {
 	var (
 		line string

@@ -133,13 +133,11 @@ type GenericRecord struct {
 	Type    uint8 // socket type
 	Meminfo []uint32
 	// Related processes
-	Procs    map[*ProcInfo]bool
 	UserName string
 }
 
 func NewGenericRecord() *GenericRecord {
 	t := new(GenericRecord)
-	t.Procs = make(map[*ProcInfo]bool)
 	return t
 }
 
@@ -171,7 +169,6 @@ func (record *GenericRecord) Reset() {
 	record.Drops = 0
 	record.Type = 0
 	record.Meminfo = nil
-	record.Procs = make(map[*ProcInfo]bool)
 	record.UserName = ""
 }
 
@@ -184,7 +181,6 @@ func (record *GenericRecord) SetUpRelation() {
 		for _, proc = range procMap {
 			if _, ok = proc.Fd[record.Inode]; ok {
 				record.UserName = proc.Stat.Name
-				record.Procs[proc] = true
 			}
 		}
 	}
@@ -206,10 +202,10 @@ func (record *GenericRecord) ProcInfoPrint() {
 		name  string
 	)
 	fmt.Printf(`["%s":`, record.UserName)
-	for proc := range record.Procs {
+	for pid, proc := range GlobalProcInfo[record.UserName] {
 		for inode, name = range proc.Fd {
 			if inode == record.Inode {
-				fmt.Printf(`(pid=%d,fd=%s)`, proc.Stat.Pid, name)
+				fmt.Printf(`(pid=%d,fd=%s)`, pid, name)
 			}
 		}
 	}
