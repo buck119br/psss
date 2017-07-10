@@ -63,9 +63,6 @@ func GenericShow(protocal, af int) {
 	if len(psss.GlobalRecords) == 0 {
 		return
 	}
-	if *flagProcess {
-		psss.SetUpRelation()
-	}
 	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
 	fmt.Printf("%-*s\t%-*s\t", psss.MaxLocalAddrLength, "LocalAddress:Port", psss.MaxRemoteAddrLength, "RemoteAddress:Port")
 	if *flagProcess {

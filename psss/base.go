@@ -30,8 +30,9 @@ var (
 	ProtocalFilter uint64
 	SsFilter       uint32
 
-	FlagInfo   bool
-	FlagMemory bool
+	FlagProcess bool
+	FlagInfo    bool
+	FlagMemory  bool
 )
 
 var (

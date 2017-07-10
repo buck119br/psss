@@ -200,6 +200,9 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 			}
 			cursor += int(nlAttr.Len)
 		}
+		if FlagProcess {
+			record.SetUpRelation()
+		}
 		RecordOutputChan <- record
 	}
 	return nil

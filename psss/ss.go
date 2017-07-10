@@ -175,6 +175,21 @@ func (record *GenericRecord) Reset() {
 	record.UserName = ""
 }
 
+func (record *GenericRecord) SetUpRelation() {
+	var (
+		proc *ProcInfo
+		ok   bool
+	)
+	for _, procMap := range GlobalProcInfo {
+		for _, proc = range procMap {
+			if _, ok = proc.Fd[record.Inode]; ok {
+				record.UserName = proc.Stat.Name
+				record.Procs[proc] = true
+			}
+		}
+	}
+}
+
 func (record *GenericRecord) GenericInfoPrint() {
 	if len(Sstate[record.Status]) >= 8 {
 		fmt.Printf("%s\t", Sstate[record.Status])

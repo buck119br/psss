@@ -119,6 +119,8 @@ func main() {
 	}
 
 	if *flagProcess {
+		psss.FlagProcess = true
+
 		var ok bool
 		psss.GlobalProcInfo = make(map[string]map[int]*psss.ProcInfo)
 		go psss.GetProcInfo()

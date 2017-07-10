@@ -198,17 +198,3 @@ func GetProcInfo() {
 		ProcInfoOutputChan <- proc
 	}
 }
-
-func SetUpRelation() {
-	var ok bool
-	for ino := range GlobalRecords {
-		for _, procMap := range GlobalProcInfo {
-			for _, proc := range procMap {
-				if _, ok = proc.Fd[ino]; ok {
-					GlobalRecords[ino].UserName = proc.Stat.Name
-					GlobalRecords[ino].Procs[proc] = true
-				}
-			}
-		}
-	}
-}
