@@ -206,10 +206,12 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 }
 
 func RecvInetDiagMsgAll(skfd int) {
+	defer func() {
+		RecordOutputChan <- nil
+	}()
 	for {
 		if err := RecvInetDiagMsgMulti(skfd); err != nil {
 			if err == ErrorDone {
-				RecordOutputChan <- nil
 				return
 			}
 			continue

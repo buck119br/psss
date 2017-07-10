@@ -179,10 +179,12 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 }
 
 func RecvUnixDiagMsgAll(skfd int) {
+	defer func() {
+		RecordOutputChan <- nil
+	}()
 	for {
 		if err := RecvUnixDiagMsgMulti(skfd); err != nil {
 			if err == ErrorDone {
-				RecordOutputChan <- nil
 				return
 			}
 			continue
