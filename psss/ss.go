@@ -65,35 +65,34 @@ func (i IP) String() (str string) {
 }
 
 func IPv4HexToString(ipHex string) (ip string, err error) {
-	var tempInt int64
 	if len(ipHex) != 8 {
 		return ip, fmt.Errorf("invalid input:[%s]", ipHex)
 	}
-	for i := 3; i > 0; i-- {
-		if tempInt, err = strconv.ParseInt(ipHex[i*2:(i+1)*2], 16, 64); err != nil {
+	for indexBuffer = 3; indexBuffer > 0; indexBuffer-- {
+		if int64Buffer, err = strconv.ParseInt(ipHex[indexBuffer*2:(indexBuffer+1)*2], 16, 64); err != nil {
 			return "", err
 		}
-		ip += fmt.Sprintf("%d", tempInt) + "."
+		ip += fmt.Sprintf("%d", int64Buffer) + "."
 	}
-	if tempInt, err = strconv.ParseInt(ipHex[0:2], 16, 64); err != nil {
+	if int64Buffer, err = strconv.ParseInt(ipHex[0:2], 16, 64); err != nil {
 		return "", err
 	}
-	ip += fmt.Sprintf("%d", tempInt)
+	ip += fmt.Sprintf("%d", int64Buffer)
 	return ip, nil
 }
 
 func IPv6HexToString(ipHex string) (ip string, err error) {
 	prefix := ipHex[:24]
 	suffix := ipHex[24:]
-	for i := 0; i < 6; i++ {
-		if prefix[i:i+4] == "0000" {
+	for indexBuffer = 0; indexBuffer < 6; indexBuffer++ {
+		if prefix[indexBuffer:indexBuffer+4] == "0000" {
 			ip += ":"
 			continue
 		}
-		ip += prefix[i:i+4] + ":"
+		ip += prefix[indexBuffer:indexBuffer+4] + ":"
 	}
-	for _, v := range Colons {
-		ip = strings.Replace(ip, v, "::", -1)
+	for indexBuffer = range Colons {
+		ip = strings.Replace(ip, Colons[indexBuffer], "::", -1)
 	}
 	if suffix, err = IPv4HexToString(suffix); err != nil {
 		return "", err
@@ -421,7 +420,6 @@ readProc:
 		line        string
 		fields      []string
 		fieldsIndex int
-		tempInt64   int64
 		flag        int64
 	)
 	records = make(map[uint32]*GenericRecord)
@@ -467,29 +465,29 @@ readProc:
 		fieldsIndex++
 		// Type: the socket type.
 		// For SOCK_STREAM sockets, this is 0001; for SOCK_DGRAM sockets, it is 0002; and for SOCK_SEQPACKET sockets, it is 0005.
-		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		record.Type = uint8(tempInt64)
+		record.Type = uint8(int64Buffer)
 		fieldsIndex++
 		// St: the internal state of the socket.
-		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
 		if flag&(1<<16) != 0 {
 			record.Status = SsLISTEN
 		} else {
-			record.Status = UnixSstate[int(tempInt64)-1]
+			record.Status = UnixSstate[int(int64Buffer)-1]
 		}
 		if SsFilter&(1<<record.Status) == 0 {
 			continue
 		}
 		fieldsIndex++
 		// Inode
-		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
+		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
 			continue
 		}
-		record.Inode = uint32(tempInt64)
+		record.Inode = uint32(int64Buffer)
 		record.LocalAddr.Port = fmt.Sprintf("%d", record.Inode)
 		// Path: the bound path (if any) of the socket.
 		// Sockets in the abstract namespace are included in the list, and are shown with a Path that commences with the character '@'.
@@ -561,7 +559,7 @@ readProc:
 		fields      []string
 		fieldsIndex int
 		stringBuff  []string
-		tempInt64   int64
+		int64Buffer int64
 	)
 	records = make(map[uint32]*GenericRecord)
 
@@ -607,10 +605,10 @@ readProc:
 		if err != nil {
 			continue
 		}
-		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		record.LocalAddr.Port = fmt.Sprintf("%d", tempInt64)
+		record.LocalAddr.Port = fmt.Sprintf("%d", int64Buffer)
 		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
 			MaxLocalAddrLength = len(record.LocalAddr.String())
 		}
@@ -626,54 +624,54 @@ readProc:
 		if err != nil {
 			continue
 		}
-		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		record.RemoteAddr.Port = fmt.Sprintf("%d", tempInt64)
+		record.RemoteAddr.Port = fmt.Sprintf("%d", int64Buffer)
 		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
 			MaxRemoteAddrLength = len(record.RemoteAddr.String())
 		}
 		fieldsIndex++
 		// Status
-		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		record.Status = uint8(tempInt64)
+		record.Status = uint8(int64Buffer)
 		if SsFilter&(1<<record.Status) == 0 {
 			continue
 		}
 		fieldsIndex++
 		// TxQueue:RxQueue
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if tempInt64, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
+		if int64Buffer, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
 			continue
 		}
-		record.TxQueue = uint32(tempInt64)
-		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+		record.TxQueue = uint32(int64Buffer)
+		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		record.RxQueue = uint32(tempInt64)
+		record.RxQueue = uint32(int64Buffer)
 		fieldsIndex++
 		// Timer:TmWhen
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if tempInt64, err = strconv.ParseInt(stringBuff[0], 16, 32); err != nil {
+		if int64Buffer, err = strconv.ParseInt(stringBuff[0], 16, 32); err != nil {
 			continue
 		}
-		record.Timer = int(tempInt64)
+		record.Timer = int(int64Buffer)
 		if record.Timer > 4 {
 			record.Timer = 5
 		}
-		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 32); err != nil {
+		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 32); err != nil {
 			continue
 		}
-		record.Timeout = int(tempInt64)
+		record.Timeout = int(int64Buffer)
 		record.Timeout = (record.Timeout*1000 + int(SC_CLK_TCK) - 1) / int(SC_CLK_TCK)
 		fieldsIndex++
 		// Retransmit
-		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		record.Retransmit = int(tempInt64)
+		record.Retransmit = int(int64Buffer)
 		fieldsIndex++
 		if record.UID, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
 			continue
@@ -683,10 +681,10 @@ readProc:
 			continue
 		}
 		fieldsIndex++
-		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
+		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
 			continue
 		}
-		record.Inode = uint32(tempInt64)
+		record.Inode = uint32(int64Buffer)
 		fieldsIndex++
 		if record.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			continue
@@ -754,8 +752,8 @@ readProc:
 }
 
 func GetSocketCount(fields []string) (int, error) {
-	for i := range fields {
-		if fields[i] == "inuse" {
+	for indexBuffer = range fields {
+		if fields[indexBuffer] == "inuse" {
 			return strconv.Atoi(fields[i+1])
 		}
 	}

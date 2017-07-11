@@ -142,7 +142,7 @@ func (p *ProcInfo) GetStat() (err error) {
 }
 
 func (p *ProcInfo) GetFds() (err error) {
-	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
+	fdPath = ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
 	fd, err := os.Open(fdPath)
 	if err != nil {
 		return err
@@ -152,18 +152,14 @@ func (p *ProcInfo) GetFds() (err error) {
 	if err != nil {
 		return err
 	}
-	var (
-		link  string
-		inode uint32
-	)
-	for i := range names {
-		if link, err = os.Readlink(fdPath + "/" + names[i]); err != nil {
+	for indexBuffer = range names {
+		if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
 			continue
 		}
-		if _, err = fmt.Sscanf(link, "socket:[%d]", &inode); err != nil {
+		if _, err = fmt.Sscanf(fdLink, "socket:[%d]", &fdInode); err != nil {
 			continue
 		}
-		p.Fd[inode] = names[i]
+		p.Fd[fdInode] = names[indexBuffer]
 	}
 	return nil
 }
@@ -182,16 +178,14 @@ func GetProcInfo() {
 	if err != nil {
 		return
 	}
-	var (
-		tempInt int
-		proc    *ProcInfo
-	)
-	for i := range names {
-		if tempInt, err = strconv.Atoi(names[i]); err != nil {
+
+	var proc *ProcInfo
+	for indexBuffer = range names {
+		if intBuffer, err = strconv.Atoi(names[indexBuffer]); err != nil {
 			continue
 		}
 		proc = <-ProcInfoInputChan
-		proc.Stat.Pid = tempInt
+		proc.Stat.Pid = intBuffer
 		if err = proc.GetStat(); err != nil {
 			proc.Stat.Name = "NULL"
 		}

@@ -67,23 +67,15 @@ func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
 	if skfd, err = unix.Socket(unix.AF_NETLINK, unix.SOCK_RAW, unix.NETLINK_SOCK_DIAG); err != nil {
 		return -1, err
 	}
-	sockAddrNl := unix.SockaddrNetlink{
-		Family: unix.AF_NETLINK,
-	}
-	unDiagReq := UnixDiagRequest{
-		Header: unix.NlMsghdr{
-			Type:  SOCK_DIAG_BY_FAMILY,
-			Flags: unix.NLM_F_DUMP | unix.NLM_F_REQUEST,
-		},
-		Request: UnixDiagReq{
-			SdiagFamily: unix.AF_UNIX,
-			UdiagStates: states,
-			UdiagShow:   show,
-		},
-	}
+	sockAddrNl.Family = unix.AF_NETLINK
+	unDiagReq.Header.Type = SOCK_DIAG_BY_FAMILY
+	unDiagReq.Header.Flags = unix.NLM_F_DUMP | unix.NLM_F_REQUEST
+	unDiagReq.Request.SdiagFamily = unix.AF_UNIX
+	unDiagReq.Request.UdiagStates = states
+	unDiagReq.Request.UdiagShow = show
 	unDiagReq.Header.Len = uint32(unsafe.Sizeof(unDiagReq))
-	*(*UnixDiagRequest)(unsafe.Pointer(&UnixDiagRequestBuffer[0])) = unDiagReq
-	if err = unix.Sendmsg(skfd, UnixDiagRequestBuffer, nil, &sockAddrNl, 0); err != nil {
+	*(*UnixDiagRequest)(unsafe.Pointer(&unDiagRequestBuffer[0])) = unDiagReq
+	if err = unix.Sendmsg(skfd, unDiagRequestBuffer, nil, &sockAddrNl, 0); err != nil {
 		return -1, err
 	}
 	return skfd, nil
@@ -91,49 +83,45 @@ func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
 
 func RecvUnixDiagMsgMulti(skfd int) (err error) {
 	var (
-		n      int
 		cursor int
 		record *GenericRecord
-		msg    UnixDiagMessage
-		nlAttr unix.NlAttr
-		rqlen  UnixDiagRQlen
 	)
 	for {
-		if n, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, unix.MSG_PEEK); err != nil {
+		if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, unix.MSG_PEEK); err != nil {
 			return err
 		}
-		if n < len(GlobalBuffer) {
+		if bytesCounter < len(GlobalBuffer) {
 			break
 		}
 		GlobalBuffer = make([]byte, 2*len(GlobalBuffer))
 	}
-	if n, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, 0); err != nil {
+	if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, 0); err != nil {
 		return err
 	}
-	raw, err := syscall.ParseNetlinkMessage(GlobalBuffer[:n])
+	raw, err := syscall.ParseNetlinkMessage(GlobalBuffer[:bytesCounter])
 	if err != nil {
 		return err
 	}
-	for i := range raw {
+	for indexBuffer := range raw {
 		record = <-RecordInputChan
 		if raw[i].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
-		msg = *(*UnixDiagMessage)(unsafe.Pointer(&raw[i].Data[:SizeOfUnixDiagMsg][0]))
-		record.Inode = msg.UdiagIno
-		record.LocalAddr.Port = fmt.Sprintf("%d", msg.UdiagIno)
-		record.Status = msg.UdiagState
-		record.Type = msg.UdiagType
-		record.SK = uint64(msg.UdiagCookie[1])<<32 | uint64(msg.UdiagCookie[0])
+		unDiagMsg = *(*UnixDiagMessage)(unsafe.Pointer(&raw[indexBuffer].Data[:SizeOfUnixDiagMsg][0]))
+		record.Inode = unDiagMsg.UdiagIno
+		record.LocalAddr.Port = fmt.Sprintf("%d", unDiagMsg.UdiagIno)
+		record.Status = unDiagMsg.UdiagState
+		record.Type = unDiagMsg.UdiagType
+		record.SK = uint64(unDiagMsg.UdiagCookie[1])<<32 | uint64(unDiagMsg.UdiagCookie[0])
 		cursor = SizeOfUnixDiagMsg
-		for cursor+4 < len(raw[i].Data) {
+		for cursor+4 < len(raw[indexBuffer].Data) {
 			for raw[i].Data[cursor] == byte(0) {
 				cursor++
 			}
-			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[i].Data[cursor : cursor+unix.SizeofNlAttr][0]))
+			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[indexBuffer].Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case UNIX_DIAG_NAME:
-				record.LocalAddr.Host = string(raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
+				record.LocalAddr.Host = string(raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
 				if len(record.LocalAddr.Host) == 0 {
 					record.LocalAddr.Host = "*"
 				}
@@ -141,33 +129,33 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 					MaxLocalAddrLength = len(record.LocalAddr.String())
 				}
 			case UNIX_DIAG_VFS:
-				// vfs := *(*UnixDiagVFS)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// vfs := *(*UnixDiagVFS)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case UNIX_DIAG_PEER:
 				record.RemoteAddr.Host = "*"
-				record.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
+				record.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
 				if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
 					MaxRemoteAddrLength = len(record.RemoteAddr.String())
 				}
 			case UNIX_DIAG_ICONS:
 				// if nlAttr.Len > 4 {
 				// 	icons := make([]uint32, 0)
-				// 	for i := cursor + unix.SizeofNlAttr; i < cursor+int(nlAttr.Len); i = i + 4 {
-				// 		icons = append(icons, *(*uint32)(unsafe.Pointer(&raw[i].Data[i : i+4][0])))
+				// 	for j := cursor + unix.SizeofNlAttr; j < cursor+int(nlAttr.Len); j = j + 4 {
+				// 		icons = append(icons, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
 				// 	}
 				// }
 			case UNIX_DIAG_RQLEN:
-				rqlen = *(*UnixDiagRQlen)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
-				record.RxQueue = rqlen.RQ
-				record.TxQueue = rqlen.WQ
+				unDiagRQlen = *(*UnixDiagRQlen)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				record.RxQueue = unDiagRQlen.RQ
+				record.TxQueue = unDiagRQlen.WQ
 			case UNIX_DIAG_MEMINFO:
 				if nlAttr.Len > 4 {
 					record.Meminfo = make([]uint32, 0, 8)
 					for j := cursor + unix.SizeofNlAttr; j < cursor+int(nlAttr.Len); j = j + 4 {
-						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&raw[i].Data[j : j+4][0])))
+						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
 					}
 				}
 			case UNIX_DIAG_SHUTDOWN:
-				// shutdown := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// shutdown := *(*uint8)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
 				fmt.Println("invalid NlAttr Type")
 			}

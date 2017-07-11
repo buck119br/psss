@@ -37,18 +37,33 @@ var (
 )
 
 var (
-	Summary               map[string]map[string]int
-	GlobalRecords         map[uint32]*GenericRecord
-	GlobalProcInfo        map[string]map[int]*ProcInfo
-	GlobalSystemInfo      *SystemInfo
-	GlobalBuffer          []byte
-	FileContentBuffer     *bytes.Buffer
-	UnixDiagRequestBuffer []byte
-	InetDiagRequestBuffer []byte
-	RecordInputChan       chan *GenericRecord
-	RecordOutputChan      chan *GenericRecord
-	ProcInfoInputChan     chan *ProcInfo
-	ProcInfoOutputChan    chan *ProcInfo
+	Summary          map[string]map[string]int
+	GlobalRecords    map[uint32]*GenericRecord
+	GlobalProcInfo   map[string]map[int]*ProcInfo
+	GlobalSystemInfo *SystemInfo
+	// buffer
+	GlobalBuffer        []byte
+	FileContentBuffer   *bytes.Buffer
+	unDiagRequestBuffer []byte
+	inDiagRequestBuffer []byte
+	int64Buffer         int64
+	intBuffer           int
+	indexBuffer         int
+	bytesCounter        int
+	sockAddrNl          unix.SockaddrNetlink
+	nlAttr              unix.NlAttr
+	unDiagMsg           UnixDiagMessage
+	unDiagRQlen         UnixDiagRQlen
+	inDiagReq           InetDiagRequest
+	inDiagMsg           InetDiagMessage
+	fdPath              string
+	fdLink              string
+	fdInode             uint32
+	// channel
+	RecordInputChan    chan *GenericRecord
+	RecordOutputChan   chan *GenericRecord
+	ProcInfoInputChan  chan *ProcInfo
+	ProcInfoOutputChan chan *ProcInfo
 )
 
 var (
@@ -67,8 +82,8 @@ var (
 func init() {
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	FileContentBuffer = bytes.NewBuffer(make([]byte, os.Getpagesize()))
-	UnixDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
-	InetDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
+	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
+	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)
 	RecordOutputChan = make(chan *GenericRecord)
 	ProcInfoInputChan = make(chan *ProcInfo)
