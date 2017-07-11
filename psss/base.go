@@ -9,6 +9,8 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+
+	"golang.org/x/sys/unix"
 )
 
 const (
