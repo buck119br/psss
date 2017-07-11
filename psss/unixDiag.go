@@ -102,9 +102,9 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 	if err != nil {
 		return err
 	}
-	for indexBuffer := range raw {
+	for indexBuffer = range raw {
 		record = <-RecordInputChan
-		if raw[i].Header.Type == unix.NLMSG_DONE {
+		if raw[indexBuffer].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
 		unDiagMsg = *(*UnixDiagMessage)(unsafe.Pointer(&raw[indexBuffer].Data[:SizeOfUnixDiagMsg][0]))
@@ -115,7 +115,7 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 		record.SK = uint64(unDiagMsg.UdiagCookie[1])<<32 | uint64(unDiagMsg.UdiagCookie[0])
 		cursor = SizeOfUnixDiagMsg
 		for cursor+4 < len(raw[indexBuffer].Data) {
-			for raw[i].Data[cursor] == byte(0) {
+			for raw[indexBuffer].Data[cursor] == byte(0) {
 				cursor++
 			}
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[indexBuffer].Data[cursor : cursor+unix.SizeofNlAttr][0]))

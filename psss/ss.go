@@ -754,7 +754,7 @@ readProc:
 func GetSocketCount(fields []string) (int, error) {
 	for indexBuffer = range fields {
 		if fields[indexBuffer] == "inuse" {
-			return strconv.Atoi(fields[i+1])
+			return strconv.Atoi(fields[indexBuffer+1])
 		}
 	}
 	return 0, nil
