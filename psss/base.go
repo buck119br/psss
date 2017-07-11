@@ -54,6 +54,7 @@ var (
 	bytesCounter        int
 	sockAddrNl          unix.SockaddrNetlink
 	nlAttr              unix.NlAttr
+	unDiagReq           UnixDiagRequest
 	unDiagMsg           UnixDiagMessage
 	unDiagRQlen         UnixDiagRQlen
 	inDiagReq           InetDiagRequest
