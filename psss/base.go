@@ -59,6 +59,7 @@ var (
 	unDiagRQlen         UnixDiagRQlen
 	inDiagReq           InetDiagRequest
 	inDiagMsg           InetDiagMessage
+	dirNames            []string
 	fdPath              string
 	fdLink              string
 	fdInode             uint32
