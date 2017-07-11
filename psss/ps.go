@@ -148,19 +148,19 @@ func (p *ProcInfo) GetFds() (err error) {
 		return err
 	}
 	defer fd.Close()
-	if fdDirNames, err = fd.Readdirnames(0); err != nil {
+	names, err := fd.Readdirnames(0)
+	if err != nil {
 		return err
 	}
-	for indexBuffer = range fdDirNames {
-		if fdLink, err = os.Readlink(fdPath + "/" + fdDirNames[indexBuffer]); err != nil {
+	for indexBuffer = range names {
+		if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
 			continue
 		}
 		if _, err = fmt.Sscanf(fdLink, "socket:[%d]", &fdInode); err != nil {
 			continue
 		}
-		p.Fd[fdInode] = fdDirNames[indexBuffer]
+		p.Fd[fdInode] = names[indexBuffer]
 	}
-	fdDirNames = fdDirNames[0:0]
 	return nil
 }
 
@@ -174,13 +174,14 @@ func GetProcInfo() {
 		return
 	}
 	defer fd.Close()
-	if procDirNames, err = fd.Readdirnames(0); err != nil {
+	names, err := fd.Readdirnames(0)
+	if err != nil {
 		return
 	}
 
 	var proc *ProcInfo
-	for indexBuffer = range procDirNames {
-		if intBuffer, err = strconv.Atoi(procDirNames[indexBuffer]); err != nil {
+	for indexBuffer = range names {
+		if intBuffer, err = strconv.Atoi(names[indexBuffer]); err != nil {
 			continue
 		}
 		proc = <-ProcInfoInputChan
@@ -193,5 +194,4 @@ func GetProcInfo() {
 		}
 		ProcInfoOutputChan <- proc
 	}
-	procDirNames = procDirNames[0:0]
 }
