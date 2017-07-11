@@ -152,14 +152,14 @@ func (p *ProcInfo) GetFds() (err error) {
 	if err != nil {
 		return err
 	}
-	for _, v := range names {
-		if fdLink, err = os.Readlink(fdPath + "/" + v); err != nil {
+	for indexBuffer = range names {
+		if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
 			continue
 		}
 		if _, err = fmt.Sscanf(fdLink, "socket:[%d]", &fdInode); err != nil {
 			continue
 		}
-		p.Fd[fdInode] = v
+		p.Fd[fdInode] = names[indexBuffer]
 	}
 	return nil
 }
@@ -180,8 +180,8 @@ func GetProcInfo() {
 	}
 
 	var proc *ProcInfo
-	for _, v := range names {
-		if intBuffer, err = strconv.Atoi(v); err != nil {
+	for indexBuffer = range names {
+		if intBuffer, err = strconv.Atoi(names[indexBuffer]); err != nil {
 			continue
 		}
 		proc = <-ProcInfoInputChan
