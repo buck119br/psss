@@ -160,7 +160,7 @@ func (p *ProcInfo) GetFds() (err error) {
 		}
 		p.Fd[fdInode] = fdDirNames[indexBuffer]
 	}
-	dirNames = dirNames[0:0]
+	fddfdDirNames = fdDirNames[0:0]
 	return nil
 }
 
