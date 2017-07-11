@@ -151,7 +151,7 @@ func (p *ProcInfo) GetFds() (err error) {
 	if names, err := fd.Readdirnames(0); err != nil {
 		return err
 	} else {
-		for v := range names {
+		for _, v := range names {
 			if fdLink, err = os.Readlink(fdPath + "/" + v); err != nil {
 				continue
 			}
@@ -178,7 +178,7 @@ func GetProcInfo() {
 		return
 	} else {
 		var proc *ProcInfo
-		for v := range names {
+		for _, v := range names {
 			if intBuffer, err = strconv.Atoi(v); err != nil {
 				continue
 			}
