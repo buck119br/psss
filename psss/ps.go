@@ -3,7 +3,6 @@ package psss
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 )
@@ -167,7 +166,6 @@ func (p *ProcInfo) GetFds() (err error) {
 
 func GetProcInfo() {
 	defer func() {
-		runtime.GC()
 		<-ProcInfoInputChan
 		ProcInfoOutputChan <- nil
 	}()
