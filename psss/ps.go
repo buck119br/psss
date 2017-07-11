@@ -148,18 +148,18 @@ func (p *ProcInfo) GetFds() (err error) {
 		return err
 	}
 	defer fd.Close()
-	names, err := fd.Readdirnames(0)
-	if err != nil {
+	if names, err := fd.Readdirnames(0); err != nil {
 		return err
-	}
-	for indexBuffer = range names {
-		if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
-			continue
+	} else {
+		for indexBuffer = range names {
+			if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
+				continue
+			}
+			if _, err = fmt.Sscanf(fdLink, "socket:[%d]", &fdInode); err != nil {
+				continue
+			}
+			p.Fd[fdInode] = names[indexBuffer]
 		}
-		if _, err = fmt.Sscanf(fdLink, "socket:[%d]", &fdInode); err != nil {
-			continue
-		}
-		p.Fd[fdInode] = names[indexBuffer]
 	}
 	return nil
 }
@@ -174,25 +174,23 @@ func GetProcInfo() {
 		return
 	}
 	defer fd.Close()
-	names, err := fd.Readdirnames(0)
-	if err != nil {
+	if names, err := fd.Readdirnames(0); err != nil {
 		return
+	} else {
+		var proc *ProcInfo
+		for indexBuffer = range names {
+			if intBuffer, err = strconv.Atoi(names[indexBuffer]); err != nil {
+				continue
+			}
+			proc = <-ProcInfoInputChan
+			proc.Stat.Pid = intBuffer
+			if err = proc.GetStat(); err != nil {
+				proc.Stat.Name = "NULL"
+			}
+			if err = proc.GetFds(); err != nil {
+				proc.Stat.Name = "NULL"
+			}
+			ProcInfoOutputChan <- proc
+		}
 	}
-
-	var proc *ProcInfo
-	for indexBuffer = range names {
-		if intBuffer, err = strconv.Atoi(names[indexBuffer]); err != nil {
-			continue
-		}
-		proc = <-ProcInfoInputChan
-		proc.Stat.Pid = intBuffer
-		if err = proc.GetStat(); err != nil {
-			proc.Stat.Name = "NULL"
-		}
-		if err = proc.GetFds(); err != nil {
-			proc.Stat.Name = "NULL"
-		}
-		ProcInfoOutputChan <- proc
-	}
-
 }
