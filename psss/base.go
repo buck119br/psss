@@ -47,9 +47,6 @@ var (
 	// buffer
 	GlobalBuffer        []byte
 	FileContentBuffer   *bytes.Buffer
-	dentBuffer          []byte
-	dentBufferx         []byte
-	nameBuffer          []byte
 	unDiagRequestBuffer []byte
 	inDiagRequestBuffer []byte
 	int64Buffer         int64
@@ -63,7 +60,8 @@ var (
 	unDiagRQlen         UnixDiagRQlen
 	inDiagReq           InetDiagRequest
 	inDiagMsg           InetDiagMessage
-	dirent              Dirent
+	procDirentHandler   *DirentHandler
+	fdDirentHandler     *DirentHandler
 	fdStat_t            *syscall.Stat_t
 	fdPath              string
 	// channel
@@ -89,9 +87,6 @@ var (
 func init() {
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	FileContentBuffer = bytes.NewBuffer(make([]byte, os.Getpagesize()))
-	dentBuffer = make([]byte, os.Getpagesize())
-	dentBufferx = make([]byte, 0, os.Getpagesize())
-	nameBuffer = make([]byte, 0, 256)
 	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)
@@ -99,6 +94,8 @@ func init() {
 	ProcInfoInputChan = make(chan *ProcInfo)
 	ProcInfoOutputChan = make(chan *ProcInfo)
 
+	procDirentHandler = NewDirentHandler()
+	fdDirentHandler = NewDirentHandler()
 	fdStat_t = new(syscall.Stat_t)
 }
 

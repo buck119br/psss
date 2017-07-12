@@ -18,40 +18,63 @@ type Dirent struct {
 	Name   string
 }
 
-func ReadDirents(fd *os.File) (dirents map[Dirent]bool, err error) {
-	dentBufferx = dentBufferx[0:0]
+type DirentHandler struct {
+	SignalChan   chan bool
+	Buffer       []byte
+	Bufferx      []byte
+	NameBuffer   []byte
+	Dirent       *Dirent
+	BytesCounter int
+	IndexBuffer  int
+	Cursor       int
+	Signal       bool
+}
+
+func NewDirentHandler() *DirentHandler {
+	d := new(DirentHandler)
+	d.SignalChan = make(chan bool)
+	d.Buffer = make([]byte, os.Getpagesize())
+	d.Bufferx = make([]byte, os.Getpagesize())
+	d.NameBuffer = make([]byte, 256)
+	d.Dirent = new(Dirent)
+	return d
+}
+
+func (d *DirentHandler) ReadDirents(fd *os.File) {
+	defer func() {
+		d.SignalChan <- false
+	}()
+	d.Bufferx = d.Bufferx[0:0]
 	for {
-		if bytesCounter, err = unix.Getdents(int(fd.Fd()), dentBuffer); err != nil {
+		if d.BytesCounter, err = unix.Getdents(int(fd.Fd()), d.Buffer); err != nil {
 			return
 		}
 		runtime.KeepAlive(fd)
-		if bytesCounter == 0 {
+		if d.BytesCounter == 0 {
 			break
 		}
-		dentBufferx = append(dentBufferx, dentBuffer[:bytesCounter]...)
+		d.Bufferx = append(d.Bufferx, d.Buffer[:d.BytesCounter]...)
 	}
-	var cursor int
-	dirents = make(map[Dirent]bool)
-	for cursor < len(dentBufferx)-1 {
-		dirent.Inode = *(*uint64)(unsafe.Pointer(&dentBufferx[cursor : cursor+8][0]))
-		dirent.Offset = *(*uint64)(unsafe.Pointer(&dentBufferx[cursor+8 : cursor+16][0]))
-		dirent.Reclen = *(*uint16)(unsafe.Pointer(&dentBufferx[cursor+16 : cursor+18][0]))
-		dirent.Type = *(*byte)(unsafe.Pointer(&dentBufferx[cursor+18 : cursor+19][0]))
-		nameBuffer = nameBuffer[0:0]
-		for indexBuffer = cursor + 19; indexBuffer < cursor+int(dirent.Reclen); indexBuffer++ {
-			if dentBufferx[indexBuffer] == byte(0) {
+	d.Cursor = 0
+	for d.Cursor < len(d.Bufferx)-1 {
+		d.Dirent.Inode = *(*uint64)(unsafe.Pointer(&d.Bufferx[d.Cursor : d.Cursor+8][0]))
+		d.Dirent.Offset = *(*uint64)(unsafe.Pointer(&d.Bufferx[d.Cursor+8 : d.Cursor+16][0]))
+		d.Dirent.Reclen = *(*uint16)(unsafe.Pointer(&d.Bufferx[d.Cursor+16 : d.Cursor+18][0]))
+		d.Dirent.Type = *(*byte)(unsafe.Pointer(&d.Bufferx[d.Cursor+18 : d.Cursor+19][0]))
+		d.NameBuffer = d.NameBuffer[0:0]
+		for d.IndexBuffer = d.Cursor + 19; d.IndexBuffer < d.Cursor+int(d.Dirent.Reclen); d.IndexBuffer++ {
+			if d.Bufferx[d.IndexBuffer] == byte(0) {
 				break
 			}
-			nameBuffer = append(nameBuffer, dentBufferx[indexBuffer])
+			d.NameBuffer = append(d.NameBuffer, d.Bufferx[d.IndexBuffer])
 		}
-		dirent.Name = string(nameBuffer[:len(nameBuffer)])
-		cursor += int(dirent.Reclen)
-		if dirent.Name == "." || dirent.Name == ".." {
+		d.Dirent.Name = string(d.NameBuffer[:len(d.NameBuffer)])
+		d.Cursor += int(d.Dirent.Reclen)
+		if d.Dirent.Name == "." || d.Dirent.Name == ".." {
 			continue
 		}
-		dirents[dirent] = true
+		d.SignalChan <- true
 	}
-	return dirents, nil
 }
 
 func BwToStr(bw float64) string {

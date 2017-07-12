@@ -149,15 +149,15 @@ func (p *ProcInfo) GetFds() (err error) {
 		return err
 	}
 	defer fd.Close()
-	dirents, err := ReadDirents(fd)
-	if err != nil {
-		return
-	}
-	for dirent = range dirents {
-		if err = syscall.Stat(fdPath+"/"+dirent.Name, fdStat_t); err != nil {
+	go fdDirentHandler.ReadDirents(fd)
+	for fdDirentHandler.Signal = range fdDirentHandler.SignalChan {
+		if !fdDirentHandler.Signal {
+			return
+		}
+		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.Dirent.Name, fdStat_t); err != nil {
 			continue
 		}
-		p.Fd[uint32(fdStat_t.Ino)] = dirent.Name
+		p.Fd[uint32(fdStat_t.Ino)] = fdDirentHandler.Dirent.Name
 	}
 	return nil
 }
@@ -174,12 +174,12 @@ func GetProcInfo() {
 	defer fd.Close()
 
 	var proc *ProcInfo
-	dirents, err := ReadDirents(fd)
-	if err != nil {
-		return
-	}
-	for dirent = range dirents {
-		if intBuffer, err = strconv.Atoi(dirent.Name); err != nil {
+	go procDirentHandler.ReadDirents(fd)
+	for procDirentHandler.Signal = range procDirentHandler.SignalChan {
+		if !procDirentHandler.Signal {
+			return
+		}
+		if intBuffer, err = strconv.Atoi(procDirentHandler.Dirent.Name); err != nil {
 			continue
 		}
 		proc = <-ProcInfoInputChan
