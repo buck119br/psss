@@ -24,7 +24,7 @@ func ParseDirent(buffer []byte) (dirents map[Dirent]bool, err error) {
 		dirent.Type = *(*byte)(unsafe.Pointer(&buffer[cursor+18 : cursor+19][0]))
 		dirent.Name = string(buffer[cursor+19 : cursor+int(dirent.Reclen)])
 		cursor += int(dirent.Reclen)
-		dirents[dirent] = bool
+		dirents[dirent] = true
 	}
 	return dirents, nil
 }

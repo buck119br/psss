@@ -151,7 +151,7 @@ func (p *ProcInfo) GetFds() (err error) {
 	}
 	defer fd.Close()
 	for {
-		if bytesCounter, err = unix.Getdents(fd.Fd(), fdDentBuffer); err != nil {
+		if bytesCounter, err = unix.Getdents(int(fd.Fd()), fdDentBuffer); err != nil {
 			return
 		}
 		if bytesCounter < len(fdDentBuffer) {
@@ -159,7 +159,7 @@ func (p *ProcInfo) GetFds() (err error) {
 		}
 		fdDentBuffer = make([]byte, 2*len(fdDentBuffer))
 	}
-	if bytesCounter, err = unix.Getdents(fd.Fd(), fdDentBuffer); err != nil {
+	if bytesCounter, err = unix.Getdents(int(fd.Fd()), fdDentBuffer); err != nil {
 		return
 	}
 	dirents, err := ParseDirent(procDentBuffer)
@@ -184,7 +184,7 @@ func GetProcInfo() {
 	defer fd.Close()
 
 	for {
-		if bytesCounter, err = unix.Getdents(fd.Fd(), procDentBuffer); err != nil {
+		if bytesCounter, err = unix.Getdents(int(fd.Fd()), procDentBuffer); err != nil {
 			return
 		}
 		if bytesCounter < len(procDentBuffer) {
@@ -192,7 +192,7 @@ func GetProcInfo() {
 		}
 		procDentBuffer = make([]byte, 2*len(procDentBuffer))
 	}
-	if bytesCounter, err = unix.Getdents(fd.Fd(), procDentBuffer); err != nil {
+	if bytesCounter, err = unix.Getdents(int(fd.Fd()), procDentBuffer); err != nil {
 		return
 	}
 	dirents, err := ParseDirent(procDentBuffer)
