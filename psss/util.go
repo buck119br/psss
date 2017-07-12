@@ -19,6 +19,9 @@ func ParseDirent(buffer []byte) (dirents map[Dirent]bool, err error) {
 	dirents = make(map[Dirent]bool)
 	for cursor < len(buffer)-1 {
 		dirent.Inode = *(*uint64)(unsafe.Pointer(&buffer[cursor : cursor+8][0]))
+		if dirent.Inode == 0 {
+			return
+		}
 		dirent.Offset = *(*uint64)(unsafe.Pointer(&buffer[cursor+8 : cursor+16][0]))
 		dirent.Reclen = *(*uint16)(unsafe.Pointer(&buffer[cursor+16 : cursor+18][0]))
 		dirent.Type = *(*byte)(unsafe.Pointer(&buffer[cursor+18 : cursor+19][0]))

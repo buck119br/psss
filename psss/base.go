@@ -86,7 +86,7 @@ var (
 func init() {
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	FileContentBuffer = bytes.NewBuffer(make([]byte, os.Getpagesize()))
-	procDentBuffer = make([]byte, 10*os.Getpagesize())
+	procDentBuffer = make([]byte, os.Getpagesize())
 	fdDentBuffer = make([]byte, os.Getpagesize())
 	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
