@@ -104,7 +104,7 @@ func (p *ProcInfo) GetStat() (err error) {
 	if _, err = FileContentBuffer.ReadFrom(fd); err != nil {
 		return err
 	}
-	n, err := fmt.Sscanf(FileContentBuffer.String()[:FileContentBuffer.Len()-1],
+	n, err := fmt.Sscanf(string(FileContentBuffer.Bytes()[:FileContentBuffer.Len()-1]),
 		`%d %s %c %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d`,
 		&p.Stat.Pid, &p.Stat.Name, &p.Stat.State,
 		&p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid,
@@ -145,20 +145,16 @@ func (p *ProcInfo) GetStat() (err error) {
 
 func (p *ProcInfo) GetFds() (err error) {
 	fdPath = ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
-	// fd, err := os.Open(fdPath)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer fd.Close()
-	// names, err := fd.Readdirnames(0)
-	// if err != nil {
-	// 	return err
-	// }
-	fis, err := ioutil.ReadDir(fdPath)
+	fd, err := os.Open(fdPath)
 	if err != nil {
 		return err
 	}
-	for indexBuffer = range fis {
+	defer fd.Close()
+	names, err := fd.Readdirnames(0)
+	if err != nil {
+		return err
+	}
+	for indexBuffer = range names {
 		// if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
 		// 	continue
 		// }
@@ -166,11 +162,10 @@ func (p *ProcInfo) GetFds() (err error) {
 		// 	continue
 		// }
 		// p.Fd[fdInode] = names[indexBuffer]
-		name := fis[indexBuffer].Name()
-		if err = syscall.Stat(fdPath+"/"+name, fdStat_t); err != nil {
+		if err = syscall.Stat(fdPath+"/"+names[indexBuffer], fdStat_t); err != nil {
 			continue
 		}
-		p.Fd[uint32(fdStat_t.Ino)] = name
+		p.Fd[uint32(fdStat_t.Ino)] = names[indexBuffer]
 	}
 	return nil
 }
