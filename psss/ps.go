@@ -5,8 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"golang.org/x/sys/unix"
 )
 
 var ProcState = map[byte]string{
@@ -150,24 +148,7 @@ func (p *ProcInfo) GetFds() (err error) {
 		return err
 	}
 	defer fd.Close()
-	for {
-		if bytesCounter, err = unix.Getdents(int(fd.Fd()), fdDentBuffer); err != nil {
-			return
-		}
-		if bytesCounter == 0 {
-			break
-		}
-		fdDentBuffer = make([]byte, 2*len(fdDentBuffer))
-	}
-	if bytesCounter, err = unix.Getdents(int(fd.Fd()), fdDentBuffer); err != nil {
-		return
-	}
-	dirents, err := ParseDirent(fdDentBuffer)
-	if err != nil {
-		return
-	}
-	RefillBuffer(fdDentBuffer)
-	for dirent = range dirents {
+	for dirent = range ReadDirents(int(fd.Fd())) {
 		p.Fd[uint32(dirent.Inode)] = dirent.Name
 	}
 	return nil
@@ -184,26 +165,8 @@ func GetProcInfo() {
 	}
 	defer fd.Close()
 
-	for {
-		if bytesCounter, err = unix.Getdents(int(fd.Fd()), procDentBuffer); err != nil {
-			return
-		}
-		if bytesCounter == 0 {
-			break
-		}
-		procDentBuffer = make([]byte, 2*len(procDentBuffer))
-	}
-	if bytesCounter, err = unix.Getdents(int(fd.Fd()), procDentBuffer); err != nil {
-		return
-	}
-	dirents, err := ParseDirent(procDentBuffer)
-	if err != nil {
-		return
-	}
-	RefillBuffer(procDentBuffer)
-
 	var proc *ProcInfo
-	for dirent = range dirents {
+	for dirent = range ReadDirents(int(fd.Fd())) {
 		if intBuffer, err = strconv.Atoi(dirent.Name); err != nil {
 			continue
 		}

@@ -46,8 +46,8 @@ var (
 	// buffer
 	GlobalBuffer        []byte
 	FileContentBuffer   *bytes.Buffer
-	procDentBuffer      []byte
-	fdDentBuffer        []byte
+	dentBuffer          []byte
+	dentBufferx         []byte
 	unDiagRequestBuffer []byte
 	inDiagRequestBuffer []byte
 	int64Buffer         int64
@@ -86,8 +86,8 @@ var (
 func init() {
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	FileContentBuffer = bytes.NewBuffer(make([]byte, os.Getpagesize()))
-	procDentBuffer = make([]byte, os.Getpagesize())
-	fdDentBuffer = make([]byte, os.Getpagesize())
+	dentBuffer = make([]byte, os.Getpagesize())
+	dentBufferx = make([]byte, 0, os.Getpagesize())
 	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"unsafe"
+
+	"golang.org/x/sys/unix"
 )
 
 type Dirent struct {
@@ -14,28 +16,29 @@ type Dirent struct {
 	Name   string
 }
 
-func ParseDirent(buffer []byte) (dirents map[Dirent]bool, err error) {
-	var cursor int
-	dirents = make(map[Dirent]bool)
-	for cursor < len(buffer)-1 {
-		dirent.Inode = *(*uint64)(unsafe.Pointer(&buffer[cursor : cursor+8][0]))
-		if dirent.Inode == 0 {
+func ReadDirents(fd int) (dirents map[Dirent]bool) {
+	dentBufferx = dentBufferx[0:0]
+	for {
+		if bytesCounter, err = unix.Getdents(int(fd.Fd()), dentBuffer); err != nil {
 			return
 		}
-		dirent.Offset = *(*uint64)(unsafe.Pointer(&buffer[cursor+8 : cursor+16][0]))
-		dirent.Reclen = *(*uint16)(unsafe.Pointer(&buffer[cursor+16 : cursor+18][0]))
-		dirent.Type = *(*byte)(unsafe.Pointer(&buffer[cursor+18 : cursor+19][0]))
-		dirent.Name = string(buffer[cursor+19 : cursor+int(dirent.Reclen)])
+		dentBufferx = append(dentBufferx, dentBuffer[:bytesCounter]...)
+		if bytesCounter < len(dentBuffer) {
+			break
+		}
+	}
+	var cursor int
+	dirents = make(map[Dirent]bool)
+	for cursor < len(dentBufferx)-1 {
+		dirent.Inode = *(*uint64)(unsafe.Pointer(&dentBufferx[cursor : cursor+8][0]))
+		dirent.Offset = *(*uint64)(unsafe.Pointer(&dentBufferx[cursor+8 : cursor+16][0]))
+		dirent.Reclen = *(*uint16)(unsafe.Pointer(&dentBufferx[cursor+16 : cursor+18][0]))
+		dirent.Type = *(*byte)(unsafe.Pointer(&dentBufferx[cursor+18 : cursor+19][0]))
+		dirent.Name = string(dentBufferx[cursor+19 : cursor+int(dirent.Reclen)])
 		cursor += int(dirent.Reclen)
 		dirents[dirent] = true
 	}
-	return dirents, nil
-}
-
-func RefillBuffer(buffer []byte) {
-	for i := range buffer {
-		buffer[i] = 0
-	}
+	return dirents
 }
 
 func BwToStr(bw float64) string {
