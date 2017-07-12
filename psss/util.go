@@ -21,7 +21,7 @@ type Dirent struct {
 func ReadDirents(fd *os.File) (dirents map[Dirent]bool, err error) {
 	dentBufferx = dentBufferx[0:0]
 	for {
-		if bytesCounter, err = unix.Getdents(fd, dentBuffer); err != nil {
+		if bytesCounter, err = unix.Getdents(int(fd.Fd()), dentBuffer); err != nil {
 			return
 		}
 		runtime.KeepAlive(fd)
