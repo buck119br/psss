@@ -2,6 +2,7 @@ package psss
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -143,23 +144,32 @@ func (p *ProcInfo) GetStat() (err error) {
 
 func (p *ProcInfo) GetFds() (err error) {
 	fdPath = ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
-	fd, err := os.Open(fdPath)
+	// fd, err := os.Open(fdPath)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer fd.Close()
+	// names, err := fd.Readdirnames(0)
+	// if err != nil {
+	// 	return err
+	// }
+	fis, err := ioutil.ReadDir(fdPath)
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
-	names, err := fd.Readdirnames(0)
-	if err != nil {
-		return err
-	}
-	for indexBuffer = range names {
-		if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
+	for indexBuffer = range fis {
+		// if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
+		// 	continue
+		// }
+		// if _, err = fmt.Sscanf(fdLink, "socket:[%d]", &fdInode); err != nil {
+		// 	continue
+		// }
+		// p.Fd[fdInode] = names[indexBuffer]
+		name := fis[indexBuffer].Name()
+		if err = syscall.Stat(fdPath+"/"+name, fdStat_t); err != nil {
 			continue
 		}
-		if _, err = fmt.Sscanf(fdLink, "socket:[%d]", &fdInode); err != nil {
-			continue
-		}
-		p.Fd[fdInode] = names[indexBuffer]
+		p.Fd[uint32(fdStat_t.Ino)] = name
 	}
 	return nil
 }

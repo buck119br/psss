@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"syscall"
 
 	"golang.org/x/sys/unix"
 )
@@ -62,6 +63,7 @@ var (
 	fdPath              string
 	fdLink              string
 	fdInode             uint32
+	fdStat_t            *syscall.Stat_t
 	// channel
 	RecordInputChan    chan *GenericRecord
 	RecordOutputChan   chan *GenericRecord
