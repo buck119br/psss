@@ -150,7 +150,8 @@ func (p *ProcInfo) GetFds() (err error) {
 	}
 	defer fd.Close()
 	go fdDirentHandler.ReadDirents(fd)
-	for fdDirentHandler.Signal = range fdDirentHandler.SignalChan {
+	fdDirentHandler.InputSignalChan <- true
+	for fdDirentHandler.Signal = range fdDirentHandler.OutputSignalChan {
 		if !fdDirentHandler.Signal {
 			return
 		}
@@ -175,12 +176,13 @@ func GetProcInfo() {
 
 	var proc *ProcInfo
 	go procDirentHandler.ReadDirents(fd)
-	for procDirentHandler.Signal = range procDirentHandler.SignalChan {
+	procDirentHandler.InputSignalChan <- true
+	for procDirentHandler.Signal = range procDirentHandler.OutputSignalChan {
 		if !procDirentHandler.Signal {
 			return
 		}
 		if intBuffer, err = strconv.Atoi(procDirentHandler.Dirent.Name); err != nil {
-			continue
+			goto next
 		}
 		proc = <-ProcInfoInputChan
 		proc.Stat.Pid = intBuffer
@@ -191,5 +193,7 @@ func GetProcInfo() {
 			proc.Stat.Name = "NULL"
 		}
 		ProcInfoOutputChan <- proc
+	next:
+		procDirentHandler.InputSignalChan <- true
 	}
 }
