@@ -162,10 +162,11 @@ func (p *ProcInfo) GetFds() (err error) {
 	if bytesCounter, err = unix.Getdents(int(fd.Fd()), fdDentBuffer); err != nil {
 		return
 	}
-	dirents, err := ParseDirent(procDentBuffer)
+	dirents, err := ParseDirent(fdDentBuffer)
 	if err != nil {
 		return
 	}
+	RefillBuffer(fdDentBuffer)
 	for dirent = range dirents {
 		p.Fd[uint32(dirent.Inode)] = dirent.Name
 	}
@@ -187,10 +188,9 @@ func GetProcInfo() {
 		if bytesCounter, err = unix.Getdents(int(fd.Fd()), procDentBuffer); err != nil {
 			return
 		}
-		// if bytesCounter == 0 {
-		// 	break
-		// }
-		fmt.Println(bytesCounter, err)
+		if bytesCounter == 0 {
+			break
+		}
 		procDentBuffer = make([]byte, 2*len(procDentBuffer))
 	}
 	if bytesCounter, err = unix.Getdents(int(fd.Fd()), procDentBuffer); err != nil {
@@ -200,6 +200,7 @@ func GetProcInfo() {
 	if err != nil {
 		return
 	}
+	RefillBuffer(procDentBuffer)
 
 	var proc *ProcInfo
 	for dirent = range dirents {

@@ -32,6 +32,12 @@ func ParseDirent(buffer []byte) (dirents map[Dirent]bool, err error) {
 	return dirents, nil
 }
 
+func RefillBuffer(buffer []byte) {
+	for i := range buffer {
+		buffer[i] = 0
+	}
+}
+
 func BwToStr(bw float64) string {
 	switch {
 	case bw > math.Pow(1000, 7):
