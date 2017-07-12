@@ -184,7 +184,7 @@ func GetProcInfo() {
 	}
 	defer fd.Close()
 
-	for i := 0; i < 5; i++ {
+	for {
 		if bytesCounter, err = unix.Getdents(int(fd.Fd()), procDentBuffer); err != nil {
 			return
 		}
