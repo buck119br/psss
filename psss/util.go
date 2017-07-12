@@ -35,7 +35,7 @@ func ReadDirents(fd int) (dirents map[Dirent]bool, err error) {
 		dirent.Reclen = *(*uint16)(unsafe.Pointer(&dentBufferx[cursor+16 : cursor+18][0]))
 		dirent.Type = *(*byte)(unsafe.Pointer(&dentBufferx[cursor+18 : cursor+19][0]))
 		nameBuffer = nameBuffer[0:0]
-		for indexBuffer = range dentBufferx[cursor+19 : cursor+int(dirent.Reclen)] {
+		for indexBuffer = cursor + 19; indexBuffer < cursor+int(dirent.Reclen); indexBuffer++ {
 			if dentBufferx[indexBuffer] == byte(0) {
 				break
 			}
