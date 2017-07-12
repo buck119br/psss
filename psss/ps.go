@@ -148,7 +148,8 @@ func (p *ProcInfo) GetFds() (err error) {
 		return err
 	}
 	defer fd.Close()
-	for dirent = range ReadDirents(int(fd.Fd())) {
+	dirents := ReadDirents(int(fd.Fd()))
+	for dirent = range dirents {
 		p.Fd[uint32(dirent.Inode)] = dirent.Name
 	}
 	return nil
@@ -166,7 +167,8 @@ func GetProcInfo() {
 	defer fd.Close()
 
 	var proc *ProcInfo
-	for dirent = range ReadDirents(int(fd.Fd())) {
+	dirents := ReadDirents(int(fd.Fd()))
+	for dirent = range dirents {
 		if intBuffer, err = strconv.Atoi(dirent.Name); err != nil {
 			continue
 		}

@@ -16,10 +16,10 @@ type Dirent struct {
 	Name   string
 }
 
-func ReadDirents(fd int) (dirents map[Dirent]bool) {
+func ReadDirents(fd int) (dirents map[Dirent]bool, err error) {
 	dentBufferx = dentBufferx[0:0]
 	for {
-		if bytesCounter, err = unix.Getdents(int(fd.Fd()), dentBuffer); err != nil {
+		if bytesCounter, err = unix.Getdents(fd, dentBuffer); err != nil {
 			return
 		}
 		dentBufferx = append(dentBufferx, dentBuffer[:bytesCounter]...)
@@ -38,7 +38,7 @@ func ReadDirents(fd int) (dirents map[Dirent]bool) {
 		cursor += int(dirent.Reclen)
 		dirents[dirent] = true
 	}
-	return dirents
+	return dirents, nil
 }
 
 func BwToStr(bw float64) string {
