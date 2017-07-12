@@ -45,6 +45,7 @@ func (d *DirentHandler) ReadDirents(fd *os.File) {
 		d.SignalChan <- false
 	}()
 	d.Bufferx = d.Bufferx[0:0]
+	var err error
 	for {
 		if d.BytesCounter, err = unix.Getdents(int(fd.Fd()), d.Buffer); err != nil {
 			return
