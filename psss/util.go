@@ -3,6 +3,8 @@ package psss
 import (
 	"fmt"
 	"math"
+	"os"
+	"runtime"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
@@ -16,12 +18,13 @@ type Dirent struct {
 	Name   string
 }
 
-func ReadDirents(fd int) (dirents map[Dirent]bool, err error) {
+func ReadDirents(fd *os.File) (dirents map[Dirent]bool, err error) {
 	dentBufferx = dentBufferx[0:0]
 	for {
 		if bytesCounter, err = unix.Getdents(fd, dentBuffer); err != nil {
 			return
 		}
+		runtime.KeepAlive(fd)
 		dentBufferx = append(dentBufferx, dentBuffer[:bytesCounter]...)
 		if bytesCounter < len(dentBuffer) {
 			break
@@ -43,6 +46,9 @@ func ReadDirents(fd int) (dirents map[Dirent]bool, err error) {
 		}
 		dirent.Name = string(nameBuffer[:len(nameBuffer)])
 		cursor += int(dirent.Reclen)
+		if dirent.Name == "." || dirent.Name == ".." {
+			continue
+		}
 		dirents[dirent] = true
 	}
 	return dirents, nil

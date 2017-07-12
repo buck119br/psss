@@ -149,7 +149,7 @@ func (p *ProcInfo) GetFds() (err error) {
 		return err
 	}
 	defer fd.Close()
-	dirents, err := ReadDirents(int(fd.Fd()))
+	dirents, err := ReadDirents(fd)
 	if err != nil {
 		return
 	}
@@ -174,7 +174,7 @@ func GetProcInfo() {
 	defer fd.Close()
 
 	var proc *ProcInfo
-	dirents, err := ReadDirents(int(fd.Fd()))
+	dirents, err := ReadDirents(fd)
 	if err != nil {
 		return
 	}
