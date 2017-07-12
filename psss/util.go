@@ -25,10 +25,10 @@ func ReadDirents(fd *os.File) (dirents map[Dirent]bool, err error) {
 			return
 		}
 		runtime.KeepAlive(fd)
-		dentBufferx = append(dentBufferx, dentBuffer[:bytesCounter]...)
-		if bytesCounter < len(dentBuffer) {
+		if bytesCounter == 0 {
 			break
 		}
+		dentBufferx = append(dentBufferx, dentBuffer[:bytesCounter]...)
 	}
 	var cursor int
 	dirents = make(map[Dirent]bool)
