@@ -15,6 +15,7 @@ type Dirent struct {
 }
 
 func ParseDirent(buffer []byte) (dirents map[Dirent]bool, err error) {
+	var cursor int
 	dirents = make(map[Dirent]bool)
 	for cursor < len(buffer)-1 {
 		dirent.Inode = *(*uint64)(unsafe.Pointer(&buffer[cursor : cursor+8][0]))
