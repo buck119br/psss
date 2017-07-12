@@ -3,7 +3,30 @@ package psss
 import (
 	"fmt"
 	"math"
+	"unsafe"
 )
+
+type Dirent struct {
+	Inode  uint64
+	Offset uint64
+	Reclen uint16
+	Type   byte
+	Name   string
+}
+
+func ParseDirent(buffer []byte) (dirents map[Dirent]bool, err error) {
+	dirents = make(map[Dirent]bool)
+	for cursor < len(buffer)-1 {
+		dirent.Inode = *(*uint64)(unsafe.Pointer(&buffer[cursor : cursor+8][0]))
+		dirent.Offset = *(*uint64)(unsafe.Pointer(&buffer[cursor+8 : cursor+16][0]))
+		dirent.Reclen = *(*uint16)(unsafe.Pointer(&buffer[cursor+16 : cursor+18][0]))
+		dirent.Type = *(*byte)(unsafe.Pointer(&buffer[cursor+18 : cursor+19][0]))
+		dirent.Name = string(buffer[cursor+19 : cursor+int(dirent.Reclen)])
+		cursor += int(dirent.Reclen)
+		dirents[dirent] = bool
+	}
+	return dirents, nil
+}
 
 func BwToStr(bw float64) string {
 	switch {

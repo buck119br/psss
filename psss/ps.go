@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 var ProcState = map[byte]string{
@@ -149,22 +148,24 @@ func (p *ProcInfo) GetFds() (err error) {
 		return err
 	}
 	defer fd.Close()
-	names, err := fd.Readdirnames(0)
-	if err != nil {
-		return err
-	}
-	for indexBuffer = range names {
-		// if fdLink, err = os.Readlink(fdPath + "/" + names[indexBuffer]); err != nil {
-		// 	continue
-		// }
-		// if _, err = fmt.Sscanf(fdLink, "socket:[%d]", &fdInode); err != nil {
-		// 	continue
-		// }
-		// p.Fd[fdInode] = names[indexBuffer]
-		if err = syscall.Stat(fdPath+"/"+names[indexBuffer], fdStat_t); err != nil {
-			continue
+	for {
+		if bytesCounter, err = unix.Getdents(fd.Fd(), fdDentBuffer); err != nil {
+			return
 		}
-		p.Fd[uint32(fdStat_t.Ino)] = names[indexBuffer]
+		if bytesCounter < len(fdDentBuffer) {
+			break
+		}
+		fdDentBuffer = make([]byte, 2*len(fdDentBuffer))
+	}
+	if bytesCounter, err = unix.Getdents(fd.Fd(), fdDentBuffer); err != nil {
+		return
+	}
+	dirents, err := ParseDirent(procDentBuffer)
+	if err != nil {
+		return
+	}
+	for dirent = range dirents {
+		p.Fd[uint32(dirent.Inode)] = dirent.Name
 	}
 	return nil
 }
@@ -179,14 +180,27 @@ func GetProcInfo() {
 		return
 	}
 	defer fd.Close()
-	names, err := fd.Readdirnames(0)
+
+	for {
+		if bytesCounter, err = unix.Getdents(fd.Fd(), procDentBuffer); err != nil {
+			return
+		}
+		if bytesCounter < len(procDentBuffer) {
+			break
+		}
+		procDentBuffer = make([]byte, 2*len(procDentBuffer))
+	}
+	if bytesCounter, err = unix.Getdents(fd.Fd(), procDentBuffer); err != nil {
+		return
+	}
+	dirents, err := ParseDirent(procDentBuffer)
 	if err != nil {
 		return
 	}
 
 	var proc *ProcInfo
-	for indexBuffer = range names {
-		if intBuffer, err = strconv.Atoi(names[indexBuffer]); err != nil {
+	for dirent = range dirents {
+		if intBuffer, err = strconv.Atoi(dirent.Name); err != nil {
 			continue
 		}
 		proc = <-ProcInfoInputChan

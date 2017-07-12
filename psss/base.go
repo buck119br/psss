@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"syscall"
 
 	"golang.org/x/sys/unix"
 )
@@ -47,6 +46,8 @@ var (
 	// buffer
 	GlobalBuffer        []byte
 	FileContentBuffer   *bytes.Buffer
+	procDentBuffer      []byte
+	fdDentBuffer        []byte
 	unDiagRequestBuffer []byte
 	inDiagRequestBuffer []byte
 	int64Buffer         int64
@@ -60,10 +61,8 @@ var (
 	unDiagRQlen         UnixDiagRQlen
 	inDiagReq           InetDiagRequest
 	inDiagMsg           InetDiagMessage
+	dirent              Dirent
 	fdPath              string
-	fdLink              string
-	fdInode             uint32
-	fdStat_t            *syscall.Stat_t
 	// channel
 	RecordInputChan    chan *GenericRecord
 	RecordOutputChan   chan *GenericRecord
@@ -87,6 +86,8 @@ var (
 func init() {
 	GlobalBuffer = make([]byte, os.Getpagesize())
 	FileContentBuffer = bytes.NewBuffer(make([]byte, os.Getpagesize()))
+	procDentBuffer = make([]byte, 10*os.Getpagesize())
+	fdDentBuffer = make([]byte, os.Getpagesize())
 	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)
