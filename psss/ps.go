@@ -156,9 +156,11 @@ func (p *ProcInfo) GetFds() (err error) {
 			return
 		}
 		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.Dirent.Name, fdStat_t); err != nil {
-			continue
+			goto next
 		}
 		p.Fd[uint32(fdStat_t.Ino)] = fdDirentHandler.Dirent.Name
+	next:
+		fdDirentHandler.InputSignalChan <- true
 	}
 	return nil
 }
