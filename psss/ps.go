@@ -153,7 +153,10 @@ func (p *ProcInfo) GetFds() (err error) {
 		return
 	}
 	for dirent = range dirents {
-		p.Fd[uint32(dirent.Inode)] = dirent.Name
+		if err = syscall.Stat(fdPath+"/"+dirent.Name, fdStat_t); err != nil {
+			continue
+		}
+		p.Fd[uint32(fdStat_t.Ino)] = dirent.Name
 	}
 	return nil
 }

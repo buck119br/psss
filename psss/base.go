@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"syscall"
 
 	"golang.org/x/sys/unix"
 )
@@ -63,6 +64,7 @@ var (
 	inDiagReq           InetDiagRequest
 	inDiagMsg           InetDiagMessage
 	dirent              Dirent
+	fdStat_t            *syscall.Stat_t
 	fdPath              string
 	// channel
 	RecordInputChan    chan *GenericRecord
@@ -96,6 +98,8 @@ func init() {
 	RecordOutputChan = make(chan *GenericRecord)
 	ProcInfoInputChan = make(chan *ProcInfo)
 	ProcInfoOutputChan = make(chan *ProcInfo)
+
+	fdStat_t = new(syscall.Stat_t)
 }
 
 func AddrLengthInit() {
