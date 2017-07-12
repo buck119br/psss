@@ -162,7 +162,7 @@ func (p *ProcInfo) GetFds() (err error) {
 	if bytesCounter, err = unix.Getdents(int(fd.Fd()), fdDentBuffer); err != nil {
 		return
 	}
-	dirents, err := ParseDirent(procDentBuffer)
+	dirents, err := ParseDirent(procDentBuffer[:bytesCounter])
 	if err != nil {
 		return
 	}
@@ -195,7 +195,7 @@ func GetProcInfo() {
 	if bytesCounter, err = unix.Getdents(int(fd.Fd()), procDentBuffer); err != nil {
 		return
 	}
-	dirents, err := ParseDirent(procDentBuffer)
+	dirents, err := ParseDirent(procDentBuffer[:bytesCounter])
 	if err != nil {
 		return
 	}
