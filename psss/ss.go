@@ -174,12 +174,14 @@ func (record *GenericRecord) Reset() {
 func (record *GenericRecord) SetUpRelation() {
 	var (
 		proc *ProcInfo
-		ok   bool
+		i    int
 	)
 	for _, procMap := range GlobalProcInfo {
 		for _, proc = range procMap {
-			if _, ok = proc.Fd[record.Inode]; ok {
-				record.UserName = proc.Stat.Name
+			for i = range proc.Fds {
+				if record.Inode == proc.Fds[i].Inode {
+					record.UserName = proc.Stat.Name
+				}
 			}
 		}
 	}
@@ -196,11 +198,13 @@ func (record *GenericRecord) GenericInfoPrint() {
 }
 
 func (record *GenericRecord) ProcInfoPrint() {
-	var ok bool
+	var i int
 	fmt.Printf(`["%s":`, record.UserName)
 	for pid, proc := range GlobalProcInfo[record.UserName] {
-		if _, ok = proc.Fd[record.Inode]; ok {
-			fmt.Printf(`(pid=%d,fd=%s)`, pid, proc.Fd[record.Inode])
+		for i = range proc.Fds {
+			if record.Inode == proc.Fds[i].Inode {
+				fmt.Printf(`(pid=%d,fd=%s)`, pid, proc.Fds[i].Name)
+			}
 		}
 	}
 	fmt.Printf("]")

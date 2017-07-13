@@ -77,20 +77,25 @@ type ProcStat struct {
 	ExitCode            int    // The thread's exit status.
 }
 
+type Fd struct {
+	Inode uint32
+	Name  string
+}
+
 type ProcInfo struct {
 	Stat *ProcStat
-	Fd   map[uint32]string
+	Fds  []Fd
 }
 
 func NewProcInfo() *ProcInfo {
 	p := new(ProcInfo)
 	p.Stat = new(ProcStat)
-	p.Fd = make(map[uint32]string)
+	p.Fds = make([]Fd, 0)
 	return p
 }
 
 func (p *ProcInfo) Reset() {
-	p.Fd = make(map[uint32]string)
+	p.Fds = make([]Fd, 0)
 }
 
 func (p *ProcInfo) GetStat() (err error) {
@@ -158,7 +163,7 @@ func (p *ProcInfo) GetFds() (err error) {
 		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.Dirent.Name, fdStat_t); err != nil {
 			goto next
 		}
-		p.Fd[uint32(fdStat_t.Ino)] = fdDirentHandler.Dirent.Name
+		p.Fds = append(p.Fds, Fd{Inode: uint32(fdStat_t.Ino), Name: fdDirentHandler.Dirent.Name})
 	next:
 		fdDirentHandler.InputSignalChan <- true
 	}
