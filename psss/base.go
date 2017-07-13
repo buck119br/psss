@@ -37,47 +37,13 @@ var (
 	FlagProcess bool
 	FlagInfo    bool
 	FlagMemory  bool
-)
 
-var (
-	Summary          map[string]map[string]int
-	GlobalRecords    map[uint32]*GenericRecord
-	GlobalProcInfo   map[string]map[int]*ProcInfo
-	GlobalSystemInfo *SystemInfo
-	// buffer
-	GlobalBuffer        []byte
-	FileContentBuffer   *bytes.Buffer
-	unDiagRequestBuffer []byte
-	inDiagRequestBuffer []byte
-	int64Buffer         int64
-	intBuffer           int
-	indexBuffer         int
-	bytesCounter        int
-	sockAddrNl          unix.SockaddrNetlink
-	nlAttr              unix.NlAttr
-	unDiagReq           UnixDiagRequest
-	unDiagMsg           UnixDiagMessage
-	unDiagRQlen         UnixDiagRQlen
-	inDiagReq           InetDiagRequest
-	inDiagMsg           InetDiagMessage
-	procDirentHandler   *DirentHandler
-	fdDirentHandler     *DirentHandler
-	fdStat_t            *syscall.Stat_t
-	fdPath              string
-	// channel
-	RecordInputChan    chan *GenericRecord
-	RecordOutputChan   chan *GenericRecord
-	ProcInfoInputChan  chan *ProcInfo
-	ProcInfoOutputChan chan *ProcInfo
-)
-
-var (
 	MaxLocalAddrLength  int
 	MaxRemoteAddrLength int
 )
 
 var (
-	PageSize = os.Getpagesize()
+	pageSize = os.Getpagesize()
 
 	SC_CLK_TCK = uint64(C.sysconf(C._SC_CLK_TCK))
 )
@@ -86,9 +52,41 @@ var (
 	ErrorDone = fmt.Errorf("Done")
 )
 
+var (
+	// channel
+	RecordInputChan    chan *GenericRecord
+	RecordOutputChan   chan *GenericRecord
+	ProcInfoInputChan  chan *ProcInfo
+	ProcInfoOutputChan chan *ProcInfo
+
+	globalProcInfo map[string]map[int]*ProcInfo
+	// buffer
+	sockDiagMsgBuffer   []byte
+	unDiagRequestBuffer []byte
+	inDiagRequestBuffer []byte
+	fileContentBuffer   *bytes.Buffer
+
+	int64Buffer  int64
+	intBuffer    int
+	indexBuffer  int
+	bytesCounter int
+
+	sockAddrNl  unix.SockaddrNetlink
+	nlAttr      unix.NlAttr
+	unDiagReq   UnixDiagRequest
+	unDiagMsg   UnixDiagMessage
+	unDiagRQlen UnixDiagRQlen
+	inDiagReq   InetDiagRequest
+	inDiagMsg   InetDiagMessage
+
+	procDirentHandler *DirentHandler
+	fdDirentHandler   *DirentHandler
+	fdStat_t          *syscall.Stat_t
+)
+
 func init() {
-	GlobalBuffer = make([]byte, PageSize)
-	FileContentBuffer = bytes.NewBuffer(make([]byte, PageSize))
+	sockDiagMsgBuffer = make([]byte, pageSize)
+	fileContentBuffer = bytes.NewBuffer(make([]byte, pageSize))
 	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)

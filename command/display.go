@@ -9,7 +9,11 @@ import (
 
 func ShowSummary() {
 	var format string
-	psss.GenericReadSockstat()
+	summary, err := psss.GenericReadSockstat()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	fmt.Println("Transport\t Total\t IPv4\t IPv6\t")
 	for _, pf := range psss.SummaryPF {
 		if len(pf) >= 8 {
@@ -17,50 +21,50 @@ func ShowSummary() {
 		} else {
 			format = "%s\t\t %d\t %d\t %d\t\n"
 		}
-		fmt.Printf(format, pf, psss.Summary[pf][psss.IPv4String]+psss.Summary[pf][psss.IPv6String], psss.Summary[pf][psss.IPv4String], psss.Summary[pf][psss.IPv6String])
+		fmt.Printf(format, pf, summary[pf][psss.IPv4String]+summary[pf][psss.IPv6String], summary[pf][psss.IPv4String], summary[pf][psss.IPv6String])
 	}
 }
 
 func SocketShow() {
 	if psss.ProtocalFilter&psss.ProtocalUnix != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords, _ = psss.UnixRecordRead()
+		records, _ = psss.UnixRecordRead()
 		GenericShow(psss.ProtocalUnix, unix.AF_UNIX)
 	}
 	if psss.ProtocalFilter&psss.ProtocalRAW != 0 && psss.AfFilter&(1<<unix.AF_INET) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalRAW, unix.AF_INET)
+		records, _ = psss.GenericRecordRead(psss.ProtocalRAW, unix.AF_INET)
 		GenericShow(psss.ProtocalRAW, unix.AF_INET)
 	}
 	if psss.ProtocalFilter&psss.ProtocalRAW != 0 && psss.AfFilter&(1<<unix.AF_INET6) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalRAW, unix.AF_INET6)
+		records, _ = psss.GenericRecordRead(psss.ProtocalRAW, unix.AF_INET6)
 		GenericShow(psss.ProtocalRAW, unix.AF_INET6)
 	}
 	if psss.ProtocalFilter&psss.ProtocalUDP != 0 && psss.AfFilter&(1<<unix.AF_INET) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalUDP, unix.AF_INET)
+		records, _ = psss.GenericRecordRead(psss.ProtocalUDP, unix.AF_INET)
 		GenericShow(psss.ProtocalUDP, unix.AF_INET)
 	}
 	if psss.ProtocalFilter&psss.ProtocalUDP != 0 && psss.AfFilter&(1<<unix.AF_INET6) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalUDP, unix.AF_INET6)
+		records, _ = psss.GenericRecordRead(psss.ProtocalUDP, unix.AF_INET6)
 		GenericShow(psss.ProtocalUDP, unix.AF_INET6)
 	}
 	if psss.ProtocalFilter&psss.ProtocalTCP != 0 && psss.AfFilter&(1<<unix.AF_INET) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalTCP, unix.AF_INET)
+		records, _ = psss.GenericRecordRead(psss.ProtocalTCP, unix.AF_INET)
 		GenericShow(psss.ProtocalTCP, unix.AF_INET)
 	}
 	if psss.ProtocalFilter&psss.ProtocalTCP != 0 && psss.AfFilter&(1<<unix.AF_INET6) != 0 {
 		psss.AddrLengthInit()
-		psss.GlobalRecords, _ = psss.GenericRecordRead(psss.ProtocalTCP, unix.AF_INET6)
+		records, _ = psss.GenericRecordRead(psss.ProtocalTCP, unix.AF_INET6)
 		GenericShow(psss.ProtocalTCP, unix.AF_INET6)
 	}
 }
 
 func GenericShow(protocal, af int) {
-	if len(psss.GlobalRecords) == 0 {
+	if len(records) == 0 {
 		return
 	}
 	fmt.Printf("Netid\tState\t\tRecv-Q\tSend-Q\t")
@@ -70,7 +74,7 @@ func GenericShow(protocal, af int) {
 	}
 	fmt.Printf("\n")
 	var ok bool
-	for _, record := range psss.GlobalRecords {
+	for _, record := range records {
 		switch protocal {
 		case psss.ProtocalTCP:
 			fmt.Printf("tcp")
@@ -95,7 +99,7 @@ func GenericShow(protocal, af int) {
 		if *flagProcess && len(record.UserName) > 0 {
 			record.ProcInfoPrint()
 		}
-		if NewlineFlag {
+		if newlineFlag {
 			fmt.Printf("\n")
 		}
 		if protocal != psss.ProtocalUnix {

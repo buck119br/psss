@@ -40,7 +40,9 @@ var (
 	flagRAW    = flag.Bool("w", false, "display only RAW sockets")          // ok
 	flagUnix   = flag.Bool("x", false, "display only Unix domain sockets")  // ok
 
-	NewlineFlag bool
+	newlineFlag bool
+
+	records map[uint32]*psss.GenericRecord
 )
 
 func main() {
@@ -115,30 +117,12 @@ func main() {
 	}
 
 	if *flagExtended || *flagOption || *flagMemory || *flagInfo {
-		NewlineFlag = true
+		newlineFlag = true
 	}
 
 	if *flagProcess {
 		psss.FlagProcess = true
-
-		var ok bool
-		psss.GlobalProcInfo = make(map[string]map[int]*psss.ProcInfo)
-		go psss.GetProcInfo()
-		psss.ProcInfoInputChan <- psss.NewProcInfo()
-		for proc := range psss.ProcInfoOutputChan {
-			if proc == nil {
-				break
-			}
-			if proc.Stat.Name == "NULL" {
-				goto next
-			}
-			if _, ok = psss.GlobalProcInfo[proc.Stat.Name]; !ok {
-				psss.GlobalProcInfo[proc.Stat.Name] = make(map[int]*psss.ProcInfo)
-			}
-			psss.GlobalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
-		next:
-			psss.ProcInfoInputChan <- psss.NewProcInfo()
-		}
+		psss.GetProcInfo()
 	}
 
 	SocketShow()

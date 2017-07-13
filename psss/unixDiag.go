@@ -87,18 +87,18 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 		record *GenericRecord
 	)
 	for {
-		if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, unix.MSG_PEEK); err != nil {
+		if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, sockDiagMsgBuffer, nil, unix.MSG_PEEK); err != nil {
 			return err
 		}
-		if bytesCounter < len(GlobalBuffer) {
+		if bytesCounter < len(sockDiagMsgBuffer) {
 			break
 		}
-		GlobalBuffer = make([]byte, 2*len(GlobalBuffer))
+		sockDiagMsgBuffer = make([]byte, 2*len(sockDiagMsgBuffer))
 	}
-	if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, GlobalBuffer, nil, 0); err != nil {
+	if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, sockDiagMsgBuffer, nil, 0); err != nil {
 		return err
 	}
-	raw, err := syscall.ParseNetlinkMessage(GlobalBuffer[:bytesCounter])
+	raw, err := syscall.ParseNetlinkMessage(sockDiagMsgBuffer[:bytesCounter])
 	if err != nil {
 		return err
 	}

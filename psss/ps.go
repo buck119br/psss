@@ -83,13 +83,12 @@ type Fd struct {
 }
 
 type ProcInfo struct {
-	Stat *ProcStat
+	Stat ProcStat
 	Fds  []Fd
 }
 
 func NewProcInfo() *ProcInfo {
 	p := new(ProcInfo)
-	p.Stat = new(ProcStat)
 	p.Fds = make([]Fd, 0)
 	return p
 }
@@ -104,11 +103,11 @@ func (p *ProcInfo) GetStat() (err error) {
 		return err
 	}
 	defer fd.Close()
-	FileContentBuffer.Reset()
-	if _, err = FileContentBuffer.ReadFrom(fd); err != nil {
+	fileContentBuffer.Reset()
+	if _, err = fileContentBuffer.ReadFrom(fd); err != nil {
 		return err
 	}
-	n, err := fmt.Sscanf(string(FileContentBuffer.Bytes()[:FileContentBuffer.Len()-1]),
+	n, err := fmt.Sscanf(string(fileContentBuffer.Bytes()[:fileContentBuffer.Len()-1]),
 		`%d %s %c %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d`,
 		&p.Stat.Pid, &p.Stat.Name, &p.Stat.State,
 		&p.Stat.Ppid, &p.Stat.Pgrp, &p.Stat.Session, &p.Stat.TtyNr, &p.Stat.Tpgid,
@@ -148,7 +147,7 @@ func (p *ProcInfo) GetStat() (err error) {
 }
 
 func (p *ProcInfo) GetFds() (err error) {
-	fdPath = ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
+	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
 	fd, err := os.Open(fdPath)
 	if err != nil {
 		return err
@@ -170,7 +169,7 @@ func (p *ProcInfo) GetFds() (err error) {
 	return nil
 }
 
-func GetProcInfo() {
+func ScanProcFS() {
 	defer func() {
 		<-ProcInfoInputChan
 		ProcInfoOutputChan <- nil
@@ -202,5 +201,26 @@ func GetProcInfo() {
 		ProcInfoOutputChan <- proc
 	next:
 		procDirentHandler.InputSignalChan <- true
+	}
+}
+
+func GetProcInfo() {
+	var ok bool
+	globalProcInfo = make(map[string]map[int]*ProcInfo)
+	go ScanProcFS()
+	ProcInfoInputChan <- NewProcInfo()
+	for proc := range ProcInfoOutputChan {
+		if proc == nil {
+			break
+		}
+		if proc.Stat.Name == "NULL" {
+			goto next
+		}
+		if _, ok = globalProcInfo[proc.Stat.Name]; !ok {
+			globalProcInfo[proc.Stat.Name] = make(map[int]*ProcInfo)
+		}
+		globalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
+	next:
+		ProcInfoInputChan <- NewProcInfo()
 	}
 }

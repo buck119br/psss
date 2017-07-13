@@ -176,7 +176,7 @@ func (record *GenericRecord) SetUpRelation() {
 		proc *ProcInfo
 		i    int
 	)
-	for _, procMap := range GlobalProcInfo {
+	for _, procMap := range globalProcInfo {
 		for _, proc = range procMap {
 			for i = range proc.Fds {
 				if record.Inode == proc.Fds[i].Inode {
@@ -200,7 +200,7 @@ func (record *GenericRecord) GenericInfoPrint() {
 func (record *GenericRecord) ProcInfoPrint() {
 	var i int
 	fmt.Printf(`["%s":`, record.UserName)
-	for pid, proc := range GlobalProcInfo[record.UserName] {
+	for pid, proc := range globalProcInfo[record.UserName] {
 		for i = range proc.Fds {
 			if record.Inode == proc.Fds[i].Inode {
 				fmt.Printf(`(pid=%d,fd=%s)`, pid, proc.Fds[i].Name)
@@ -765,59 +765,55 @@ func GetSocketCount(fields []string) (int, error) {
 }
 
 // IPv6:versionFlag = true; IPv4:versionFlag = false
-func GenericReadSockstat() (err error) {
-	var (
-		file   *os.File
-		line   string
-		fields []string
-	)
-	Summary = make(map[string]map[string]int)
+func GenericReadSockstat() (summary map[string]map[string]int, err error) {
+	summary = make(map[string]map[string]int)
 	for _, pf := range SummaryPF {
-		Summary[pf] = make(map[string]int)
+		summary[pf] = make(map[string]int)
 	}
 
+	var file *os.File
 	for _, v := range []string{"sockstat4", "sockstat6"} {
 		if file, err = os.Open(procFilePath[v]); err != nil {
-			return err
+			return nil, err
 		}
 		defer file.Close()
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			if err = scanner.Err(); err != nil {
-				return err
+				return nil, err
 			}
-			line = scanner.Text()
-			fields = strings.Fields(line)
+			line := scanner.Text()
+			fields := strings.Fields(line)
 			switch fields[0] {
 			case "sockets:":
 				continue
 			case "TCP:":
-				Summary["TCP"][IPv4String], err = GetSocketCount(fields[1:])
+				summary["TCP"][IPv4String], err = GetSocketCount(fields[1:])
 			case "TCP6:":
-				Summary["TCP"][IPv6String], err = GetSocketCount(fields[1:])
+				summary["TCP"][IPv6String], err = GetSocketCount(fields[1:])
 			case "UDP:":
-				Summary["UDP"][IPv4String], err = GetSocketCount(fields[1:])
+				summary["UDP"][IPv4String], err = GetSocketCount(fields[1:])
 			case "UDP6:":
-				Summary["UDP"][IPv6String], err = GetSocketCount(fields[1:])
+				summary["UDP"][IPv6String], err = GetSocketCount(fields[1:])
 			case "UDPLITE:":
-				Summary["UDPLITE"][IPv4String], err = GetSocketCount(fields[1:])
+				summary["UDPLITE"][IPv4String], err = GetSocketCount(fields[1:])
 			case "UDPLITE6:":
-				Summary["UDPLITE"][IPv6String], err = GetSocketCount(fields[1:])
+				summary["UDPLITE"][IPv6String], err = GetSocketCount(fields[1:])
 			case "RAW:":
-				Summary["RAW"][IPv4String], err = GetSocketCount(fields[1:])
+				summary["RAW"][IPv4String], err = GetSocketCount(fields[1:])
 			case "RAW6:":
-				Summary["RAW"][IPv6String], err = GetSocketCount(fields[1:])
+				summary["RAW"][IPv6String], err = GetSocketCount(fields[1:])
 			case "FRAG:":
-				Summary["FRAG"][IPv4String], err = GetSocketCount(fields[1:])
+				summary["FRAG"][IPv4String], err = GetSocketCount(fields[1:])
 			case "FRAG6:":
-				Summary["FRAG"][IPv6String], err = GetSocketCount(fields[1:])
+				summary["FRAG"][IPv6String], err = GetSocketCount(fields[1:])
 			default:
 				continue
 			}
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
-	return nil
+	return summary, nil
 }
