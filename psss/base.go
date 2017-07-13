@@ -85,14 +85,15 @@ var (
 )
 
 func init() {
-	sockDiagMsgBuffer = make([]byte, pageSize)
-	fileContentBuffer = bytes.NewBuffer(make([]byte, pageSize))
-	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
-	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)
 	RecordOutputChan = make(chan *GenericRecord)
 	ProcInfoInputChan = make(chan *ProcInfo)
 	ProcInfoOutputChan = make(chan *ProcInfo)
+
+	sockDiagMsgBuffer = make([]byte, pageSize)
+	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
+	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
+	fileContentBuffer = bytes.NewBuffer(make([]byte, pageSize))
 
 	procDirentHandler = NewDirentHandler()
 	fdDirentHandler = NewDirentHandler()

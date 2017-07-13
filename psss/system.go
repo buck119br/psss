@@ -39,12 +39,11 @@ func NewSystemStat() *SystemStat {
 }
 
 type SystemInfo struct {
-	Stat *SystemStat
+	Stat SystemStat
 }
 
 func NewSystemInfo() *SystemInfo {
 	si := new(SystemInfo)
-	si.Stat = NewSystemStat()
 	return si
 }
 
