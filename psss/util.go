@@ -35,8 +35,8 @@ func NewDirentHandler() *DirentHandler {
 	d := new(DirentHandler)
 	d.InputSignalChan = make(chan bool)
 	d.OutputSignalChan = make(chan bool)
-	d.Buffer = make([]byte, os.Getpagesize())
-	d.Bufferx = make([]byte, os.Getpagesize())
+	d.Buffer = make([]byte, PageSize)
+	d.Bufferx = make([]byte, PageSize)
 	d.NameBuffer = make([]byte, 256)
 	d.Dirent = new(Dirent)
 	return d

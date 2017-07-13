@@ -77,6 +77,8 @@ var (
 )
 
 var (
+	PageSize = os.Getpagesize()
+
 	SC_CLK_TCK = uint64(C.sysconf(C._SC_CLK_TCK))
 )
 
@@ -85,8 +87,8 @@ var (
 )
 
 func init() {
-	GlobalBuffer = make([]byte, os.Getpagesize())
-	FileContentBuffer = bytes.NewBuffer(make([]byte, os.Getpagesize()))
+	GlobalBuffer = make([]byte, PageSize)
+	FileContentBuffer = bytes.NewBuffer(make([]byte, PageSize))
 	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	RecordInputChan = make(chan *GenericRecord)
