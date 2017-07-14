@@ -42,7 +42,7 @@ var (
 
 	newlineFlag bool
 
-	records map[uint32]*psss.GenericRecord
+	sis map[uint32]*psss.SocketInfo
 )
 
 func main() {

@@ -728,7 +728,7 @@ func RecvUnixDiagMsgAll(skfd int) {
 	}
 }
 
-func UnixsiRead() (sis map[uint32]*SocketInfo, err error) {
+func GenericUnixRead() (sis map[uint32]*SocketInfo, err error) {
 	skfd, err := SendUnixDiagMsg(SsFilter,
 		UDIAG_SHOW_NAME|UDIAG_SHOW_VFS|UDIAG_SHOW_PEER|UDIAG_SHOW_ICONS|UDIAG_SHOW_RQLEN|UDIAG_SHOW_MEMINFO)
 	if err != nil {
