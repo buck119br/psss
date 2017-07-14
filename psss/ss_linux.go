@@ -227,7 +227,7 @@ func SendInetDiagMsg(af uint8, protocal uint8, exts uint8, states uint32) (skfd 
 func RecvInetDiagMsgMulti(skfd int) (err error) {
 	var (
 		cursor int
-		record *GenericRecord
+		si     *SocketInfo
 	)
 	for {
 		if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, sockDiagMsgBuffer, nil, unix.MSG_PEEK); err != nil {
@@ -246,41 +246,41 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 		return err
 	}
 	for indexBuffer = range raw {
-		record = <-RecordInputChan
+		si = <-SocketInfoInputChan
 		if raw[indexBuffer].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
 		inDiagMsg = *(*InetDiagMessage)(unsafe.Pointer(&raw[indexBuffer].Data[:SizeOfInetDiagMsg][0]))
 		switch inDiagMsg.IdiagFamily {
 		case unix.AF_INET:
-			record.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagSrc[0]), "0x"))
-			record.RemoteAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagDst[0]), "0x"))
+			si.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagSrc[0]), "0x"))
+			si.RemoteAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagDst[0]), "0x"))
 		case unix.AF_INET6:
-			record.LocalAddr.Host, _ = IPv6HexToString(
+			si.LocalAddr.Host, _ = IPv6HexToString(
 				strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagSrc[0]), "0x") +
 					strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagSrc[1]), "0x") +
 					strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagSrc[2]), "0x") +
 					strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagSrc[3]), "0x"),
 			)
-			record.RemoteAddr.Host, _ = IPv6HexToString(
+			si.RemoteAddr.Host, _ = IPv6HexToString(
 				strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagDst[0]), "0x") +
 					strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagDst[1]), "0x") +
 					strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagDst[2]), "0x") +
 					strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagDst[3]), "0x"),
 			)
 		}
-		record.LocalAddr.Port = fmt.Sprintf("%d", (inDiagMsg.ID.IdiagSport&0xff00)>>8+(inDiagMsg.ID.IdiagSport&0xff)<<8)
-		record.RemoteAddr.Port = fmt.Sprintf("%d", (inDiagMsg.ID.IdiagDport&0xff00)>>8+(inDiagMsg.ID.IdiagDport&0xff)<<8)
-		record.Status = inDiagMsg.IdiagState
-		record.RxQueue = inDiagMsg.IdiagRqueue
-		record.TxQueue = inDiagMsg.IdiagWqueue
-		record.Timer = int(inDiagMsg.IdiagTimer)
-		record.Timeout = int(inDiagMsg.IdiagExpires)
-		record.Retransmit = int(inDiagMsg.IdiagRetrans)
-		record.UID = uint64(inDiagMsg.IdiagUid)
-		record.Inode = inDiagMsg.IdiagInode
-		record.RefCount = int(inDiagMsg.ID.IdiagIF)
-		record.SK = uint64(inDiagMsg.ID.IdiagCookie[1])<<32 | uint64(inDiagMsg.ID.IdiagCookie[0])
+		si.LocalAddr.Port = fmt.Sprintf("%d", (inDiagMsg.ID.IdiagSport&0xff00)>>8+(inDiagMsg.ID.IdiagSport&0xff)<<8)
+		si.RemoteAddr.Port = fmt.Sprintf("%d", (inDiagMsg.ID.IdiagDport&0xff00)>>8+(inDiagMsg.ID.IdiagDport&0xff)<<8)
+		si.Status = inDiagMsg.IdiagState
+		si.RxQueue = inDiagMsg.IdiagRqueue
+		si.TxQueue = inDiagMsg.IdiagWqueue
+		si.Timer = int(inDiagMsg.IdiagTimer)
+		si.Timeout = int(inDiagMsg.IdiagExpires)
+		si.Retransmit = int(inDiagMsg.IdiagRetrans)
+		si.UID = uint64(inDiagMsg.IdiagUid)
+		si.Inode = inDiagMsg.IdiagInode
+		si.RefCount = int(inDiagMsg.ID.IdiagIF)
+		si.SK = uint64(inDiagMsg.ID.IdiagCookie[1])<<32 | uint64(inDiagMsg.ID.IdiagCookie[0])
 		cursor = SizeOfInetDiagMsg
 		for cursor+4 < len(raw[indexBuffer].Data) {
 			for raw[indexBuffer].Data[cursor] == byte(0) {
@@ -291,21 +291,21 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 			case INET_DIAG_MEMINFO:
 				// meminfo := *(*InetDiagMeminfo)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_INFO:
-				record.TCPInfo = (*TCPInfo)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				si.TCPInfo = (*TCPInfo)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_VEGASINFO:
-				record.VegasInfo = (*TCPVegasInfo)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				si.VegasInfo = (*TCPVegasInfo)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_CONG:
-				record.CONG = make([]byte, 0)
-				record.CONG = append(record.CONG, raw[indexBuffer].Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
+				si.CONG = make([]byte, 0)
+				si.CONG = append(si.CONG, raw[indexBuffer].Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
 			case INET_DIAG_TOS:
 				// tos := *(*uint8)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_TCLASS:
 				// tclass := *(*uint8)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_SKMEMINFO:
 				if nlAttr.Len > 4 {
-					record.Meminfo = make([]uint32, 0, 8)
+					si.Meminfo = make([]uint32, 0, 8)
 					for j := cursor + unix.SizeofNlAttr; j < cursor+int(nlAttr.Len); j = j + 4 {
-						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
+						si.Meminfo = append(si.Meminfo, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
 					}
 				}
 			case INET_DIAG_SHUTDOWN:
@@ -314,14 +314,14 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 			}
 			cursor += int(nlAttr.Len)
 		}
-		RecordOutputChan <- record
+		SocketInfoOutputChan <- si
 	}
 	return nil
 }
 
 func RecvInetDiagMsgAll(skfd int) {
 	defer func() {
-		RecordOutputChan <- nil
+		SocketInfoOutputChan <- nil
 	}()
 	for {
 		if err := RecvInetDiagMsgMulti(skfd); err != nil {
@@ -333,7 +333,7 @@ func RecvInetDiagMsgAll(skfd int) {
 	}
 }
 
-func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord, err error) {
+func GenericInetRead(protocal, af int) (sis map[uint32]*SocketInfo, err error) {
 	var (
 		ipproto uint8
 		exts    uint8
@@ -362,18 +362,18 @@ func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord, err
 	}
 	defer unix.Close(skfd)
 
-	records = make(map[uint32]*GenericRecord)
+	sis = make(map[uint32]*SocketInfo)
 	go RecvInetDiagMsgAll(skfd)
-	RecordInputChan <- NewGenericRecord()
-	for record := range RecordOutputChan {
-		if record == nil {
-			return records, nil
+	SocketInfoInputChan <- NewSocketInfo()
+	for si := range SocketInfoOutputChan {
+		if si == nil {
+			return sis, nil
 		}
 		if FlagProcess {
-			record.SetUpRelation()
+			si.SetUpRelation()
 		}
-		records[record.Inode] = record
-		RecordInputChan <- NewGenericRecord()
+		sis[si.Inode] = si
+		SocketInfoInputChan <- NewSocketInfo()
 	}
 
 readProc:
@@ -386,7 +386,7 @@ readProc:
 		stringBuff  []string
 		int64Buffer int64
 	)
-	records = make(map[uint32]*GenericRecord)
+	sis = make(map[uint32]*SocketInfo)
 
 	switch protocal {
 	case ProtocalTCP:
@@ -410,22 +410,22 @@ readProc:
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if err = scanner.Err(); err != nil {
-			return records, err
+			return sis, err
 		}
 		line = scanner.Text()
 		fields = strings.Fields(line)
 		if fields[0] == "sl" {
 			continue
 		}
-		record := NewGenericRecord()
+		si := NewSocketInfo()
 		// Local address
 		fieldsIndex = 1
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
 		switch af {
 		case unix.AF_INET:
-			record.LocalAddr.Host, err = IPv4HexToString(stringBuff[0])
+			si.LocalAddr.Host, err = IPv4HexToString(stringBuff[0])
 		case unix.AF_INET6:
-			record.LocalAddr.Host, err = IPv6HexToString(stringBuff[0])
+			si.LocalAddr.Host, err = IPv6HexToString(stringBuff[0])
 		}
 		if err != nil {
 			continue
@@ -433,18 +433,18 @@ readProc:
 		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		record.LocalAddr.Port = fmt.Sprintf("%d", int64Buffer)
-		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
-			MaxLocalAddrLength = len(record.LocalAddr.String())
+		si.LocalAddr.Port = fmt.Sprintf("%d", int64Buffer)
+		if MaxLocalAddrLength < len(si.LocalAddr.String()) {
+			MaxLocalAddrLength = len(si.LocalAddr.String())
 		}
 		fieldsIndex++
 		// Remote address
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
 		switch af {
 		case unix.AF_INET:
-			record.RemoteAddr.Host, err = IPv4HexToString(stringBuff[0])
+			si.RemoteAddr.Host, err = IPv4HexToString(stringBuff[0])
 		case unix.AF_INET6:
-			record.RemoteAddr.Host, err = IPv6HexToString(stringBuff[0])
+			si.RemoteAddr.Host, err = IPv6HexToString(stringBuff[0])
 		}
 		if err != nil {
 			continue
@@ -452,17 +452,17 @@ readProc:
 		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		record.RemoteAddr.Port = fmt.Sprintf("%d", int64Buffer)
-		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
-			MaxRemoteAddrLength = len(record.RemoteAddr.String())
+		si.RemoteAddr.Port = fmt.Sprintf("%d", int64Buffer)
+		if MaxRemoteAddrLength < len(si.RemoteAddr.String()) {
+			MaxRemoteAddrLength = len(si.RemoteAddr.String())
 		}
 		fieldsIndex++
 		// Status
 		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		record.Status = uint8(int64Buffer)
-		if SsFilter&(1<<record.Status) == 0 {
+		si.Status = uint8(int64Buffer)
+		if SsFilter&(1<<si.Status) == 0 {
 			continue
 		}
 		fieldsIndex++
@@ -471,107 +471,107 @@ readProc:
 		if int64Buffer, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
 			continue
 		}
-		record.TxQueue = uint32(int64Buffer)
+		si.TxQueue = uint32(int64Buffer)
 		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		record.RxQueue = uint32(int64Buffer)
+		si.RxQueue = uint32(int64Buffer)
 		fieldsIndex++
 		// Timer:TmWhen
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
 		if int64Buffer, err = strconv.ParseInt(stringBuff[0], 16, 32); err != nil {
 			continue
 		}
-		record.Timer = int(int64Buffer)
-		if record.Timer > 4 {
-			record.Timer = 5
+		si.Timer = int(int64Buffer)
+		if si.Timer > 4 {
+			si.Timer = 5
 		}
 		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 32); err != nil {
 			continue
 		}
-		record.Timeout = int(int64Buffer)
-		record.Timeout = (record.Timeout*1000 + int(SC_CLK_TCK) - 1) / int(SC_CLK_TCK)
+		si.Timeout = int(int64Buffer)
+		si.Timeout = (si.Timeout*1000 + int(SC_CLK_TCK) - 1) / int(SC_CLK_TCK)
 		fieldsIndex++
 		// Retransmit
 		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		record.Retransmit = int(int64Buffer)
+		si.Retransmit = int(int64Buffer)
 		fieldsIndex++
-		if record.UID, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
+		if si.UID, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
 			continue
 		}
 		fieldsIndex++
-		if record.Probes, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+		if si.Probes, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			continue
 		}
 		fieldsIndex++
 		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
 			continue
 		}
-		record.Inode = uint32(int64Buffer)
+		si.Inode = uint32(int64Buffer)
 		fieldsIndex++
-		if record.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+		if si.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			continue
 		}
 		fieldsIndex++
-		if record.SK, err = strconv.ParseUint(fields[fieldsIndex], 16, 64); err != nil {
+		if si.SK, err = strconv.ParseUint(fields[fieldsIndex], 16, 64); err != nil {
 			continue
 		}
 		switch protocal {
 		case ProtocalTCP:
 			if len(fields) > 12 {
 				fieldsIndex++
-				if record.RTO, err = strconv.ParseFloat(fields[fieldsIndex], 64); err != nil {
+				if si.RTO, err = strconv.ParseFloat(fields[fieldsIndex], 64); err != nil {
 					continue
 				}
 				fieldsIndex++
-				if record.ATO, err = strconv.ParseFloat(fields[fieldsIndex], 64); err != nil {
+				if si.ATO, err = strconv.ParseFloat(fields[fieldsIndex], 64); err != nil {
 					continue
 				}
-				record.ATO = record.ATO / float64(SC_CLK_TCK)
+				si.ATO = si.ATO / float64(SC_CLK_TCK)
 				fieldsIndex++
-				if record.QACK, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				if si.QACK, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					continue
 				}
-				record.QACK = record.QACK / 2
+				si.QACK = si.QACK / 2
 				fieldsIndex++
-				if record.CongestionWindow, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				if si.CongestionWindow, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					continue
 				}
 				fieldsIndex++
-				if record.SlowStartThreshold, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+				if si.SlowStartThreshold, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 					continue
 				}
 			} else {
-				record.RTO = 0
-				record.ATO = 0
-				record.QACK = 0
-				record.CongestionWindow = 2
-				record.SlowStartThreshold = -1
+				si.RTO = 0
+				si.ATO = 0
+				si.QACK = 0
+				si.CongestionWindow = 2
+				si.SlowStartThreshold = -1
 			}
-			if record.SlowStartThreshold == -1 {
-				record.SlowStartThreshold = 0
+			if si.SlowStartThreshold == -1 {
+				si.SlowStartThreshold = 0
 			}
-			if record.RTO == float64(3*SC_CLK_TCK) {
-				record.RTO = 0
+			if si.RTO == float64(3*SC_CLK_TCK) {
+				si.RTO = 0
 			}
-			if record.Timer != 1 {
-				record.Retransmit = record.Probes
+			if si.Timer != 1 {
+				si.Retransmit = si.Probes
 			}
 		case ProtocalUDP, ProtocalRAW:
 			fieldsIndex++
-			if record.Drops, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
+			if si.Drops, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 				continue
 			}
 		}
 		if len(fields) > 17 {
-			record.Opt = fields[17:]
+			si.Opt = fields[17:]
 		}
 		if FlagProcess {
-			record.SetUpRelation()
+			si.SetUpRelation()
 		}
-		records[record.Inode] = record
+		sis[si.Inode] = si
 	}
 	return
 }
@@ -632,7 +632,7 @@ func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
 func RecvUnixDiagMsgMulti(skfd int) (err error) {
 	var (
 		cursor int
-		record *GenericRecord
+		si     *SocketInfo
 	)
 	for {
 		if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, sockDiagMsgBuffer, nil, unix.MSG_PEEK); err != nil {
@@ -651,16 +651,16 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 		return err
 	}
 	for indexBuffer = range raw {
-		record = <-RecordInputChan
+		si = <-SocketInfoInputChan
 		if raw[indexBuffer].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
 		unDiagMsg = *(*UnixDiagMessage)(unsafe.Pointer(&raw[indexBuffer].Data[:SizeOfUnixDiagMsg][0]))
-		record.Inode = unDiagMsg.UdiagIno
-		record.LocalAddr.Port = fmt.Sprintf("%d", unDiagMsg.UdiagIno)
-		record.Status = unDiagMsg.UdiagState
-		record.Type = unDiagMsg.UdiagType
-		record.SK = uint64(unDiagMsg.UdiagCookie[1])<<32 | uint64(unDiagMsg.UdiagCookie[0])
+		si.Inode = unDiagMsg.UdiagIno
+		si.LocalAddr.Port = fmt.Sprintf("%d", unDiagMsg.UdiagIno)
+		si.Status = unDiagMsg.UdiagState
+		si.Type = unDiagMsg.UdiagType
+		si.SK = uint64(unDiagMsg.UdiagCookie[1])<<32 | uint64(unDiagMsg.UdiagCookie[0])
 		cursor = SizeOfUnixDiagMsg
 		for cursor+4 < len(raw[indexBuffer].Data) {
 			for raw[indexBuffer].Data[cursor] == byte(0) {
@@ -669,20 +669,20 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[indexBuffer].Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case UNIX_DIAG_NAME:
-				record.LocalAddr.Host = string(raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
-				if len(record.LocalAddr.Host) == 0 {
-					record.LocalAddr.Host = "*"
+				si.LocalAddr.Host = string(raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
+				if len(si.LocalAddr.Host) == 0 {
+					si.LocalAddr.Host = "*"
 				}
-				if MaxLocalAddrLength < len(record.LocalAddr.String()) {
-					MaxLocalAddrLength = len(record.LocalAddr.String())
+				if MaxLocalAddrLength < len(si.LocalAddr.String()) {
+					MaxLocalAddrLength = len(si.LocalAddr.String())
 				}
 			case UNIX_DIAG_VFS:
 				// vfs := *(*UnixDiagVFS)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case UNIX_DIAG_PEER:
-				record.RemoteAddr.Host = "*"
-				record.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
-				if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
-					MaxRemoteAddrLength = len(record.RemoteAddr.String())
+				si.RemoteAddr.Host = "*"
+				si.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
+				if MaxRemoteAddrLength < len(si.RemoteAddr.String()) {
+					MaxRemoteAddrLength = len(si.RemoteAddr.String())
 				}
 			case UNIX_DIAG_ICONS:
 				// if nlAttr.Len > 4 {
@@ -693,13 +693,13 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 				// }
 			case UNIX_DIAG_RQLEN:
 				unDiagRQlen = *(*UnixDiagRQlen)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
-				record.RxQueue = unDiagRQlen.RQ
-				record.TxQueue = unDiagRQlen.WQ
+				si.RxQueue = unDiagRQlen.RQ
+				si.TxQueue = unDiagRQlen.WQ
 			case UNIX_DIAG_MEMINFO:
 				if nlAttr.Len > 4 {
-					record.Meminfo = make([]uint32, 0, 8)
+					si.Meminfo = make([]uint32, 0, 8)
 					for j := cursor + unix.SizeofNlAttr; j < cursor+int(nlAttr.Len); j = j + 4 {
-						record.Meminfo = append(record.Meminfo, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
+						si.Meminfo = append(si.Meminfo, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
 					}
 				}
 			case UNIX_DIAG_SHUTDOWN:
@@ -709,14 +709,14 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 			}
 			cursor += int(nlAttr.Len)
 		}
-		RecordOutputChan <- record
+		SocketInfoOutputChan <- si
 	}
 	return nil
 }
 
 func RecvUnixDiagMsgAll(skfd int) {
 	defer func() {
-		RecordOutputChan <- nil
+		SocketInfoOutputChan <- nil
 	}()
 	for {
 		if err := RecvUnixDiagMsgMulti(skfd); err != nil {
@@ -728,25 +728,25 @@ func RecvUnixDiagMsgAll(skfd int) {
 	}
 }
 
-func UnixRecordRead() (records map[uint32]*GenericRecord, err error) {
+func UnixsiRead() (sis map[uint32]*SocketInfo, err error) {
 	skfd, err := SendUnixDiagMsg(SsFilter,
 		UDIAG_SHOW_NAME|UDIAG_SHOW_VFS|UDIAG_SHOW_PEER|UDIAG_SHOW_ICONS|UDIAG_SHOW_RQLEN|UDIAG_SHOW_MEMINFO)
 	if err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	records = make(map[uint32]*GenericRecord)
+	sis = make(map[uint32]*SocketInfo)
 	go RecvUnixDiagMsgAll(skfd)
-	RecordInputChan <- NewGenericRecord()
-	for record := range RecordOutputChan {
-		if record == nil {
-			return records, nil
+	SocketInfoInputChan <- NewSocketInfo()
+	for si := range SocketInfoOutputChan {
+		if si == nil {
+			return sis, nil
 		}
 		if FlagProcess {
-			record.SetUpRelation()
+			si.SetUpRelation()
 		}
-		records[record.Inode] = record
-		RecordInputChan <- NewGenericRecord()
+		sis[si.Inode] = si
+		SocketInfoInputChan <- NewSocketInfo()
 	}
 
 readProc:
@@ -757,7 +757,7 @@ readProc:
 		fieldsIndex int
 		flag        int64
 	)
-	records = make(map[uint32]*GenericRecord)
+	sis = make(map[uint32]*SocketInfo)
 	file, err := os.Open(procFilePath["Unix"])
 	if err != nil {
 		return nil, err
@@ -766,7 +766,7 @@ readProc:
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if err = scanner.Err(); err != nil {
-			return records, err
+			return sis, err
 		}
 		line = scanner.Text()
 		fields = strings.Fields(line)
@@ -776,20 +776,20 @@ readProc:
 		if fields[0] == "Num" {
 			continue
 		}
-		record := NewGenericRecord()
+		si := NewSocketInfo()
 		// Num: the kernel table slot number.
 		fieldsIndex = 0
-		if record.SK, err = strconv.ParseUint(strings.Replace(fields[fieldsIndex], ":", "", -1), 16, 64); err != nil {
+		if si.SK, err = strconv.ParseUint(strings.Replace(fields[fieldsIndex], ":", "", -1), 16, 64); err != nil {
 			continue
 		}
-		record.RemoteAddr.Host = "*"
-		record.RemoteAddr.Port = "Unknown"
-		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
-			MaxRemoteAddrLength = len(record.RemoteAddr.String())
+		si.RemoteAddr.Host = "*"
+		si.RemoteAddr.Port = "Unknown"
+		if MaxRemoteAddrLength < len(si.RemoteAddr.String()) {
+			MaxRemoteAddrLength = len(si.RemoteAddr.String())
 		}
 		fieldsIndex++
 		// RefCount: the number of users of the socket.
-		record.RxQueue = 0
+		si.RxQueue = 0
 		fieldsIndex++
 		// Protocol: currently always 0.
 		fieldsIndex++
@@ -803,18 +803,18 @@ readProc:
 		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		record.Type = uint8(int64Buffer)
+		si.Type = uint8(int64Buffer)
 		fieldsIndex++
 		// St: the internal state of the socket.
 		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
 		if flag&(1<<16) != 0 {
-			record.Status = SsLISTEN
+			si.Status = SsLISTEN
 		} else {
-			record.Status = UnixSstate[int(int64Buffer)-1]
+			si.Status = UnixSstate[int(int64Buffer)-1]
 		}
-		if SsFilter&(1<<record.Status) == 0 {
+		if SsFilter&(1<<si.Status) == 0 {
 			continue
 		}
 		fieldsIndex++
@@ -822,25 +822,25 @@ readProc:
 		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
 			continue
 		}
-		record.Inode = uint32(int64Buffer)
-		record.LocalAddr.Port = fmt.Sprintf("%d", record.Inode)
+		si.Inode = uint32(int64Buffer)
+		si.LocalAddr.Port = fmt.Sprintf("%d", si.Inode)
 		// Path: the bound path (if any) of the socket.
 		// Sockets in the abstract namespace are included in the list, and are shown with a Path that commences with the character '@'.
 		if len(fields) > 7 {
 			fieldsIndex++
-			record.LocalAddr.Host = fields[fieldsIndex]
+			si.LocalAddr.Host = fields[fieldsIndex]
 		} else {
-			record.LocalAddr.Host = "*"
+			si.LocalAddr.Host = "*"
 		}
-		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
-			MaxLocalAddrLength = len(record.LocalAddr.String())
+		if MaxLocalAddrLength < len(si.LocalAddr.String()) {
+			MaxLocalAddrLength = len(si.LocalAddr.String())
 		}
 		if FlagProcess {
-			record.SetUpRelation()
+			si.SetUpRelation()
 		}
-		records[record.Inode] = record
+		sis[si.Inode] = si
 	}
-	return records, nil
+	return sis, nil
 }
 
 func GetSocketCount(fields []string) (int, error) {

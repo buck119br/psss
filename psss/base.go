@@ -48,10 +48,10 @@ var (
 
 var (
 	// channel
-	RecordInputChan    chan *GenericRecord
-	RecordOutputChan   chan *GenericRecord
-	ProcInfoInputChan  chan *ProcInfo
-	ProcInfoOutputChan chan *ProcInfo
+	SocketInfoInputChan  chan *SocketInfo
+	SocketInfoOutputChan chan *SocketInfo
+	ProcInfoInputChan    chan *ProcInfo
+	ProcInfoOutputChan   chan *ProcInfo
 
 	globalProcInfo map[string]map[int]*ProcInfo
 
@@ -62,8 +62,8 @@ var (
 )
 
 func init() {
-	RecordInputChan = make(chan *GenericRecord)
-	RecordOutputChan = make(chan *GenericRecord)
+	SocketInfoInputChan = make(chan *SocketInfo)
+	SocketInfoOutputChan = make(chan *SocketInfo)
 	ProcInfoInputChan = make(chan *ProcInfo)
 	ProcInfoOutputChan = make(chan *ProcInfo)
 
