@@ -2,6 +2,7 @@ package psss
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
