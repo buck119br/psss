@@ -1,14 +1,29 @@
 package psss
 
-import (
-	"bufio"
-	"fmt"
-	"math"
-	"os"
-	"strconv"
-	"strings"
+const (
+	SsUNKNOWN uint8 = iota
+	SsESTAB
+	SsSYNSENT
+	SsSYNRECV
+	SsFINWAIT1
+	SsFINWAIT2
+	SsTIMEWAIT
+	SsUNCONN
+	SsCLOSEWAIT
+	SsLASTACK
+	SsLISTEN
+	SsCLOSING
+	SsMAX
+)
 
-	"golang.org/x/sys/unix"
+const (
+	SOCK_STREAM    = 1
+	SOCK_DGRAM     = 2
+	SOCK_RAW       = 3
+	SOCK_RDM       = 4
+	SOCK_SEQPACKET = 5
+	SOCK_DCCP      = 6
+	SOCK_PACKET    = 10
 )
 
 const (
@@ -17,33 +32,47 @@ const (
 )
 
 var (
-	SummaryPF = []string{
-		"TCP",
-		"UDP",
-		"UDPLITE",
-		"RAW",
-		"FRAG",
+	Sstate = []string{
+		"UNKNOWN",
+		"ESTAB",
+		"SYN-SENT",
+		"SYN-RECV",
+		"FIN-WAIT-1",
+		"FIN-WAIT-2",
+		"TIME-WAIT",
+		"UNCONN",
+		"CLOSE-WAIT",
+		"LAST-ACK",
+		"LISTEN",
+		"CLOSING",
+		"MAX",
 	}
 
-	procFilePath = map[string]string{
-		"sockstat4": "/proc/net/sockstat",
-		"sockstat6": "/proc/net/sockstat6",
-		"TCP4":      "/proc/net/tcp",
-		"TCP6":      "/proc/net/tcp6",
-		"UDP4":      "/proc/net/udp",
-		"UDP6":      "/proc/net/udp6",
-		"RAW4":      "/proc/net/raw",
-		"RAW6":      "/proc/net/raw6",
-		"Unix":      "/proc/net/unix",
+	SocketType = map[uint8]string{
+		SOCK_STREAM:    "str",
+		SOCK_DGRAM:     "dgr",
+		SOCK_RAW:       "raw",
+		SOCK_RDM:       "rdm",
+		SOCK_SEQPACKET: "seq",
+		SOCK_DCCP:      "dccp",
+		SOCK_PACKET:    "pack",
 	}
 
-	TimerName = []string{
+	TimerState = []string{
 		"OFF",
 		"ON",
 		"KEEPALIVE",
 		"TIMEWAIT",
 		"PERSIST",
 		"UNKNOWN",
+	}
+
+	SummaryPF = []string{
+		"TCP",
+		"UDP",
+		"UDPLITE",
+		"RAW",
+		"FRAG",
 	}
 
 	Colons = []string{
@@ -211,7 +240,7 @@ func (record *GenericRecord) ProcInfoPrint() {
 }
 
 func (record *GenericRecord) TimerInfoPrint() {
-	fmt.Printf("[timer:(%s,%dsec,", TimerName[record.Timer], record.Timeout)
+	fmt.Printf("[timer:(%s,%dsec,", TimerState[record.Timer], record.Timeout)
 	if record.Timer != 1 {
 		fmt.Printf("%d)]    ", record.Probes)
 	} else {
@@ -395,425 +424,4 @@ func (record *GenericRecord) TCPInfoPrint() {
 		fmt.Printf(" minrtt:%s", BwToStr(float64(record.TCPInfo.Min_rtt)/1000))
 	}
 	fmt.Printf(" )]\n")
-}
-
-func UnixRecordRead() (records map[uint32]*GenericRecord, err error) {
-	skfd, err := SendUnixDiagMsg(SsFilter,
-		UDIAG_SHOW_NAME|UDIAG_SHOW_VFS|UDIAG_SHOW_PEER|UDIAG_SHOW_ICONS|UDIAG_SHOW_RQLEN|UDIAG_SHOW_MEMINFO)
-	if err != nil {
-		goto readProc
-	}
-	defer unix.Close(skfd)
-	records = make(map[uint32]*GenericRecord)
-	go RecvUnixDiagMsgAll(skfd)
-	RecordInputChan <- NewGenericRecord()
-	for record := range RecordOutputChan {
-		if record == nil {
-			return records, nil
-		}
-		if FlagProcess {
-			record.SetUpRelation()
-		}
-		records[record.Inode] = record
-		RecordInputChan <- NewGenericRecord()
-	}
-
-readProc:
-	// In this way, so much information cannot get.
-	var (
-		line        string
-		fields      []string
-		fieldsIndex int
-		flag        int64
-	)
-	records = make(map[uint32]*GenericRecord)
-	file, err := os.Open(procFilePath["Unix"])
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		if err = scanner.Err(); err != nil {
-			return records, err
-		}
-		line = scanner.Text()
-		fields = strings.Fields(line)
-		if len(fields) < 7 {
-			continue
-		}
-		if fields[0] == "Num" {
-			continue
-		}
-		record := NewGenericRecord()
-		// Num: the kernel table slot number.
-		fieldsIndex = 0
-		if record.SK, err = strconv.ParseUint(strings.Replace(fields[fieldsIndex], ":", "", -1), 16, 64); err != nil {
-			continue
-		}
-		record.RemoteAddr.Host = "*"
-		record.RemoteAddr.Port = "Unknown"
-		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
-			MaxRemoteAddrLength = len(record.RemoteAddr.String())
-		}
-		fieldsIndex++
-		// RefCount: the number of users of the socket.
-		record.RxQueue = 0
-		fieldsIndex++
-		// Protocol: currently always 0.
-		fieldsIndex++
-		// Flags: the internal kernel flags holding the status of the socket.
-		if flag, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
-			continue
-		}
-		fieldsIndex++
-		// Type: the socket type.
-		// For SOCK_STREAM sockets, this is 0001; for SOCK_DGRAM sockets, it is 0002; and for SOCK_SEQPACKET sockets, it is 0005.
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
-			continue
-		}
-		record.Type = uint8(int64Buffer)
-		fieldsIndex++
-		// St: the internal state of the socket.
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
-			continue
-		}
-		if flag&(1<<16) != 0 {
-			record.Status = SsLISTEN
-		} else {
-			record.Status = UnixSstate[int(int64Buffer)-1]
-		}
-		if SsFilter&(1<<record.Status) == 0 {
-			continue
-		}
-		fieldsIndex++
-		// Inode
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
-			continue
-		}
-		record.Inode = uint32(int64Buffer)
-		record.LocalAddr.Port = fmt.Sprintf("%d", record.Inode)
-		// Path: the bound path (if any) of the socket.
-		// Sockets in the abstract namespace are included in the list, and are shown with a Path that commences with the character '@'.
-		if len(fields) > 7 {
-			fieldsIndex++
-			record.LocalAddr.Host = fields[fieldsIndex]
-		} else {
-			record.LocalAddr.Host = "*"
-		}
-		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
-			MaxLocalAddrLength = len(record.LocalAddr.String())
-		}
-		if FlagProcess {
-			record.SetUpRelation()
-		}
-		records[record.Inode] = record
-	}
-	return records, nil
-}
-
-func GenericRecordRead(protocal, af int) (records map[uint32]*GenericRecord, err error) {
-	var (
-		ipproto uint8
-		exts    uint8
-		skfd    int
-	)
-	switch protocal {
-	case ProtocalTCP:
-		ipproto = unix.IPPROTO_TCP
-		if FlagInfo {
-			exts |= 1 << (INET_DIAG_INFO - 1)
-			exts |= 1 << (INET_DIAG_VEGASINFO - 1)
-			exts |= 1 << (INET_DIAG_CONG - 1)
-		}
-	case ProtocalUDP:
-		ipproto = unix.IPPROTO_UDP
-	case ProtocalRAW:
-		ipproto = unix.IPPROTO_RAW
-	default:
-		return nil, fmt.Errorf("invalid protocal:[%d]", protocal)
-	}
-	if FlagMemory {
-		exts |= 1 << (INET_DIAG_SKMEMINFO - 1)
-	}
-	if skfd, err = SendInetDiagMsg(uint8(af), ipproto, exts, SsFilter); err != nil {
-		goto readProc
-	}
-	defer unix.Close(skfd)
-
-	records = make(map[uint32]*GenericRecord)
-	go RecvInetDiagMsgAll(skfd)
-	RecordInputChan <- NewGenericRecord()
-	for record := range RecordOutputChan {
-		if record == nil {
-			return records, nil
-		}
-		if FlagProcess {
-			record.SetUpRelation()
-		}
-		records[record.Inode] = record
-		RecordInputChan <- NewGenericRecord()
-	}
-
-readProc:
-	var (
-		procPath    string
-		file        *os.File
-		line        string
-		fields      []string
-		fieldsIndex int
-		stringBuff  []string
-		int64Buffer int64
-	)
-	records = make(map[uint32]*GenericRecord)
-
-	switch protocal {
-	case ProtocalTCP:
-		procPath = "TCP"
-	case ProtocalUDP:
-		procPath = "UDP"
-	case ProtocalRAW:
-		procPath = "RAW"
-	}
-	switch af {
-	case unix.AF_INET:
-		procPath += "4"
-	case unix.AF_INET6:
-		procPath += "6"
-	}
-	if file, err = os.Open(procFilePath[procPath]); err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		if err = scanner.Err(); err != nil {
-			return records, err
-		}
-		line = scanner.Text()
-		fields = strings.Fields(line)
-		if fields[0] == "sl" {
-			continue
-		}
-		record := NewGenericRecord()
-		// Local address
-		fieldsIndex = 1
-		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		switch af {
-		case unix.AF_INET:
-			record.LocalAddr.Host, err = IPv4HexToString(stringBuff[0])
-		case unix.AF_INET6:
-			record.LocalAddr.Host, err = IPv6HexToString(stringBuff[0])
-		}
-		if err != nil {
-			continue
-		}
-		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
-			continue
-		}
-		record.LocalAddr.Port = fmt.Sprintf("%d", int64Buffer)
-		if MaxLocalAddrLength < len(record.LocalAddr.String()) {
-			MaxLocalAddrLength = len(record.LocalAddr.String())
-		}
-		fieldsIndex++
-		// Remote address
-		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		switch af {
-		case unix.AF_INET:
-			record.RemoteAddr.Host, err = IPv4HexToString(stringBuff[0])
-		case unix.AF_INET6:
-			record.RemoteAddr.Host, err = IPv6HexToString(stringBuff[0])
-		}
-		if err != nil {
-			continue
-		}
-		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
-			continue
-		}
-		record.RemoteAddr.Port = fmt.Sprintf("%d", int64Buffer)
-		if MaxRemoteAddrLength < len(record.RemoteAddr.String()) {
-			MaxRemoteAddrLength = len(record.RemoteAddr.String())
-		}
-		fieldsIndex++
-		// Status
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
-			continue
-		}
-		record.Status = uint8(int64Buffer)
-		if SsFilter&(1<<record.Status) == 0 {
-			continue
-		}
-		fieldsIndex++
-		// TxQueue:RxQueue
-		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if int64Buffer, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
-			continue
-		}
-		record.TxQueue = uint32(int64Buffer)
-		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
-			continue
-		}
-		record.RxQueue = uint32(int64Buffer)
-		fieldsIndex++
-		// Timer:TmWhen
-		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if int64Buffer, err = strconv.ParseInt(stringBuff[0], 16, 32); err != nil {
-			continue
-		}
-		record.Timer = int(int64Buffer)
-		if record.Timer > 4 {
-			record.Timer = 5
-		}
-		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 32); err != nil {
-			continue
-		}
-		record.Timeout = int(int64Buffer)
-		record.Timeout = (record.Timeout*1000 + int(SC_CLK_TCK) - 1) / int(SC_CLK_TCK)
-		fieldsIndex++
-		// Retransmit
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
-			continue
-		}
-		record.Retransmit = int(int64Buffer)
-		fieldsIndex++
-		if record.UID, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
-			continue
-		}
-		fieldsIndex++
-		if record.Probes, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
-			continue
-		}
-		fieldsIndex++
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
-			continue
-		}
-		record.Inode = uint32(int64Buffer)
-		fieldsIndex++
-		if record.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
-			continue
-		}
-		fieldsIndex++
-		if record.SK, err = strconv.ParseUint(fields[fieldsIndex], 16, 64); err != nil {
-			continue
-		}
-		switch protocal {
-		case ProtocalTCP:
-			if len(fields) > 12 {
-				fieldsIndex++
-				if record.RTO, err = strconv.ParseFloat(fields[fieldsIndex], 64); err != nil {
-					continue
-				}
-				fieldsIndex++
-				if record.ATO, err = strconv.ParseFloat(fields[fieldsIndex], 64); err != nil {
-					continue
-				}
-				record.ATO = record.ATO / float64(SC_CLK_TCK)
-				fieldsIndex++
-				if record.QACK, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
-					continue
-				}
-				record.QACK = record.QACK / 2
-				fieldsIndex++
-				if record.CongestionWindow, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
-					continue
-				}
-				fieldsIndex++
-				if record.SlowStartThreshold, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
-					continue
-				}
-			} else {
-				record.RTO = 0
-				record.ATO = 0
-				record.QACK = 0
-				record.CongestionWindow = 2
-				record.SlowStartThreshold = -1
-			}
-			if record.SlowStartThreshold == -1 {
-				record.SlowStartThreshold = 0
-			}
-			if record.RTO == float64(3*SC_CLK_TCK) {
-				record.RTO = 0
-			}
-			if record.Timer != 1 {
-				record.Retransmit = record.Probes
-			}
-		case ProtocalUDP, ProtocalRAW:
-			fieldsIndex++
-			if record.Drops, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
-				continue
-			}
-		}
-		if len(fields) > 17 {
-			record.Opt = fields[17:]
-		}
-		if FlagProcess {
-			record.SetUpRelation()
-		}
-		records[record.Inode] = record
-	}
-	return
-}
-
-func GetSocketCount(fields []string) (int, error) {
-	for indexBuffer = range fields {
-		if fields[indexBuffer] == "inuse" {
-			return strconv.Atoi(fields[indexBuffer+1])
-		}
-	}
-	return 0, nil
-}
-
-// IPv6:versionFlag = true; IPv4:versionFlag = false
-func GenericReadSockstat() (summary map[string]map[string]int, err error) {
-	summary = make(map[string]map[string]int)
-	for _, pf := range SummaryPF {
-		summary[pf] = make(map[string]int)
-	}
-
-	var file *os.File
-	for _, v := range []string{"sockstat4", "sockstat6"} {
-		if file, err = os.Open(procFilePath[v]); err != nil {
-			return nil, err
-		}
-		defer file.Close()
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			if err = scanner.Err(); err != nil {
-				return nil, err
-			}
-			line := scanner.Text()
-			fields := strings.Fields(line)
-			switch fields[0] {
-			case "sockets:":
-				continue
-			case "TCP:":
-				summary["TCP"][IPv4String], err = GetSocketCount(fields[1:])
-			case "TCP6:":
-				summary["TCP"][IPv6String], err = GetSocketCount(fields[1:])
-			case "UDP:":
-				summary["UDP"][IPv4String], err = GetSocketCount(fields[1:])
-			case "UDP6:":
-				summary["UDP"][IPv6String], err = GetSocketCount(fields[1:])
-			case "UDPLITE:":
-				summary["UDPLITE"][IPv4String], err = GetSocketCount(fields[1:])
-			case "UDPLITE6:":
-				summary["UDPLITE"][IPv6String], err = GetSocketCount(fields[1:])
-			case "RAW:":
-				summary["RAW"][IPv4String], err = GetSocketCount(fields[1:])
-			case "RAW6:":
-				summary["RAW"][IPv6String], err = GetSocketCount(fields[1:])
-			case "FRAG:":
-				summary["FRAG"][IPv4String], err = GetSocketCount(fields[1:])
-			case "FRAG6:":
-				summary["FRAG"][IPv6String], err = GetSocketCount(fields[1:])
-			default:
-				continue
-			}
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return summary, nil
 }

@@ -6,12 +6,8 @@ package psss
 import "C"
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"syscall"
-
-	"golang.org/x/sys/unix"
 )
 
 const (
@@ -26,8 +22,6 @@ const (
 	ProtocalUnix
 	ProtocalMax
 )
-
-const ProcRoot = "/proc"
 
 var (
 	AfFilter       uint64
@@ -60,28 +54,11 @@ var (
 	ProcInfoOutputChan chan *ProcInfo
 
 	globalProcInfo map[string]map[int]*ProcInfo
-	// buffer
-	sockDiagMsgBuffer   []byte
-	unDiagRequestBuffer []byte
-	inDiagRequestBuffer []byte
-	fileContentBuffer   *bytes.Buffer
 
 	int64Buffer  int64
 	intBuffer    int
 	indexBuffer  int
 	bytesCounter int
-
-	sockAddrNl  unix.SockaddrNetlink
-	nlAttr      unix.NlAttr
-	unDiagReq   UnixDiagRequest
-	unDiagMsg   UnixDiagMessage
-	unDiagRQlen UnixDiagRQlen
-	inDiagReq   InetDiagRequest
-	inDiagMsg   InetDiagMessage
-
-	procDirentHandler *DirentHandler
-	fdDirentHandler   *DirentHandler
-	fdStat_t          *syscall.Stat_t
 )
 
 func init() {
@@ -90,14 +67,7 @@ func init() {
 	ProcInfoInputChan = make(chan *ProcInfo)
 	ProcInfoOutputChan = make(chan *ProcInfo)
 
-	sockDiagMsgBuffer = make([]byte, pageSize)
-	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
-	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
-	fileContentBuffer = bytes.NewBuffer(make([]byte, pageSize))
-
-	procDirentHandler = NewDirentHandler()
-	fdDirentHandler = NewDirentHandler()
-	fdStat_t = new(syscall.Stat_t)
+	archInit()
 }
 
 func AddrLengthInit() {
