@@ -250,7 +250,7 @@ func (si *SocketInfo) GenericInfoPrint() {
 func (si *SocketInfo) ProcInfoPrint() {
 	var inode uint32
 	fmt.Printf(`["%s":`, si.UserName)
-	for pid, proc := range globalProcInfo[si.UserName] {
+	for pid := range globalProcInfo[si.UserName] {
 		for inode = range GlobalProcFds[si.UserName][pid] {
 			if si.Inode == inode {
 				fmt.Printf(`(pid=%d,fd=%s)`, pid, GlobalProcFds[si.UserName][pid][inode].Name)
