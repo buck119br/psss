@@ -222,12 +222,13 @@ func (si *SocketInfo) Reset() {
 
 func (si *SocketInfo) SetUpRelation() {
 	var (
-		pid int
-		ok  bool
+		map2L map[uint32]*Fd
+		pid   int
+		ok    bool
 	)
-	for name := range GlobalProcFds {
-		for pid = range GlobalProcFds[name] {
-			if _, ok = GlobalProcFds[name][pid][si.Inode]; ok {
+	for name, map1L := range GlobalProcFds {
+		for pid, map2L := range map1L {
+			if _, ok = map2L[si.Inode]; ok {
 				si.UserName = globalProcInfo[name][pid].Stat.Name
 				return
 			}

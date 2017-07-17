@@ -155,7 +155,7 @@ func (p *ProcInfo) GetFds() (err error) {
 			GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)] = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
 		} else {
 			GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)].Name = fdDirentHandler.Dirent.Name
-			GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)].Fresh = false
+			GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)].Fresh = true
 		}
 	next:
 		fdDirentHandler.InputSignalChan <- true
@@ -216,5 +216,29 @@ func GetProcInfo() {
 		globalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
 	next:
 		ProcInfoInputChan <- NewProcInfo()
+	}
+}
+
+func CleanGlobalProcFds() {
+	var (
+		pid   int
+		inode uint32
+	)
+	for name := range GlobalProcFds {
+		for pid = range GlobalProcFds[name] {
+			for inode = range GlobalProcFds[name][pid] {
+				if GlobalProcFds[name][pid][inode].Fresh {
+					GlobalProcFds[name][pid][inode].Fresh = false
+				} else {
+					delete(GlobalProcFds[name][pid], inode)
+					if len(GlobalProcFds[name][pid]) == 0 {
+						delete(GlobalProcFds[name], pid)
+					}
+					if len(GlobalProcFds[name]) == 0 {
+						delete(GlobalProcFds, name)
+					}
+				}
+			}
+		}
 	}
 }
