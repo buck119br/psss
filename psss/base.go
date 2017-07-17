@@ -55,6 +55,8 @@ var (
 
 	globalProcInfo map[string]map[int]*ProcInfo
 
+	GlobalProcFds map[string]map[int]map[uint32]*Fd
+
 	int64Buffer  int64
 	intBuffer    int
 	indexBuffer  int
@@ -66,6 +68,8 @@ func init() {
 	SocketInfoOutputChan = make(chan *SocketInfo)
 	ProcInfoInputChan = make(chan *ProcInfo)
 	ProcInfoOutputChan = make(chan *ProcInfo)
+
+	GlobalProcFds = make(map[string]map[int]map[uint32]*Fd)
 
 	archInit()
 }

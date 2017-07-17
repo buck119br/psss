@@ -222,14 +222,15 @@ func (si *SocketInfo) Reset() {
 
 func (si *SocketInfo) SetUpRelation() {
 	var (
-		proc *ProcInfo
-		i    int
+		pid   int
+		inode uint32
 	)
-	for _, procMap := range globalProcInfo {
-		for _, proc = range procMap {
-			for i = range proc.Fds {
-				if si.Inode == proc.Fds[i].Inode {
-					si.UserName = proc.Stat.Name
+	for name := range GlobalProcFds {
+		for pid = range GlobalProcFds[name] {
+			for inode = range GlobalProcFds[name][pid] {
+				if si.Inode == inode {
+					si.UserName = globalProcInfo[name][pid].Stat.Name
+					return
 				}
 			}
 		}
@@ -247,12 +248,12 @@ func (si *SocketInfo) GenericInfoPrint() {
 }
 
 func (si *SocketInfo) ProcInfoPrint() {
-	var i int
+	var inode uint32
 	fmt.Printf(`["%s":`, si.UserName)
 	for pid, proc := range globalProcInfo[si.UserName] {
-		for i = range proc.Fds {
-			if si.Inode == proc.Fds[i].Inode {
-				fmt.Printf(`(pid=%d,fd=%s)`, pid, proc.Fds[i].Name)
+		for inode = range GlobalProcFds[si.UserName][pid] {
+			if si.Inode == inode {
+				fmt.Printf(`(pid=%d,fd=%s)`, pid, GlobalProcFds[si.UserName][pid][inode].Name)
 			}
 		}
 	}
