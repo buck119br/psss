@@ -223,11 +223,10 @@ func (si *SocketInfo) Reset() {
 func (si *SocketInfo) SetUpRelation() {
 	var (
 		map2L map[uint32]*Fd
-		pid   int
 		ok    bool
 	)
 	for name, map1L := range GlobalProcFds {
-		for pid, map2L = range map1L {
+		for _, map2L = range map1L {
 			if _, ok = map2L[si.Inode]; ok {
 				si.UserName = name
 				return
