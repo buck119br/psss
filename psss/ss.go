@@ -231,7 +231,6 @@ func (si *SocketInfo) SetUpRelation() {
 				si.UserName = globalProcInfo[name][pid].Stat.Name
 				return
 			}
-
 		}
 	}
 }
