@@ -227,7 +227,7 @@ func (si *SocketInfo) SetUpRelation() {
 	)
 	for name := range GlobalProcFds {
 		for pid = range GlobalProcFds[name] {
-			if _, ok = GlobalProcFds[name][si.Inode]; ok {
+			if _, ok = GlobalProcFds[name][pid][si.Inode]; ok {
 				si.UserName = globalProcInfo[name][pid].Stat.Name
 				return
 			}
