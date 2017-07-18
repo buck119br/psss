@@ -150,10 +150,10 @@ func (p *ProcInfo) GetFds() (err error) {
 			goto next
 		}
 		if map1L, ok = GlobalProcFds[p.Stat.Name]; !ok {
-			GlobalProcFds[p.Stat.Name] = make(map[int]map[uint32]*Fd)
+			map1L = make(map[int]map[uint32]*Fd)
 		}
 		if map2L, ok = map1L[p.Stat.Pid]; !ok {
-			map1L[p.Stat.Pid] = make(map[uint32]*Fd)
+			map2L = make(map[uint32]*Fd)
 		}
 		if _, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
 			map2L[uint32(fdStat_t.Ino)] = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
