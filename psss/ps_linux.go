@@ -137,7 +137,11 @@ func (p *ProcInfo) GetFds() (err error) {
 	defer fd.Close()
 	go fdDirentHandler.ReadDirents(fd)
 	fdDirentHandler.InputSignalChan <- true
-	var ok bool
+	var (
+		map1L map[int]map[uint32]*Fd
+		map2L map[uint32]*Fd
+		ok    bool
+	)
 	for fdDirentHandler.Signal = range fdDirentHandler.OutputSignalChan {
 		if !fdDirentHandler.Signal {
 			return
@@ -145,18 +149,20 @@ func (p *ProcInfo) GetFds() (err error) {
 		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.Dirent.Name, fdStat_t); err != nil {
 			goto next
 		}
-		if _, ok = GlobalProcFds[p.Stat.Name]; !ok {
+		if map1L, ok = GlobalProcFds[p.Stat.Name]; !ok {
 			GlobalProcFds[p.Stat.Name] = make(map[int]map[uint32]*Fd)
 		}
-		if _, ok = GlobalProcFds[p.Stat.Name][p.Stat.Pid]; !ok {
-			GlobalProcFds[p.Stat.Name][p.Stat.Pid] = make(map[uint32]*Fd)
+		if map2L, ok = map1L[p.Stat.Pid]; !ok {
+			map1L[p.Stat.Pid] = make(map[uint32]*Fd)
 		}
-		if _, ok = GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)]; !ok {
-			GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)] = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
+		if _, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
+			map2L[uint32(fdStat_t.Ino)] = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
 		} else {
-			GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)].Name = fdDirentHandler.Dirent.Name
-			GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)].Fresh = true
+			map2L[uint32(fdStat_t.Ino)].Name = fdDirentHandler.Dirent.Name
+			map2L[uint32(fdStat_t.Ino)].Fresh = true
 		}
+		map1L[p.Stat.Pid] = map2L
+		GlobalProcFds[p.Stat.Name] = map1L
 	next:
 		fdDirentHandler.InputSignalChan <- true
 	}

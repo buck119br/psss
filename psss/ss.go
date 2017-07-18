@@ -241,17 +241,16 @@ func (si *SocketInfo) GenericInfoPrint() {
 	} else {
 		fmt.Printf("%s\t\t", Sstate[si.Status])
 	}
-	fmt.Printf("%d\t%d\t", si.RxQueue, si.TxQueue)
-	fmt.Printf("%-*s\t%-*s\t", MaxLocalAddrLength, si.LocalAddr.String(), MaxRemoteAddrLength, si.RemoteAddr.String())
+	fmt.Printf("%d\t%d\t%-*s\t%-*s\t", si.RxQueue, si.TxQueue, MaxLocalAddrLength, si.LocalAddr.String(), MaxRemoteAddrLength, si.RemoteAddr.String())
 }
 
 func (si *SocketInfo) ProcInfoPrint() {
 	var inode uint32
 	fmt.Printf(`["%s":`, si.UserName)
-	for pid := range globalProcInfo[si.UserName] {
-		for inode = range GlobalProcFds[si.UserName][pid] {
+	for pid, map1L := range GlobalProcFds[si.UserName] {
+		for inode = range map1L {
 			if si.Inode == inode {
-				fmt.Printf(`(pid=%d,fd=%s)`, pid, GlobalProcFds[si.UserName][pid][inode].Name)
+				fmt.Printf(`(pid=%d,fd=%s)`, pid, map1L[inode].Name)
 			}
 		}
 	}
