@@ -227,13 +227,15 @@ func GetProcInfo() {
 
 func CleanGlobalProcFds() {
 	var (
+		map2L map[uint32]*Fd
 		pid   int
 		inode uint32
+		fd    *Fd
 	)
-	for name := range GlobalProcFds {
-		for pid = range GlobalProcFds[name] {
-			for inode = range GlobalProcFds[name][pid] {
-				if GlobalProcFds[name][pid][inode].Fresh {
+	for name, map1L := range GlobalProcFds {
+		for pid, map2L = range map1L {
+			for inode, fd = range map2L {
+				if fd.Fresh {
 					GlobalProcFds[name][pid][inode].Fresh = false
 				} else {
 					delete(GlobalProcFds[name][pid], inode)
