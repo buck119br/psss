@@ -68,10 +68,10 @@ func (d *DirentHandler) ReadDirents(fd *os.File) {
 			d.NameBuffer = append(d.NameBuffer, d.Bufferx[d.IndexBuffer])
 		}
 		d.Dirent.Name = string(d.NameBuffer[:len(d.NameBuffer)])
+		d.Cursor += int(d.Dirent.Reclen)
 		if d.Dirent.Name == "." || d.Dirent.Name == ".." {
 			continue
 		}
-		d.Cursor += int(d.Dirent.Reclen)
 		d.SignalChan <- true
 	}
 }
