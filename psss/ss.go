@@ -225,7 +225,7 @@ func (si *SocketInfo) Reset() {
 
 func (si *SocketInfo) SetUpRelation() {
 	var (
-		map2L map[uint32]*Fd
+		map2L map[uint32]Fd
 		ok    bool
 	)
 	for name, map1L := range GlobalProcFds {
