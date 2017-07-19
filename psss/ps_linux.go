@@ -146,6 +146,7 @@ func (p *ProcInfo) GetFds() (err error) {
 			return
 		}
 		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.Dirent.Name, fdStat_t); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		if map1L, ok = GlobalProcFds[p.Stat.Name]; !ok {
@@ -167,8 +168,10 @@ func (p *ProcInfo) GetFds() (err error) {
 }
 
 func ScanProcFS() {
+	proc := NewProcInfo()
 	defer func() {
-		ProcInfoChan <- ProcInfo{IsEnd: true}
+		proc.IsEnd = true
+		ProcInfoChan <- *proc
 	}()
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
@@ -176,21 +179,23 @@ func ScanProcFS() {
 	}
 	defer fd.Close()
 
-	proc := NewProcInfo()
 	go procDirentHandler.ReadDirents(fd)
 	for procDirentHandler.Signal = range procDirentHandler.SignalChan {
 		if !procDirentHandler.Signal {
 			return
 		}
 		if intBuffer, err = strconv.Atoi(procDirentHandler.Dirent.Name); err != nil {
+			fmt.Println(err)
 			continue
 		}
 		proc.Stat.Pid = intBuffer
 		if err = proc.GetStat(); err != nil {
-			proc.Stat.Name = "NULL"
+			fmt.Println(err)
+			continue
 		}
 		if err = proc.GetFds(); err != nil {
-			proc.Stat.Name = "NULL"
+			fmt.Println(err)
+			continue
 		}
 		ProcInfoChan <- *proc
 	}
@@ -203,9 +208,6 @@ func GetProcInfo() {
 	for proc := range ProcInfoChan {
 		if proc.IsEnd {
 			return
-		}
-		if proc.Stat.Name == "NULL" {
-			continue
 		}
 		if _, ok = globalProcInfo[proc.Stat.Name]; !ok {
 			globalProcInfo[proc.Stat.Name] = make(map[int]ProcInfo)
