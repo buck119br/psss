@@ -140,8 +140,8 @@ func (p *ProcInfo) GetFds() (err error) {
 		fd Fd
 		ok bool
 	)
-	for fdDirentHandler.Signal = range fdDirentHandler.SignalChan {
-		if !fdDirentHandler.Signal {
+	for fdDirentHandler.ExternalDirent = range fdDirentHandler.DataChan {
+		if fdDirentHandler.ExternalDirent.IsEnd {
 			return
 		}
 		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.ExternalDirent.Name, fdStat_t); err != nil {
@@ -174,8 +174,8 @@ func ScanProcFS() {
 	defer fd.Close()
 
 	go procDirentHandler.ReadDirents(fd)
-	for procDirentHandler.Signal = range procDirentHandler.SignalChan {
-		if !procDirentHandler.Signal {
+	for procDirentHandler.ExternalDirent = range procDirentHandler.DataChan {
+		if procDirentHandler.ExternalDirent.IsEnd {
 			return
 		}
 		if intBuffer, err = strconv.Atoi(procDirentHandler.ExternalDirent.Name); err != nil {

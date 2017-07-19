@@ -15,10 +15,11 @@ type Dirent struct {
 	Reclen uint16
 	Type   byte
 	Name   string
+	IsEnd  bool
 }
 
 type DirentHandler struct {
-	SignalChan     chan bool
+	DataChan       chan Dirent
 	Buffer         []byte
 	Bufferx        []byte
 	NameBuffer     []byte
@@ -27,12 +28,11 @@ type DirentHandler struct {
 	BytesCounter   int
 	IndexBuffer    int
 	Cursor         int
-	Signal         bool
 }
 
 func NewDirentHandler() *DirentHandler {
 	d := new(DirentHandler)
-	d.SignalChan = make(chan bool)
+	d.DataChan = make(chan Dirent)
 	d.Buffer = make([]byte, pageSize)
 	d.Bufferx = make([]byte, pageSize)
 	d.NameBuffer = make([]byte, 256)
@@ -41,7 +41,8 @@ func NewDirentHandler() *DirentHandler {
 
 func (d *DirentHandler) ReadDirents(fd *os.File) {
 	defer func() {
-		d.SignalChan <- false
+		d.InternalDirent.IsEnd = true
+		d.DataChan <- d.InternalDirent
 	}()
 	d.Bufferx = d.Bufferx[0:0]
 	var err error
@@ -68,12 +69,12 @@ func (d *DirentHandler) ReadDirents(fd *os.File) {
 			d.NameBuffer = append(d.NameBuffer, d.Bufferx[d.IndexBuffer])
 		}
 		d.InternalDirent.Name = string(d.NameBuffer[:len(d.NameBuffer)])
-		d.Cursor += int(d.InternalDirent.Reclen)
 		if d.InternalDirent.Name == "." || d.InternalDirent.Name == ".." {
 			continue
 		}
-		d.ExternalDirent = d.InternalDirent
-		d.SignalChan <- true
+		d.InternalDirent.IsEnd = false
+		d.Cursor += int(d.InternalDirent.Reclen)
+		d.DataChan <- d.InternalDirent
 	}
 }
 
