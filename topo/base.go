@@ -27,8 +27,8 @@ var (
 )
 
 func init() {
-	SysInfoNew := psss.NewSystemInfo()
-	SysInfoOld := psss.NewSystemInfo()
+	SysInfoNew = psss.NewSystemInfo()
+	SysInfoOld = psss.NewSystemInfo()
 	GlobalTopology = NewTopology()
 
 	bufferPool.BufferSize = 200
