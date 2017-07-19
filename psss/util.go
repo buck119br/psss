@@ -48,6 +48,7 @@ func (d *DirentHandler) ReadDirents(fd *os.File) {
 	var err error
 	for {
 		if d.BytesCounter, err = unix.Getdents(int(fd.Fd()), d.Buffer); err != nil {
+			fmt.Println(err)
 			return
 		}
 		runtime.KeepAlive(fd)
