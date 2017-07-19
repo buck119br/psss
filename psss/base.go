@@ -53,7 +53,7 @@ var (
 
 	globalProcInfo map[string]map[int]ProcInfo
 
-	GlobalProcFds map[string]map[int]map[uint32]*Fd
+	GlobalProcFds map[string]map[int]map[uint32]Fd
 
 	int64Buffer  int64
 	intBuffer    int
@@ -65,7 +65,7 @@ func init() {
 	SocketInfoChan = make(chan SocketInfo)
 	ProcInfoChan = make(chan ProcInfo)
 
-	GlobalProcFds = make(map[string]map[int]map[uint32]*Fd)
+	GlobalProcFds = make(map[string]map[int]map[uint32]Fd)
 
 	archInit()
 }

@@ -130,16 +130,16 @@ func (p *ProcInfo) GetStat() (err error) {
 
 func (p *ProcInfo) GetFds() (err error) {
 	fdPath := ProcRoot + fmt.Sprintf("/%d/fd", p.Stat.Pid)
-	fd, err := os.Open(fdPath)
+	file, err := os.Open(fdPath)
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
-	go fdDirentHandler.ReadDirents(fd)
+	defer file.Close()
+	go fdDirentHandler.ReadDirents(file)
 	var (
-		map1L map[int]map[uint32]*Fd
-		map2L map[uint32]*Fd
-		fdPtr *Fd
+		map1L map[int]map[uint32]Fd
+		map2L map[uint32]Fd
+		fd    Fd
 		ok    bool
 	)
 	for fdDirentHandler.Signal = range fdDirentHandler.SignalChan {
@@ -150,18 +150,18 @@ func (p *ProcInfo) GetFds() (err error) {
 			continue
 		}
 		if map1L, ok = GlobalProcFds[p.Stat.Name]; !ok {
-			map1L = make(map[int]map[uint32]*Fd)
+			map1L = make(map[int]map[uint32]Fd)
 		}
 		if map2L, ok = map1L[p.Stat.Pid]; !ok {
-			map2L = make(map[uint32]*Fd)
+			map2L = make(map[uint32]Fd)
 		}
-		if fdPtr, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
-			fdPtr = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
+		if fd, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
+			fd = Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
 		} else {
-			fdPtr.Name = fdDirentHandler.Dirent.Name
-			fdPtr.Fresh = true
+			fd.Name = fdDirentHandler.Dirent.Name
+			fd.Fresh = true
 		}
-		map2L[uint32(fdStat_t.Ino)] = fdPtr
+		map2L[uint32(fdStat_t.Ino)] = fd
 		map1L[p.Stat.Pid] = map2L
 		GlobalProcFds[p.Stat.Name] = map1L
 	}
@@ -216,16 +216,17 @@ func GetProcInfo() {
 
 func CleanGlobalProcFds() {
 	var (
-		map2L map[uint32]*Fd
+		map2L map[uint32]Fd
 		pid   int
 		inode uint32
-		fd    *Fd
+		fd    Fd
 	)
 	for name, map1L := range GlobalProcFds {
 		for pid, map2L = range map1L {
 			for inode, fd = range map2L {
 				if fd.Fresh {
-					GlobalProcFds[name][pid][inode].Fresh = false
+					fd.Fresh = false
+					GlobalProcFds[name][pid][inode] = fd
 				} else {
 					delete(GlobalProcFds[name][pid], inode)
 					if len(GlobalProcFds[name][pid]) == 0 {
