@@ -29,7 +29,7 @@ var (
 func init() {
 	SysInfoNew := psss.NewSystemInfo()
 	SysInfoOld := psss.NewSystemInfo()
-	GlobalTopology = &(make(map[string]ServiceInfo))
+	GlobalTopology = NewTopology()
 
 	bufferPool.BufferSize = 200
 	bufferPool.BufferPoolInitSize = 10

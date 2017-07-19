@@ -32,4 +32,6 @@ type ServiceInfo struct {
 	DownStream AddrSet          `zid:"4" msgp:"omitempty"` // this field will not be nil only DoListen is set
 }
 
-type Topology map[string]ServiceInfo
+type Topology struct {
+	Services map[string]ServiceInfo `zid:"0"`
+}

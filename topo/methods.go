@@ -12,13 +12,19 @@ func NewServiceInfo() *ServiceInfo {
 	return s
 }
 
-func (t *Topology) GetProcInfo() error {
+func NewTopology() *Topology {
+	t := new(Topology)
+	t.Services = make(map[string]ServiceInfo)
+	return t
+}
+
+func (t *Topology) GetProcInfo() (err error) {
 	defer func() {
-		cleanReserve()
+		clearReserve()
 		SysInfoOld, SysInfoNew = SysInfoNew, SysInfoOld
 	}()
 	SysInfoNew.Reset()
-	if err = SystemInfoNew.GetStat(); err != nil {
+	if err = SysInfoNew.GetStat(); err != nil {
 		return err
 	}
 
@@ -27,10 +33,9 @@ func (t *Topology) GetProcInfo() error {
 		if proc.IsEnd {
 			return nil
 		}
-		if serviceInfo, ok = t[originProcInfo.Stat.Name]; !ok {
+		if serviceInfo, ok = t.Services[originProcInfo.Stat.Name]; !ok {
 			serviceInfo = *(NewServiceInfo())
 		}
-		procStat, _ = serviceInfo.ProcsStat[originProcInfo.Stat.Pid]
 		procStat.State = psss.ProcState[originProcInfo.Stat.State]
 		procStat.StartTime = int64(SysInfoNew.Stat.Btime + originProcInfo.Stat.Starttime/psss.SC_CLK_TCK)
 		procStat.LoadAvg = math.Trunc(float64(originProcInfo.Stat.Utime+originProcInfo.Stat.Stime)/float64(SysInfoNew.Stat.CPUTime.Total)*100000) / 100000
@@ -54,7 +59,7 @@ func (t *Topology) GetProcInfo() error {
 		procsInfoReserve[originProcInfo.Stat.Name][originProcInfo.Stat.Pid] = procInfoReserve
 		// assignment
 		serviceInfo.ProcsStat[originProcInfo.Stat.Pid] = procStat
-		t[originProcInfo.Stat.Name] = serviceInfo
+		t.Services[originProcInfo.Stat.Name] = serviceInfo
 	}
 	return nil
 }
