@@ -27,6 +27,7 @@ type DirentHandler struct {
 	BytesCounter   int
 	IndexBuffer    int
 	Cursor         int
+	Signal         bool
 }
 
 func NewDirentHandler() *DirentHandler {

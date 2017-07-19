@@ -144,7 +144,7 @@ func (p *ProcInfo) GetFds() (err error) {
 		if !fdDirentHandler.Signal {
 			return
 		}
-		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.Dirent.Name, fdStat_t); err != nil {
+		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.ExternalDirent.Name, fdStat_t); err != nil {
 			continue
 		}
 		if _, ok = GlobalProcFds[p.Stat.Name]; !ok {
@@ -178,7 +178,7 @@ func ScanProcFS() {
 		if !procDirentHandler.Signal {
 			return
 		}
-		if intBuffer, err = strconv.Atoi(procDirentHandler.Dirent.Name); err != nil {
+		if intBuffer, err = strconv.Atoi(procDirentHandler.ExternalDirent.Name); err != nil {
 			continue
 		}
 		proc.Stat.Pid = intBuffer
