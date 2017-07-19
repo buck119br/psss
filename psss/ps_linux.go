@@ -176,7 +176,7 @@ func ScanProcFS() {
 	}
 	defer fd.Close()
 
-	var proc *ProcInfo
+	proc := NewProcInfo()
 	go procDirentHandler.ReadDirents(fd)
 	for procDirentHandler.Signal = range procDirentHandler.SignalChan {
 		if !procDirentHandler.Signal {
