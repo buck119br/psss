@@ -139,7 +139,7 @@ func (p *ProcInfo) GetFds() (err error) {
 	var (
 		map1L map[int]map[uint32]*Fd
 		map2L map[uint32]*Fd
-		fd    *Fd
+		fdPtr *Fd
 		ok    bool
 	)
 	for fdDirentHandler.Signal = range fdDirentHandler.SignalChan {
@@ -155,11 +155,11 @@ func (p *ProcInfo) GetFds() (err error) {
 		if map2L, ok = map1L[p.Stat.Pid]; !ok {
 			map2L = make(map[uint32]*Fd)
 		}
-		if fd, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
-			fd = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
+		if fdPtr, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
+			fdPtr = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
 		} else {
-			fd.Name = fdDirentHandler.Dirent.Name
-			fd.Fresh = true
+			fdPtr.Name = fdDirentHandler.Dirent.Name
+			fdPtr.Fresh = true
 		}
 		map2L[uint32(fdStat_t.Ino)] = fd
 		map1L[p.Stat.Pid] = map2L
