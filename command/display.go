@@ -65,8 +65,7 @@ func SocketShow() {
 	for i := range psss.GlobalProcFds {
 		fmt.Println(i)
 		for j := range psss.GlobalProcFds[i] {
-			fmt.Println("\t", j)
-			fmt.Println("\t", psss.GlobalProcFds[i][j])
+			fmt.Println("\t", j, psss.GlobalProcFds[i][j])
 		}
 	}
 }
