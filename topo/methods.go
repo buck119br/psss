@@ -30,7 +30,7 @@ func (t *Topology) GetProcInfo() (err error) {
 
 	go psss.ScanProcFS()
 	for originProcInfo = range psss.ProcInfoChan {
-		if proc.IsEnd {
+		if originProcInfo.IsEnd {
 			return nil
 		}
 		if serviceInfo, ok = t.Services[originProcInfo.Stat.Name]; !ok {
@@ -50,8 +50,8 @@ func (t *Topology) GetProcInfo() (err error) {
 		if procInfoReserve, ok = procsInfoReserve[originProcInfo.Stat.Name][originProcInfo.Stat.Pid]; !ok {
 			procInfoReserve = new(ProcInfoReserve)
 		} else {
-			newProcStat.LoadInstant = math.Trunc(float64(originProcInfo.Stat.Utime+originProcInfo.Stat.Stime-procInfoReserve.Utime-procInfoReserve.Stime)/
-				float64((SystemInfoNew.Stat.CPUTime.Total-SystemInfoOld.Stat.CPUTime.Total)/NumCPU)*100000) / 100000
+			procStat.LoadInstant = math.Trunc(float64(originProcInfo.Stat.Utime+originProcInfo.Stat.Stime-procInfoReserve.Utime-procInfoReserve.Stime)/
+				float64((SysInfoNew.Stat.CPUTime.Total-SysInfoOld.Stat.CPUTime.Total)/numCPU)*100000) / 100000
 		}
 		procInfoReserve.Utime = originProcInfo.Stat.Utime
 		procInfoReserve.Stime = originProcInfo.Stat.Stime
