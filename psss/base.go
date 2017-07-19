@@ -62,8 +62,8 @@ var (
 )
 
 func init() {
-	SocketInfoChan = make(chan SocketInfo, 3)
-	ProcInfoChan = make(chan ProcInfo, 3)
+	SocketInfoChan = make(chan SocketInfo)
+	ProcInfoChan = make(chan ProcInfo)
 
 	GlobalProcFds = make(map[string]map[int]map[uint32]*Fd)
 
