@@ -161,7 +161,7 @@ func (p *ProcInfo) GetFds() (err error) {
 			fdPtr.Name = fdDirentHandler.Dirent.Name
 			fdPtr.Fresh = true
 		}
-		map2L[uint32(fdStat_t.Ino)] = fd
+		map2L[uint32(fdStat_t.Ino)] = fdPtr
 		map1L[p.Stat.Pid] = map2L
 		GlobalProcFds[p.Stat.Name] = map1L
 	}
