@@ -18,15 +18,15 @@ type Dirent struct {
 }
 
 type DirentHandler struct {
-	SignalChan   chan bool
-	Buffer       []byte
-	Bufferx      []byte
-	NameBuffer   []byte
-	Dirent       *Dirent
-	BytesCounter int
-	IndexBuffer  int
-	Cursor       int
-	Signal       bool
+	SignalChan     chan bool
+	Buffer         []byte
+	Bufferx        []byte
+	NameBuffer     []byte
+	InternalDirent Dirent
+	ExternalDirent Dirent
+	BytesCounter   int
+	IndexBuffer    int
+	Cursor         int
 }
 
 func NewDirentHandler() *DirentHandler {
@@ -35,7 +35,7 @@ func NewDirentHandler() *DirentHandler {
 	d.Buffer = make([]byte, pageSize)
 	d.Bufferx = make([]byte, pageSize)
 	d.NameBuffer = make([]byte, 256)
-	d.Dirent = new(Dirent)
+	d.InternalDirent = new(Dirent)
 	return d
 }
 
@@ -56,23 +56,24 @@ func (d *DirentHandler) ReadDirents(fd *os.File) {
 	}
 	d.Cursor = 0
 	for d.Cursor < len(d.Bufferx)-1 {
-		d.Dirent.Inode = *(*uint64)(unsafe.Pointer(&d.Bufferx[d.Cursor : d.Cursor+8][0]))
-		d.Dirent.Offset = *(*uint64)(unsafe.Pointer(&d.Bufferx[d.Cursor+8 : d.Cursor+16][0]))
-		d.Dirent.Reclen = *(*uint16)(unsafe.Pointer(&d.Bufferx[d.Cursor+16 : d.Cursor+18][0]))
-		d.Dirent.Type = *(*byte)(unsafe.Pointer(&d.Bufferx[d.Cursor+18 : d.Cursor+19][0]))
+		d.InternalDirent.Inode = *(*uint64)(unsafe.Pointer(&d.Bufferx[d.Cursor : d.Cursor+8][0]))
+		d.InternalDirent.Offset = *(*uint64)(unsafe.Pointer(&d.Bufferx[d.Cursor+8 : d.Cursor+16][0]))
+		d.InternalDirent.Reclen = *(*uint16)(unsafe.Pointer(&d.Bufferx[d.Cursor+16 : d.Cursor+18][0]))
+		d.InternalDirent.Type = *(*byte)(unsafe.Pointer(&d.Bufferx[d.Cursor+18 : d.Cursor+19][0]))
 		d.NameBuffer = d.NameBuffer[0:0]
-		for d.IndexBuffer = d.Cursor + 19; d.IndexBuffer < d.Cursor+int(d.Dirent.Reclen); d.IndexBuffer++ {
+		for d.IndexBuffer = d.Cursor + 19; d.IndexBuffer < d.Cursor+int(d.InternalDirent.Reclen); d.IndexBuffer++ {
 			if d.Bufferx[d.IndexBuffer] == byte(0) {
 				break
 			}
 			d.NameBuffer = append(d.NameBuffer, d.Bufferx[d.IndexBuffer])
 		}
-		d.Dirent.Name = string(d.NameBuffer[:len(d.NameBuffer)])
-		d.Cursor += int(d.Dirent.Reclen)
-		if d.Dirent.Name == "." || d.Dirent.Name == ".." {
+		d.InternalDirent.Name = string(d.NameBuffer[:len(d.NameBuffer)])
+		d.Cursor += int(d.InternalDirent.Reclen)
+		if d.InternalDirent.Name == "." || d.InternalDirent.Name == ".." {
 			continue
 		}
 		d.SignalChan <- true
+		d.ExternalDirent = d.InternalDirent
 	}
 }
 

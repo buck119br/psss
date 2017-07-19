@@ -137,10 +137,8 @@ func (p *ProcInfo) GetFds() (err error) {
 	defer file.Close()
 	go fdDirentHandler.ReadDirents(file)
 	var (
-		map1L map[int]map[uint32]Fd
-		map2L map[uint32]Fd
-		fd    Fd
-		ok    bool
+		fd Fd
+		ok bool
 	)
 	for fdDirentHandler.Signal = range fdDirentHandler.SignalChan {
 		if !fdDirentHandler.Signal {
@@ -149,21 +147,16 @@ func (p *ProcInfo) GetFds() (err error) {
 		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.Dirent.Name, fdStat_t); err != nil {
 			continue
 		}
-		if map1L, ok = GlobalProcFds[p.Stat.Name]; !ok {
-			map1L = make(map[int]map[uint32]Fd)
+		if _, ok = GlobalProcFds[p.Stat.Name]; !ok {
+			GlobalProcFds[p.Stat.Name] = make(map[int]map[uint32]Fd)
 		}
-		if map2L, ok = map1L[p.Stat.Pid]; !ok {
-			map2L = make(map[uint32]Fd)
+		if _, ok = GlobalProcFds[p.Stat.Name][p.Stat.Pid]; !ok {
+			GlobalProcFds[p.Stat.Name][p.Stat.Pid] = make(map[uint32]Fd)
 		}
-		if fd, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
-			fd = Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
-		} else {
-			fd.Name = fdDirentHandler.Dirent.Name
-			fd.Fresh = true
-		}
-		map2L[uint32(fdStat_t.Ino)] = fd
-		map1L[p.Stat.Pid] = map2L
-		GlobalProcFds[p.Stat.Name] = map1L
+		fd.Name = fdDirentHandler.ExternalDirent.Name
+		fd.Fresh = true
+
+		GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)] = fd
 	}
 	return nil
 }
