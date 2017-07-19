@@ -74,7 +74,7 @@ func GenericShow(protocal, af int) {
 	}
 	fmt.Printf("\n")
 	var ok bool
-	for _, record := range sis {
+	for _, si := range sis {
 		switch protocal {
 		case psss.ProtocalTCP:
 			fmt.Printf("tcp")
@@ -83,10 +83,10 @@ func GenericShow(protocal, af int) {
 		case psss.ProtocalRAW:
 			fmt.Printf("raw")
 		case psss.ProtocalUnix:
-			if _, ok = psss.SocketType[record.Type]; !ok {
+			if _, ok = psss.SocketType[si.Type]; !ok {
 				fmt.Printf("dgr\t")
 			} else {
-				fmt.Printf("%s\t", psss.SocketType[record.Type])
+				fmt.Printf("%s\t", psss.SocketType[si.Type])
 			}
 		}
 		switch af {
@@ -95,26 +95,26 @@ func GenericShow(protocal, af int) {
 		case unix.AF_INET6:
 			fmt.Printf("6\t")
 		}
-		record.GenericInfoPrint()
-		if *flagProcess && len(record.UserName) > 0 {
-			record.ProcInfoPrint()
+		si.GenericInfoPrint()
+		if *flagProcess && len(si.UserName) > 0 {
+			si.ProcInfoPrint()
 		}
 		if newlineFlag {
 			fmt.Printf("\n")
 		}
 		if protocal != psss.ProtocalUnix {
-			if *flagOption && record.Timer != 0 {
-				record.TimerInfoPrint()
+			if *flagOption && si.Timer != 0 {
+				si.TimerInfoPrint()
 			}
 			if *flagExtended {
-				record.ExtendInfoPrint()
+				si.ExtendInfoPrint()
 			}
 		}
-		if *flagMemory && len(record.Meminfo) == 8 {
-			record.MeminfoPrint()
+		if *flagMemory && len(si.Meminfo) == 8 {
+			si.MeminfoPrint()
 		}
-		if *flagInfo && protocal == psss.ProtocalTCP && record.TCPInfo != nil {
-			record.TCPInfoPrint()
+		if *flagInfo && protocal == psss.ProtocalTCP && si.TCPInfo != nil {
+			si.TCPInfoPrint()
 		}
 		fmt.Printf("\n")
 	}

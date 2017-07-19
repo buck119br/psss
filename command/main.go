@@ -42,7 +42,7 @@ var (
 
 	newlineFlag bool
 
-	sis map[uint32]*psss.SocketInfo
+	sis map[uint32]psss.SocketInfo
 )
 
 func main() {
