@@ -72,8 +72,8 @@ func (d *DirentHandler) ReadDirents(fd *os.File) {
 		if d.InternalDirent.Name == "." || d.InternalDirent.Name == ".." {
 			continue
 		}
-		d.SignalChan <- true
 		d.ExternalDirent = d.InternalDirent
+		d.SignalChan <- true
 	}
 }
 
