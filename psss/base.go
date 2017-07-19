@@ -48,12 +48,10 @@ var (
 
 var (
 	// channel
-	SocketInfoInputChan  chan *SocketInfo
-	SocketInfoOutputChan chan *SocketInfo
-	ProcInfoInputChan    chan *ProcInfo
-	ProcInfoOutputChan   chan *ProcInfo
+	SocketInfoChan chan SocketInfo
+	ProcInfoChan   chan ProcInfo
 
-	globalProcInfo map[string]map[int]*ProcInfo
+	globalProcInfo map[string]map[int]ProcInfo
 
 	GlobalProcFds map[string]map[int]map[uint32]*Fd
 
@@ -64,10 +62,8 @@ var (
 )
 
 func init() {
-	SocketInfoInputChan = make(chan *SocketInfo)
-	SocketInfoOutputChan = make(chan *SocketInfo)
-	ProcInfoInputChan = make(chan *ProcInfo)
-	ProcInfoOutputChan = make(chan *ProcInfo)
+	SocketInfoChan = make(chan SocketInfo, 3)
+	ProcInfoChan = make(chan ProcInfo, 3)
 
 	GlobalProcFds = make(map[string]map[int]map[uint32]*Fd)
 

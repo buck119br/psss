@@ -212,10 +212,8 @@ func SendInetDiagMsg(af uint8, protocal uint8, exts uint8, states uint32) (skfd 
 }
 
 func RecvInetDiagMsgMulti(skfd int) (err error) {
-	var (
-		cursor int
-		si     *SocketInfo
-	)
+	var cursor int
+
 	for {
 		if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, sockDiagMsgBuffer, nil, unix.MSG_PEEK); err != nil {
 			return err
@@ -232,8 +230,9 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 	if err != nil {
 		return err
 	}
+	var si = NewSocketInfo()
 	for indexBuffer = range raw {
-		si = <-SocketInfoInputChan
+		si.Reset()
 		if raw[indexBuffer].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
@@ -301,14 +300,17 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 			}
 			cursor += int(nlAttr.Len)
 		}
-		SocketInfoOutputChan <- si
+		if FlagProcess {
+			si.SetUpRelation()
+		}
+		SocketInfoChan <- *si
 	}
 	return nil
 }
 
 func RecvInetDiagMsgAll(skfd int) {
 	defer func() {
-		SocketInfoOutputChan <- nil
+		SocketInfoChan <- SocketInfo{IsEnd: true}
 	}()
 	for {
 		if err := RecvInetDiagMsgMulti(skfd); err != nil {
@@ -320,7 +322,7 @@ func RecvInetDiagMsgAll(skfd int) {
 	}
 }
 
-func GenericInetRead(protocal, af int) (sis map[uint32]*SocketInfo, err error) {
+func GenericInetRead(protocal, af int) (sis map[uint32]SocketInfo, err error) {
 	var (
 		ipproto uint8
 		exts    uint8
@@ -349,18 +351,13 @@ func GenericInetRead(protocal, af int) (sis map[uint32]*SocketInfo, err error) {
 	}
 	defer unix.Close(skfd)
 
-	sis = make(map[uint32]*SocketInfo)
+	sis = make(map[uint32]SocketInfo)
 	go RecvInetDiagMsgAll(skfd)
-	SocketInfoInputChan <- NewSocketInfo()
-	for si := range SocketInfoOutputChan {
-		if si == nil {
+	for si := range SocketInfoChan {
+		if si.IsEnd {
 			return sis, nil
 		}
-		if FlagProcess {
-			si.SetUpRelation()
-		}
 		sis[si.Inode] = si
-		SocketInfoInputChan <- NewSocketInfo()
 	}
 
 readProc:
@@ -373,7 +370,7 @@ readProc:
 		stringBuff  []string
 		int64Buffer int64
 	)
-	sis = make(map[uint32]*SocketInfo)
+	sis = make(map[uint32]SocketInfo)
 
 	switch protocal {
 	case ProtocalTCP:
@@ -558,7 +555,7 @@ readProc:
 		if FlagProcess {
 			si.SetUpRelation()
 		}
-		sis[si.Inode] = si
+		sis[si.Inode] = *si
 	}
 	return
 }
@@ -617,10 +614,8 @@ func SendUnixDiagMsg(states uint32, show uint32) (skfd int, err error) {
 }
 
 func RecvUnixDiagMsgMulti(skfd int) (err error) {
-	var (
-		cursor int
-		si     *SocketInfo
-	)
+	var cursor int
+
 	for {
 		if bytesCounter, _, _, _, err = unix.Recvmsg(skfd, sockDiagMsgBuffer, nil, unix.MSG_PEEK); err != nil {
 			return err
@@ -637,8 +632,9 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 	if err != nil {
 		return err
 	}
+	si := NewSocketInfo()
 	for indexBuffer = range raw {
-		si = <-SocketInfoInputChan
+		si.Reset()
 		if raw[indexBuffer].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
@@ -696,14 +692,17 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 			}
 			cursor += int(nlAttr.Len)
 		}
-		SocketInfoOutputChan <- si
+		if FlagProcess {
+			si.SetUpRelation()
+		}
+		SocketInfoChan <- *si
 	}
 	return nil
 }
 
 func RecvUnixDiagMsgAll(skfd int) {
 	defer func() {
-		SocketInfoOutputChan <- nil
+		SocketInfoChan <- SocketInfo{IsEnd: true}
 	}()
 	for {
 		if err := RecvUnixDiagMsgMulti(skfd); err != nil {
@@ -715,25 +714,20 @@ func RecvUnixDiagMsgAll(skfd int) {
 	}
 }
 
-func GenericUnixRead() (sis map[uint32]*SocketInfo, err error) {
+func GenericUnixRead() (sis map[uint32]SocketInfo, err error) {
 	skfd, err := SendUnixDiagMsg(SsFilter,
 		UDIAG_SHOW_NAME|UDIAG_SHOW_VFS|UDIAG_SHOW_PEER|UDIAG_SHOW_ICONS|UDIAG_SHOW_RQLEN|UDIAG_SHOW_MEMINFO)
 	if err != nil {
 		goto readProc
 	}
 	defer unix.Close(skfd)
-	sis = make(map[uint32]*SocketInfo)
+	sis = make(map[uint32]SocketInfo)
 	go RecvUnixDiagMsgAll(skfd)
-	SocketInfoInputChan <- NewSocketInfo()
-	for si := range SocketInfoOutputChan {
-		if si == nil {
+	for si := range SocketInfoChan {
+		if si.IsEnd {
 			return sis, nil
 		}
-		if FlagProcess {
-			si.SetUpRelation()
-		}
 		sis[si.Inode] = si
-		SocketInfoInputChan <- NewSocketInfo()
 	}
 
 readProc:
@@ -744,7 +738,7 @@ readProc:
 		fieldsIndex int
 		flag        int64
 	)
-	sis = make(map[uint32]*SocketInfo)
+	sis = make(map[uint32]SocketInfo)
 	file, err := os.Open(procFilePath["Unix"])
 	if err != nil {
 		return nil, err
@@ -825,7 +819,7 @@ readProc:
 		if FlagProcess {
 			si.SetUpRelation()
 		}
-		sis[si.Inode] = si
+		sis[si.Inode] = *si
 	}
 	return sis, nil
 }

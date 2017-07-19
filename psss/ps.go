@@ -6,7 +6,8 @@ type Fd struct {
 }
 
 type ProcInfo struct {
-	Stat ProcStat
+	Stat  ProcStat
+	IsEnd bool
 }
 
 func NewProcInfo() *ProcInfo {

@@ -182,6 +182,8 @@ type SocketInfo struct {
 	Meminfo []uint32
 	// Related processes
 	UserName string
+	// Flag
+	IsEnd bool
 }
 
 func NewSocketInfo() *SocketInfo {
@@ -218,6 +220,7 @@ func (si *SocketInfo) Reset() {
 	si.Type = 0
 	si.Meminfo = nil
 	si.UserName = ""
+	si.IsEnd = false
 }
 
 func (si *SocketInfo) SetUpRelation() {

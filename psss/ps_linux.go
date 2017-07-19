@@ -136,18 +136,17 @@ func (p *ProcInfo) GetFds() (err error) {
 	}
 	defer fd.Close()
 	go fdDirentHandler.ReadDirents(fd)
-	fdDirentHandler.InputSignalChan <- true
 	var (
 		map1L map[int]map[uint32]*Fd
 		map2L map[uint32]*Fd
 		ok    bool
 	)
-	for fdDirentHandler.Signal = range fdDirentHandler.OutputSignalChan {
+	for fdDirentHandler.Signal = range fdDirentHandler.SignalChan {
 		if !fdDirentHandler.Signal {
 			return
 		}
 		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.Dirent.Name, fdStat_t); err != nil {
-			goto next
+			continue
 		}
 		if map1L, ok = GlobalProcFds[p.Stat.Name]; !ok {
 			map1L = make(map[int]map[uint32]*Fd)
@@ -163,16 +162,13 @@ func (p *ProcInfo) GetFds() (err error) {
 		}
 		map1L[p.Stat.Pid] = map2L
 		GlobalProcFds[p.Stat.Name] = map1L
-	next:
-		fdDirentHandler.InputSignalChan <- true
 	}
 	return nil
 }
 
 func ScanProcFS() {
 	defer func() {
-		<-ProcInfoInputChan
-		ProcInfoOutputChan <- nil
+		ProcInfoChan <- ProcInfo{IsEnd: true}
 	}()
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
@@ -182,15 +178,13 @@ func ScanProcFS() {
 
 	var proc *ProcInfo
 	go procDirentHandler.ReadDirents(fd)
-	procDirentHandler.InputSignalChan <- true
-	for procDirentHandler.Signal = range procDirentHandler.OutputSignalChan {
+	for procDirentHandler.Signal = range procDirentHandler.SignalChan {
 		if !procDirentHandler.Signal {
 			return
 		}
 		if intBuffer, err = strconv.Atoi(procDirentHandler.Dirent.Name); err != nil {
-			goto next
+			continue
 		}
-		proc = <-ProcInfoInputChan
 		proc.Stat.Pid = intBuffer
 		if err = proc.GetStat(); err != nil {
 			proc.Stat.Name = "NULL"
@@ -198,30 +192,25 @@ func ScanProcFS() {
 		if err = proc.GetFds(); err != nil {
 			proc.Stat.Name = "NULL"
 		}
-		ProcInfoOutputChan <- proc
-	next:
-		procDirentHandler.InputSignalChan <- true
+		ProcInfoChan <- *proc
 	}
 }
 
 func GetProcInfo() {
 	var ok bool
-	globalProcInfo = make(map[string]map[int]*ProcInfo)
+	globalProcInfo = make(map[string]map[int]ProcInfo)
 	go ScanProcFS()
-	ProcInfoInputChan <- NewProcInfo()
-	for proc := range ProcInfoOutputChan {
-		if proc == nil {
-			break
+	for proc := range ProcInfoChan {
+		if proc.IsEnd {
+			return
 		}
 		if proc.Stat.Name == "NULL" {
-			goto next
+			continue
 		}
 		if _, ok = globalProcInfo[proc.Stat.Name]; !ok {
-			globalProcInfo[proc.Stat.Name] = make(map[int]*ProcInfo)
+			globalProcInfo[proc.Stat.Name] = make(map[int]ProcInfo)
 		}
 		globalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
-	next:
-		ProcInfoInputChan <- NewProcInfo()
 	}
 }
 

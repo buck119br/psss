@@ -19,22 +19,20 @@ type Dirent struct {
 }
 
 type DirentHandler struct {
-	InputSignalChan  chan bool
-	OutputSignalChan chan bool
-	Buffer           []byte
-	Bufferx          []byte
-	NameBuffer       []byte
-	Dirent           *Dirent
-	BytesCounter     int
-	IndexBuffer      int
-	Cursor           int
-	Signal           bool
+	SignalChan   chan bool
+	Buffer       []byte
+	Bufferx      []byte
+	NameBuffer   []byte
+	Dirent       *Dirent
+	BytesCounter int
+	IndexBuffer  int
+	Cursor       int
+	Signal       bool
 }
 
 func NewDirentHandler() *DirentHandler {
 	d := new(DirentHandler)
-	d.InputSignalChan = make(chan bool)
-	d.OutputSignalChan = make(chan bool)
+	d.SignalChan = make(chan bool)
 	d.Buffer = make([]byte, pageSize)
 	d.Bufferx = make([]byte, pageSize)
 	d.NameBuffer = make([]byte, 256)
@@ -44,8 +42,7 @@ func NewDirentHandler() *DirentHandler {
 
 func (d *DirentHandler) ReadDirents(fd *os.File) {
 	defer func() {
-		<-d.InputSignalChan
-		d.OutputSignalChan <- false
+		d.SignalChan <- false
 	}()
 	d.Bufferx = d.Bufferx[0:0]
 	var err error
@@ -61,7 +58,6 @@ func (d *DirentHandler) ReadDirents(fd *os.File) {
 	}
 	d.Cursor = 0
 	for d.Cursor < len(d.Bufferx)-1 {
-		<-d.InputSignalChan
 		d.Dirent.Inode = *(*uint64)(unsafe.Pointer(&d.Bufferx[d.Cursor : d.Cursor+8][0]))
 		d.Dirent.Offset = *(*uint64)(unsafe.Pointer(&d.Bufferx[d.Cursor+8 : d.Cursor+16][0]))
 		d.Dirent.Reclen = *(*uint16)(unsafe.Pointer(&d.Bufferx[d.Cursor+16 : d.Cursor+18][0]))
@@ -75,7 +71,7 @@ func (d *DirentHandler) ReadDirents(fd *os.File) {
 		}
 		d.Dirent.Name = string(d.NameBuffer[:len(d.NameBuffer)])
 		d.Cursor += int(d.Dirent.Reclen)
-		d.OutputSignalChan <- true
+		d.SignalChan <- true
 	}
 }
 
