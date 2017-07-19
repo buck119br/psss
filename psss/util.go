@@ -36,7 +36,6 @@ func NewDirentHandler() *DirentHandler {
 	d.Buffer = make([]byte, pageSize)
 	d.Bufferx = make([]byte, pageSize)
 	d.NameBuffer = make([]byte, 256)
-	d.InternalDirent = new(Dirent)
 	return d
 }
 
