@@ -139,6 +139,7 @@ func (p *ProcInfo) GetFds() (err error) {
 	var (
 		map1L map[int]map[uint32]*Fd
 		map2L map[uint32]*Fd
+		fd    *Fd
 		ok    bool
 	)
 	for fdDirentHandler.Signal = range fdDirentHandler.SignalChan {
@@ -154,12 +155,13 @@ func (p *ProcInfo) GetFds() (err error) {
 		if map2L, ok = map1L[p.Stat.Pid]; !ok {
 			map2L = make(map[uint32]*Fd)
 		}
-		if _, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
-			map2L[uint32(fdStat_t.Ino)] = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
+		if fd, ok = map2L[uint32(fdStat_t.Ino)]; !ok {
+			fd = &Fd{Name: fdDirentHandler.Dirent.Name, Fresh: true}
 		} else {
-			map2L[uint32(fdStat_t.Ino)].Name = fdDirentHandler.Dirent.Name
-			map2L[uint32(fdStat_t.Ino)].Fresh = true
+			fd.Name = fdDirentHandler.Dirent.Name
+			fd.Fresh = true
 		}
+		map2L[uint32(fdStat_t.Ino)] = fd
 		map1L[p.Stat.Pid] = map2L
 		GlobalProcFds[p.Stat.Name] = map1L
 	}
@@ -190,7 +192,9 @@ func ScanProcFS() {
 		if err = proc.GetStat(); err != nil {
 			continue
 		}
-		proc.GetFds()
+		if err = proc.GetFds(); err != nil {
+			// continue
+		}
 		ProcInfoChan <- *proc
 	}
 }

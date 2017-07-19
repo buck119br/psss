@@ -61,6 +61,7 @@ func SocketShow() {
 		sis, _ = psss.GenericInetRead(psss.ProtocalTCP, unix.AF_INET6)
 		GenericShow(psss.ProtocalTCP, unix.AF_INET6)
 	}
+	fmt.Println(psss.GlobalProcFds)
 }
 
 func GenericShow(protocal, af int) {
