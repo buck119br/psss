@@ -44,12 +44,6 @@ func (addrs AddrSet) clean() {
 }
 
 func (s *ServiceInfo) cleanAddrSets() {
-	if s.Addrs != nil {
-		s.Addrs.clean()
-	}
-	if len(s.Addrs) == 0 {
-		s.Addrs = nil
-	}
 	if s.upstream != nil {
 		s.upstream.clean()
 	}
@@ -63,6 +57,19 @@ func (s *ServiceInfo) cleanAddrSets() {
 		s.downstream = nil
 	}
 	var str string
+	if s.Addrs != nil {
+		for addr, addrState = range s.Addrs {
+			if addrState.fresh {
+				addrState.fresh = false
+				s.Addrs[addr] = addrState
+			} else {
+				delete(s.Addrs, addr)
+			}
+		}
+	}
+	if len(s.Addrs) == 0 {
+		s.Addrs = nil
+	}
 	if s.UpStream != nil {
 		for str, addrState = range s.UpStream {
 			if addrState.fresh {
@@ -73,6 +80,9 @@ func (s *ServiceInfo) cleanAddrSets() {
 			}
 		}
 	}
+	if len(s.UpStream) == 0 {
+		s.UpStream = nil
+	}
 	if s.DownStream != nil {
 		for str, addrState = range s.DownStream {
 			if addrState.fresh {
@@ -82,6 +92,9 @@ func (s *ServiceInfo) cleanAddrSets() {
 				delete(s.DownStream, str)
 			}
 		}
+	}
+	if len(s.DownStream) == 0 {
+		s.DownStream = nil
 	}
 }
 

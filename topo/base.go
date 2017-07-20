@@ -1,12 +1,14 @@
 package topo
 
 import (
+	"bytes"
 	"net"
 	"os"
 	"runtime"
 	"strings"
 
 	"github.com/buck119br/psss/psss"
+	"github.com/glycerine/zebrapack/msgp"
 )
 
 var (
@@ -17,6 +19,9 @@ var (
 	SysInfoNew     *psss.SystemInfo
 	SysInfoOld     *psss.SystemInfo
 	GlobalTopology *Topology
+
+	MsgpBuffer *bytes.Buffer
+	MsgpWriter *msgp.Writer
 
 	procsInfoReserve map[string]map[int]*ProcInfoReserve
 	localPortToName  map[string]string
@@ -48,6 +53,9 @@ func init() {
 	SysInfoNew = psss.NewSystemInfo()
 	SysInfoOld = psss.NewSystemInfo()
 	GlobalTopology = NewTopology()
+
+	MsgpBuffer = bytes.NewBuffer(make([]byte, 0, 512*1024))
+	MsgpWriter = msgp.NewWriter(MsgpBuffer)
 
 	procsInfoReserve = make(map[string]map[int]*ProcInfoReserve)
 	localPortToName = make(map[string]string)
