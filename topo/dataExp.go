@@ -25,13 +25,14 @@ type ProcStat struct {
 }
 
 type ServiceInfo struct {
-	ProcsStat  map[int]ProcStat `zid:"0"`
-	DoListen   bool             `zid:"1"`
-	Addrs      AddrSet          `zid:"2" msgp:"omitempty"` // this field represents: listening addrs when DoListen is set, and remote addrs when DoListen is reset
-	UpStream   AddrSet          `zid:"3" msgp:"omitempty"` // this field will not be nil only DoListen is set
-	DownStream AddrSet          `zid:"4" msgp:"omitempty"` // this field will not be nil only DoListen is set
+	ProcsStat  map[int]*ProcStat `zid:"0"`
+	DoListen   bool              `zid:"1"`
+	Addrs      AddrSet           `zid:"2" msgp:"omitempty"` // this field represents: listening addrs when DoListen is set, and remote addrs when DoListen is reset
+	UpStream   AddrSet           `zid:"3" msgp:"omitempty"` // this field will not be nil only DoListen is set
+	DownStream AddrSet           `zid:"4" msgp:"omitempty"` // this field will not be nil only DoListen is set
 }
 
 type Topology struct {
-	Services map[string]ServiceInfo `zid:"0"`
+	Services map[string]*ServiceInfo `zid:"0"`
+	tempAddr Addr
 }

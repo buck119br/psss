@@ -1,5 +1,9 @@
 package topo
 
+import (
+	"strings"
+)
+
 type ProcInfoReserve struct {
 	Utime uint64
 	Stime uint64
@@ -20,4 +24,13 @@ func clearReserve() {
 			}
 		}
 	}
+}
+
+func isHostLocal(host string) bool {
+	for v := range localAddrs {
+		if strings.Contains(host, v) {
+			return true
+		}
+	}
+	return false
 }
