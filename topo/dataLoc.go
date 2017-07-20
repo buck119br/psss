@@ -27,7 +27,7 @@ func clearReserve() {
 }
 
 func isHostLocal(host string) bool {
-	for v := range localAddrs {
+	for _, v := range localAddrs {
 		if strings.Contains(host, v) {
 			return true
 		}

@@ -19,7 +19,7 @@ var (
 	GlobalTopology *Topology
 
 	procsInfoReserve map[string]map[int]*ProcInfoReserve
-	localAddrToName  map[string]string
+	localPortToName  map[string]string
 
 	originProcInfo  psss.ProcInfo
 	serviceInfo     *ServiceInfo
@@ -50,7 +50,7 @@ func init() {
 	GlobalTopology = NewTopology()
 
 	procsInfoReserve = make(map[string]map[int]*ProcInfoReserve)
-	localAddrToName = make(map[string]string)
+	localPortToName = make(map[string]string)
 
 	procInfoReserve = new(ProcInfoReserve)
 

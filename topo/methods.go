@@ -15,8 +15,12 @@ func NewServiceInfo() *ServiceInfo {
 
 func NewTopology() *Topology {
 	t := new(Topology)
-	t.Services = make(map[string]ServiceInfo)
+	t.Services = make(map[string]*ServiceInfo)
 	return t
+}
+
+func (a *Addr) String() string {
+	return a.Host + ":" + a.Port
 }
 
 func (a *AddrState) Update() {
@@ -25,6 +29,59 @@ func (a *AddrState) Update() {
 	} else {
 		a.fresh = true
 		a.Count = 1
+	}
+}
+
+func (addrs AddrSet) clean() {
+	for addr, addrState = range addrs {
+		if addrState.fresh {
+			addrState.fresh = false
+			addrs[addr] = addrState
+		} else {
+			delete(addrs, addr)
+		}
+	}
+}
+
+func (s *ServiceInfo) cleanAddrSets() {
+	if s.Addrs != nil {
+		s.Addrs.clean()
+	}
+	if len(s.Addrs) == 0 {
+		s.Addrs = nil
+	}
+	if s.upstream != nil {
+		s.upstream.clean()
+	}
+	if len(s.upstream) == 0 {
+		s.upstream = nil
+	}
+	if s.downstream != nil {
+		s.downstream.clean()
+	}
+	if len(s.downstream) == 0 {
+		s.downstream = nil
+	}
+	var str string
+	if s.UpStream != nil {
+		for str, addrState = range s.UpStream {
+			if addrState.fresh {
+				addrState.fresh = false
+				s.UpStream[str] = addrState
+			} else {
+				delete(s.UpStream, str)
+			}
+		}
+	}
+	if s.DownStream != nil {
+		for str, addrState = range s.DownStream {
+			if addrState.fresh {
+				addrState.fresh = false
+				s.DownStream[str] = addrState
+			} else {
+				delete(s.DownStream, str)
+			}
+		}
 	}
 }
 
@@ -42,9 +99,6 @@ func (t *Topology) GetProcInfo() (err error) {
 	for originProcInfo = range psss.ProcInfoChan {
 		if originProcInfo.IsEnd {
 			return nil
-		}
-		if serviceInfo, ok = t.Services[originProcInfo.Stat.Name]; !ok {
-			serviceInfo = NewServiceInfo()
 		}
 		procStat.State = psss.ProcState[originProcInfo.Stat.State]
 		procStat.StartTime = int64(SysInfoNew.Stat.Btime + originProcInfo.Stat.Starttime/psss.SC_CLK_TCK)
@@ -68,13 +122,16 @@ func (t *Topology) GetProcInfo() (err error) {
 		procInfoReserve.Fresh = true
 		procsInfoReserve[originProcInfo.Stat.Name][originProcInfo.Stat.Pid] = procInfoReserve
 		// assignment
+		if serviceInfo, ok = t.Services[originProcInfo.Stat.Name]; !ok {
+			serviceInfo = NewServiceInfo()
+		}
 		serviceInfo.ProcsStat[originProcInfo.Stat.Pid] = procStat
 		t.Services[originProcInfo.Stat.Name] = serviceInfo
 	}
 	return nil
 }
 
-func (t *Topology) Clear() {
+func (t *Topology) cleanAll() {
 	var (
 		name string
 		pid  int
@@ -91,13 +148,18 @@ func (t *Topology) Clear() {
 				}
 			}
 		}
+		serviceInfo.cleanAddrSets()
 	}
 }
 
-func (t *Topology) doPortListen(user, port string) bool {
-	for t.tempAddr = range t.Services[user].Addrs {
-		if port == t.tempAddr.Port {
-			return true
+func (t *Topology) doPortListen(port string) bool {
+	for _, t.tempServiceInfo = range t.Services {
+		if t.tempServiceInfo.DoListen {
+			for t.tempAddr = range t.tempServiceInfo.Addrs {
+				if port == t.tempAddr.Port {
+					return true
+				}
+			}
 		}
 	}
 	return false
@@ -119,8 +181,10 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 			return nil
 		}
 		// handle socket info
-		localAddrToName[si.LocalAddr.String()] = si.Username
-		serviceInfo, _ = t.Services[si.Username]
+		localPortToName[si.LocalAddr.Port] = si.UserName
+		if serviceInfo, ok = t.Services[si.UserName]; !ok {
+			continue
+		}
 		if si.Status == psss.SsLISTEN {
 			serviceInfo.DoListen = true
 			if serviceInfo.Addrs == nil {
@@ -132,42 +196,103 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 			addrState.fresh = true
 			serviceInfo.Addrs[addr] = addrState
 		} else {
-			addr.Host = si.Remote.Host
-			addr.Port = si.Remote.Port
-			if t.doUserListen(si.Username) {
-				if t.doPortListen(si.Username, si.LocalAddr.Port) {
-					if serviceInfo.DownStream == nil {
-						serviceInfo.DownStream = make(map[Addr]AddrState)
+			addr.Host = si.RemoteAddr.Host
+			addr.Port = si.RemoteAddr.Port
+			if t.doUserListen(si.UserName) {
+				if t.doPortListen(si.LocalAddr.Port) {
+					if serviceInfo.downstream == nil {
+						serviceInfo.downstream = make(map[Addr]AddrState)
 					}
-					addrState, _ = serviceInfo.DownStream[addr]
-					addrState.Update()
-					serviceInfo.DownStream[addr] = addrState
+					if addrState, ok = serviceInfo.downstream[addr]; !ok {
+						addrState.Count = 1
+						addrState.fresh = true
+					} else {
+						addrState.Update()
+					}
+					serviceInfo.downstream[addr] = addrState
 				} else {
-					if serviceInfo.UpStream == nil {
-						serviceInfo.UpStream = make(map[Addr]AddrState)
+					if serviceInfo.upstream == nil {
+						serviceInfo.upstream = make(map[Addr]AddrState)
 					}
-					addrState, _ = serviceInfo.UpStream[addr]
-					addrState.Update()
-					serviceInfo.UpStream[addr] = addrState
+					if addrState, ok = serviceInfo.upstream[addr]; !ok {
+						addrState.Count = 1
+						addrState.fresh = true
+					} else {
+						addrState.Update()
+					}
+					serviceInfo.upstream[addr] = addrState
 				}
-				t.Services[si.Username] = serviceInfo
 				continue
 			}
-			if isHostLocal(si.Remote.Host) {
+			if isHostLocal(si.RemoteAddr.Host) {
 				if t.doPortListen(si.RemoteAddr.Port) {
-					return
+					continue
 				}
 			}
-			serviceInfo.DoListen = false
 			if serviceInfo.Addrs == nil {
 				serviceInfo.Addrs = make(map[Addr]AddrState)
 			}
-			addrState, _ = serviceInfo.Addrs[addr]
-			addrState.Update()
+			if addrState, ok = serviceInfo.Addrs[addr]; !ok {
+				addrState.Count = 1
+				addrState.fresh = true
+			} else {
+				addrState.Update()
+			}
 			serviceInfo.Addrs[addr] = addrState
 		}
 	}
 	return nil
+}
+
+func (t *Topology) findUser() {
+	var name string
+	for _, serviceInfo = range t.Services {
+		if serviceInfo.upstream == nil {
+			goto downstream
+		}
+		if serviceInfo.UpStream == nil {
+			serviceInfo.UpStream = make(map[string]AddrState)
+		}
+		for addr, addrState = range serviceInfo.upstream {
+			if name, ok = localPortToName[addr.Port]; !ok {
+				name = addr.String()
+			}
+			if t.tempAddrState, ok = serviceInfo.UpStream[name]; !ok {
+				serviceInfo.UpStream[name] = AddrState{Count: 1, fresh: true}
+				continue
+			}
+			if t.tempAddrState.fresh {
+				t.tempAddrState.Count += addrState.Count
+			} else {
+				t.tempAddrState.Count = addrState.Count
+				t.tempAddrState.fresh = true
+			}
+			serviceInfo.UpStream[name] = t.tempAddrState
+		}
+	downstream:
+		if serviceInfo.downstream == nil {
+			continue
+		}
+		if serviceInfo.DownStream == nil {
+			serviceInfo.DownStream = make(map[string]AddrState)
+		}
+		for addr, addrState = range serviceInfo.downstream {
+			if name, ok = localPortToName[addr.Port]; !ok {
+				name = addr.String()
+			}
+			if t.tempAddrState, ok = serviceInfo.DownStream[name]; !ok {
+				serviceInfo.DownStream[name] = AddrState{Count: 1, fresh: true}
+				continue
+			}
+			if t.tempAddrState.fresh {
+				t.tempAddrState.Count += addrState.Count
+			} else {
+				t.tempAddrState.Count = addrState.Count
+				t.tempAddrState.fresh = true
+			}
+			serviceInfo.DownStream[name] = t.tempAddrState
+		}
+	}
 }
 
 func (t *Topology) GetSockInfo() (err error) {
@@ -184,5 +309,7 @@ func (t *Topology) GetSockInfo() (err error) {
 		return err
 	}
 	psss.CleanGlobalProcFds()
+	t.findUser()
+	t.cleanAll()
 	return nil
 }
