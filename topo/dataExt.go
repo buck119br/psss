@@ -36,6 +36,7 @@ type ServiceInfo struct {
 
 type Topology struct {
 	Services        map[string]*ServiceInfo `zid:"0"`
+	Time            int64                   `zid:"1"`
 	tempServiceInfo *ServiceInfo
 	tempAddr        Addr
 	tempAddrState   AddrState

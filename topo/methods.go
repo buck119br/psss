@@ -2,6 +2,7 @@ package topo
 
 import (
 	"math"
+	"time"
 
 	"github.com/buck119br/psss/psss"
 	"golang.org/x/sys/unix"
@@ -324,5 +325,6 @@ func (t *Topology) GetSockInfo() (err error) {
 	psss.CleanGlobalProcFds()
 	t.findUser()
 	t.cleanAll()
+	t.Time = time.Now().Unix()
 	return nil
 }
