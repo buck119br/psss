@@ -1,6 +1,7 @@
 package topo
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -339,7 +340,7 @@ func (t *Topology) PrintAll() {
 		}
 		for pid, ps := range si.ProcsStat {
 			fmt.Printf("\tPID:%d, StartTime:%d, State:%s, LoadAvg:%f, LoadInstant:%f, VmSize:%s, VmRSS:%s\n",
-				pid, ps.StartTime, ps.State, ps.LoadAvg, ps.LoadInstant, psss.BwToStr(ps.VmSize), psss.BwToStr(ps.VmRSS),
+				pid, ps.StartTime, ps.State, ps.LoadAvg, ps.LoadInstant, psss.BwToStr(float64(ps.VmSize)), psss.BwToStr(float64(ps.VmRSS)),
 			)
 		}
 		if si.DoListen {
