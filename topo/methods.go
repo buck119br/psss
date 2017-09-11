@@ -207,7 +207,6 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 			}
 			addr.Host = si.LocalAddr.Host
 			addr.Port = si.LocalAddr.Port
-			fmt.Println(addr)
 			addrState.Count = 1
 			addrState.fresh = true
 			serviceInfo.Addrs[addr] = addrState
@@ -346,7 +345,6 @@ func (t *Topology) PrintAll() {
 		}
 		if si.DoListen {
 			fmt.Println("\tListening Addr:")
-			fmt.Printf("\t%#v\n", si.Addrs)
 			for addr, as := range si.Addrs {
 				fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
 			}
