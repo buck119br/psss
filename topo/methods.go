@@ -344,7 +344,7 @@ func (t *Topology) PrintAll() {
 			)
 		}
 		if si.DoListen {
-			fmt.Printfln("\tListening Port:")
+			fmt.Println("\tListening Port:")
 			for addr, as := range si.Addrs {
 				fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
 			}
