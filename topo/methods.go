@@ -344,7 +344,8 @@ func (t *Topology) PrintAll() {
 			)
 		}
 		if si.DoListen {
-			fmt.Println("\tListening Port:")
+			fmt.Println("\tListening Addr:")
+			fmt.Println("\t" + si.Addr)
 			for addr, as := range si.Addrs {
 				fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
 			}
@@ -361,9 +362,11 @@ func (t *Topology) PrintAll() {
 				}
 			}
 		} else {
-			fmt.Println("\tRemote Addr:")
-			for addr, as := range si.Addrs {
-				fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
+			if len(si.Addrs) > 0 {
+				fmt.Println("\tRemote Addr:")
+				for addr, as := range si.Addrs {
+					fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
+				}
 			}
 		}
 	}
