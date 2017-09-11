@@ -332,7 +332,7 @@ func (t *Topology) GetSockInfo() (err error) {
 
 func (t *Topology) PrintAll() {
 	for sname, si := range t.Services {
-		fmt.Printf("Service: %s" + sname)
+		fmt.Printf("Service: %s", sname)
 		if si.DoListen {
 			fmt.Printf("(Listen)\n")
 		} else {
@@ -359,6 +359,11 @@ func (t *Topology) PrintAll() {
 				for addr, as := range si.DownStream {
 					fmt.Printf("\t\t%s: %d\n", addr, as.Count)
 				}
+			}
+		} else {
+			fmt.Println("\tRemote Addr:")
+			for addr, as := range si.Addrs {
+				fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
 			}
 		}
 	}
