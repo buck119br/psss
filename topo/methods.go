@@ -272,7 +272,7 @@ func (t *Topology) findUser() {
 		for addr, addrState = range serviceInfo.addrs {
 			serviceInfo.Addrs[addr.String()] = addrState
 		}
-	upstream:
+		// upstream:
 		if serviceInfo.upstream == nil {
 			goto downstream
 		}
