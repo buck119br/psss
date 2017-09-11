@@ -264,7 +264,7 @@ func (t *Topology) findUser() {
 	var name string
 	for _, serviceInfo = range t.Services {
 		if serviceInfo.addrs == nil {
-			goto upstream
+			continue
 		}
 		if serviceInfo.Addrs == nil {
 			serviceInfo.Addrs = make(map[string]AddrState)
