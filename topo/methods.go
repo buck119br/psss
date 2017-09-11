@@ -46,12 +46,7 @@ func (addrs AddrSet) clean() {
 }
 
 func (s *ServiceInfo) cleanAddrSets() {
-	if s.addrs != nil {
-		s.addrs.clean()
-	}
-	if len(s.addrs) == 0 {
-		s.addrs = nil
-	}
+	s.addrs = nil
 	if s.upstream != nil {
 		s.upstream.clean()
 	}
