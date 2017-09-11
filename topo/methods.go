@@ -328,3 +328,37 @@ func (t *Topology) GetSockInfo() (err error) {
 	t.Time = time.Now().Unix()
 	return nil
 }
+
+func (t *Topology) PrintAll() {
+	for sname, si := range t.Services {
+		fmt.Printf("Service: %s" + sname)
+		if si.DoListen {
+			fmt.Printf("(Listen)\n")
+		} else {
+			fmt.Printf("(NotListen)\n")
+		}
+		for pid, ps := range si.ProcsStat {
+			fmt.Printf("\tPID:%d, StartTime:%d, State:%s, LoadAvg:%f, LoadInstant:%f, VmSize:%s, VmRSS:%s\n",
+				pid, ps.StartTime, ps.State, ps.LoadAvg, ps.LoadInstant, psss.BwToStr(ps.VmSize), psss.BwToStr(ps.VmRSS),
+			)
+		}
+		if si.DoListen {
+			fmt.Printfln("\tListening Port:")
+			for addr, as := range si.Addrs {
+				fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
+			}
+			if si.UpStream != nil {
+				fmt.Println("\tUpstream Addr:")
+				for addr, as := range si.UpStream {
+					fmt.Printf("\t\t%s: %d\n", addr, as.Count)
+				}
+			}
+			if si.DownStream != nil {
+				fmt.Println("\tDownStream Addr:")
+				for addr, as := range si.DownStream {
+					fmt.Printf("\t\t%s: %d\n", addr, as.Count)
+				}
+			}
+		}
+	}
+}
