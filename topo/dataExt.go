@@ -16,8 +16,8 @@ type AddrSet map[Addr]AddrState
 
 type ProcStat struct {
 	StartTime   int64   `zid:"0"`
-	State       string  `zid:"2"`
-	LoadAvg     float64 `zid:"1"`
+	State       string  `zid:"1"`
+	LoadAvg     float64 `zid:"2"`
 	LoadInstant float64 `zid:"3"`
 	VmSize      uint64  `zid:"4"`
 	VmRSS       uint64  `zid:"5"`
