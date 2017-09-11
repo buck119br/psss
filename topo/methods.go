@@ -46,6 +46,12 @@ func (addrs AddrSet) clean() {
 }
 
 func (s *ServiceInfo) cleanAddrSets() {
+	if s.addrs != nil {
+		s.addrs.clean()
+	}
+	if len(s.addrs) == 0 {
+		s.addrs = nil
+	}
 	if s.upstream != nil {
 		s.upstream.clean()
 	}
@@ -60,12 +66,12 @@ func (s *ServiceInfo) cleanAddrSets() {
 	}
 	var str string
 	if s.Addrs != nil {
-		for addr, addrState = range s.Addrs {
+		for str, addrState = range s.Addrs {
 			if addrState.fresh {
 				addrState.fresh = false
-				s.Addrs[addr] = addrState
+				s.Addrs[str] = addrState
 			} else {
-				delete(s.Addrs, addr)
+				delete(s.Addrs, str)
 			}
 		}
 	}
@@ -202,14 +208,14 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 		}
 		if si.Status == psss.SsLISTEN {
 			serviceInfo.DoListen = true
-			if serviceInfo.Addrs == nil {
-				serviceInfo.Addrs = make(map[Addr]AddrState)
+			if serviceInfo.addrs == nil {
+				serviceInfo.addrs = make(map[Addr]AddrState)
 			}
 			addr.Host = si.LocalAddr.Host
 			addr.Port = si.LocalAddr.Port
 			addrState.Count = 1
 			addrState.fresh = true
-			serviceInfo.Addrs[addr] = addrState
+			serviceInfo.addrs[addr] = addrState
 		} else {
 			addr.Host = si.RemoteAddr.Host
 			addr.Port = si.RemoteAddr.Port
@@ -244,8 +250,8 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 					continue
 				}
 			}
-			if serviceInfo.Addrs == nil {
-				serviceInfo.Addrs = make(map[Addr]AddrState)
+			if serviceInfo.addrs == nil {
+				serviceInfo.addrs = make(map[Addr]AddrState)
 			}
 			if addrState, ok = serviceInfo.Addrs[addr]; !ok {
 				addrState.Count = 1
@@ -253,7 +259,7 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 			} else {
 				addrState.Update()
 			}
-			serviceInfo.Addrs[addr] = addrState
+			serviceInfo.addrs[addr] = addrState
 		}
 	}
 	return nil
@@ -262,6 +268,16 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 func (t *Topology) findUser() {
 	var name string
 	for _, serviceInfo = range t.Services {
+		if serviceInfo.addrs == nil {
+			goto upstream
+		}
+		if serviceInfo.Addrs == nil {
+			serviceInfo.Addrs = make(map[string]AddrState)
+		}
+		for addr, addrState = range serviceInfo.addrs {
+			serviceInfo.Addrs[addr.String()] = addrState
+		}
+	upstream:
 		if serviceInfo.upstream == nil {
 			goto downstream
 		}

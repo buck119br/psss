@@ -27,9 +27,10 @@ type ProcStat struct {
 type ServiceInfo struct {
 	ProcsStat  map[int]ProcStat     `zid:"0"`
 	DoListen   bool                 `zid:"1"`
-	Addrs      map[Addr]AddrState   `zid:"2" msgp:"omitempty"` // this field represents: listening addrs when DoListen is set, and remote addrs when DoListen is reset
+	Addrs      map[string]AddrState `zid:"2" msgp:"omitempty"` // this field represents: listening addrs when DoListen is set, and remote addrs when DoListen is reset
 	UpStream   map[string]AddrState `zid:"3" msgp:"omitempty"` // this field will not be nil only DoListen is set
 	DownStream map[string]AddrState `zid:"4" msgp:"omitempty"` // this field will not be nil only DoListen is set
+	addrs      AddrSet
 	upstream   AddrSet
 	downstream AddrSet
 }
