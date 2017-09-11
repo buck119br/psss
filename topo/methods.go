@@ -176,7 +176,7 @@ func (t *Topology) cleanAll() {
 func (t *Topology) doPortListen(port string) bool {
 	for _, t.tempServiceInfo = range t.Services {
 		if t.tempServiceInfo.DoListen {
-			for t.tempAddr = range t.tempServiceInfo.Addrs {
+			for t.tempAddr = range t.tempServiceInfo.addrs {
 				if port == t.tempAddr.Port {
 					return true
 				}
@@ -253,7 +253,7 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 			if serviceInfo.addrs == nil {
 				serviceInfo.addrs = make(map[Addr]AddrState)
 			}
-			if addrState, ok = serviceInfo.Addrs[addr]; !ok {
+			if addrState, ok = serviceInfo.addrs[addr]; !ok {
 				addrState.Count = 1
 				addrState.fresh = true
 			} else {
@@ -362,7 +362,7 @@ func (t *Topology) PrintAll() {
 		if si.DoListen {
 			fmt.Println("\tListening Addr:")
 			for addr, as := range si.Addrs {
-				fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
+				fmt.Printf("\t\t%s: %d\n", addr, as.Count)
 			}
 			if si.UpStream != nil {
 				fmt.Println("\tUpstream Addr:")
@@ -380,7 +380,7 @@ func (t *Topology) PrintAll() {
 			if len(si.Addrs) > 0 {
 				fmt.Println("\tRemote Addr:")
 				for addr, as := range si.Addrs {
-					fmt.Printf("\t\t%s: %d\n", addr.String(), as.Count)
+					fmt.Printf("\t\t%s: %d\n", addr, as.Count)
 				}
 			}
 		}
