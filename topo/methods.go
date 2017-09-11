@@ -356,8 +356,8 @@ func (t *Topology) PrintAll() {
 		}
 		if si.DoListen {
 			fmt.Println("\tListening Addr:")
-			for addr, as := range si.Addrs {
-				fmt.Printf("\t\t%s: %d\n", addr, as.Count)
+			for addr := range si.Addrs {
+				fmt.Printf("\t\t%s\n", addr)
 			}
 			if si.UpStream != nil {
 				fmt.Println("\tUpstream Addr:")
