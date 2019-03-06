@@ -107,7 +107,7 @@ func (t *Topology) GetProcInfo() (err error) {
 		SysInfoOld, SysInfoNew = SysInfoNew, SysInfoOld
 	}()
 	SysInfoNew.Reset()
-	if err = SysInfoNew.GetStat(); err != nil {
+	if err = SysInfoNew.Get(); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func (t *Topology) GetProcInfo() (err error) {
 		}
 		procStat.State = psss.ProcState[originProcInfo.Stat.State]
 		procStat.StartTime = int64(SysInfoNew.Stat.Btime + originProcInfo.Stat.Starttime/psss.SC_CLK_TCK)
-		procStat.LoadAvg = math.Trunc(float64(originProcInfo.Stat.Utime+originProcInfo.Stat.Stime)/float64(SysInfoNew.Stat.CPUTime.Total)*100000) / 100000
+		procStat.LoadAvg = math.Trunc(float64(originProcInfo.Stat.Utime+originProcInfo.Stat.Stime)/float64(SysInfoNew.Stat.CPUTotal.Total)*100000) / 100000
 		procStat.LoadInstant = 0
 		procStat.VmSize = originProcInfo.Stat.Vsize
 		procStat.VmRSS = uint64(originProcInfo.Stat.Rss) * pageSize
@@ -131,7 +131,7 @@ func (t *Topology) GetProcInfo() (err error) {
 			procInfoReserve = new(ProcInfoReserve)
 		} else {
 			procStat.LoadInstant = math.Trunc(float64(originProcInfo.Stat.Utime+originProcInfo.Stat.Stime-procInfoReserve.Utime-procInfoReserve.Stime)/
-				float64((SysInfoNew.Stat.CPUTime.Total-SysInfoOld.Stat.CPUTime.Total)/numCPU)*100000) / 100000
+				float64((SysInfoNew.Stat.CPUTotal.Total-SysInfoOld.Stat.CPUTotal.Total)/numCPU)*100000) / 100000
 		}
 		procInfoReserve.Utime = originProcInfo.Stat.Utime
 		procInfoReserve.Stime = originProcInfo.Stat.Stime
