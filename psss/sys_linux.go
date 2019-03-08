@@ -11,6 +11,133 @@ import (
 	"strings"
 )
 
+var KVer = new(KernelVersion)
+
+// definition comes from Linux kernel /Documentation/iostats.txt
+type DiskStat struct {
+	MajorNumber      uint64
+	MinorNumber      uint64
+	Name             string
+	ReadCompleted    uint64 // reads completed
+	ReadMerged       uint64 // reads merged, field 6 -- # of writes merged
+	SectorsRead      uint64 // sectors read
+	ReadingSpent     uint64 // milliseconds spent reading
+	WriteCompleted   uint64 // writes completed
+	WriteMerged      uint64 // writes merged
+	SectorsWritten   uint64 // sectors written
+	WritingSpent     uint64 // milliseconds spent writing
+	IOProgressing    uint64 // I/Os currently in progress
+	IOSpent          uint64 // milliseconds spent doing I/Os
+	WeightedIOSpent  uint64 // milliseconds spent doing I/Os (weighted)
+	DiscardCompleted uint64 // discards completed
+	DiscardMerged    uint64 // discards merged
+	SectorDiscarded  uint64 // sectors discarded
+	DiscardSpending  uint64 // milliseconds spent discarding
+}
+
+func (ds *DiskStat) Parse(numFields int, raw string) (err error) {
+	fields := strings.Fields(raw)
+
+	if ds.MajorNumber, err = strconv.ParseUint(strings.TrimSpace(fields[0]), 10, 64); err != nil {
+		return err
+	}
+	if ds.MinorNumber, err = strconv.ParseUint(strings.TrimSpace(fields[1]), 10, 64); err != nil {
+		return err
+	}
+	ds.Name = fields[2]
+
+	fields = fields[3:]
+
+	var v uint64
+	for i := 0; i < numFields; i++ {
+		if v, err = strconv.ParseUint(fields[i], 10, 64); err != nil {
+			return err
+		}
+		switch i {
+		case 0:
+			ds.ReadCompleted = v
+		case 1:
+			ds.ReadMerged = v
+		case 2:
+			ds.SectorsRead = v
+		case 3:
+			ds.ReadingSpent = v
+		case 4:
+			ds.WriteCompleted = v
+		case 5:
+			ds.WriteMerged = v
+		case 6:
+			ds.SectorsWritten = v
+		case 7:
+			ds.WritingSpent = v
+		case 8:
+			ds.IOProgressing = v
+		case 9:
+			ds.IOSpent = v
+		case 10:
+			ds.WeightedIOSpent = v
+		case 11:
+			ds.DiscardCompleted = v
+		case 12:
+			ds.DiscardMerged = v
+		case 13:
+			ds.SectorDiscarded = v
+		case 14:
+			ds.DiscardSpending = v
+		default:
+			return fmt.Errorf("unknown field index:[%d]", i)
+		}
+	}
+
+	return nil
+}
+
+type DiskStats []*DiskStat
+
+func NewDiskStats() DiskStats {
+	return make([]*DiskStat, 0)
+}
+
+func (dss *DiskStats) Get() (err error) {
+	if KVer.VersionNum <= 0 {
+		if err = KVer.Get(); err != nil {
+			return err
+		}
+	}
+
+	var numFields int
+
+	switch {
+	case KVer.VersionNum < 2006000:
+		return fmt.Errorf("kernel version:[%s] not support", KVer.UTSRelease)
+	case KVer.VersionNum >= 2006000 && KVer.VersionNum < 4018000:
+		numFields = 11
+	case KVer.VersionNum >= 4018000:
+		numFields = 15
+	}
+
+	fd, err := os.Open(ProcRoot + "/diskstats")
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	scanner := bufio.NewScanner(fd)
+	for scanner.Scan() {
+		if err = scanner.Err(); err != nil {
+			return err
+		}
+		ds := new(DiskStat)
+		if err = ds.Parse(numFields, scanner.Text()); err != nil {
+			fmt.Printf("disk stat parse error:[%v]\n", err)
+			continue
+		}
+		*dss = append(*dss, ds)
+	}
+
+	return nil
+}
+
+// definition comes from Linux kernel /fs/proc/meminfo.c
 type MemoryInfo struct {
 	MemTotal       uint64
 	MemFree        uint64
@@ -204,6 +331,87 @@ func (mi *MemoryInfo) Get() error {
 	return nil
 }
 
+// definition comes from http://man7.org/linux/man-pages/man5/proc.5.html
+type MountInfo struct {
+	ID             uint64 // a unique ID for the mount (may be reused after umount(2)).
+	ParentID       uint64 // the ID of the parent mount (or of self for the root of this mount namespace's mount tree). If a new mount is stacked on top of a previous existing mount (so that it hides the existing mount) at pathname P, then the parent of the new mount is the previous mount at that location.  Thus, when looking at all the mounts stacked at a particular location, the top-most mount is the one that is not the parent of any other mount at the same location. (Note, however, that this top-most mount will be accessible only if the longest path subprefix of P that is a mount point is not itself hidden by a stacked mount.) If the parent mount point lies outside the process's root directory (see chroot(2)), the ID shown here won't have a corresponding record in mountinfo whose mount ID (field 1) matches this parent mount ID (because mount points that lie outside the process's root directory are not shown in mountinfo). As a special case of this point, the process's root mount point may have a parent mount (for the initramfs filesystem) that lies outside the process's root directory, and an entry for that mount point will not appear in mountinfo.
+	DiskMajorNum   uint64 // the value of st_dev for files on this filesystem (see stat(2)).
+	DiskMinorNum   uint64
+	FileSystemRoot string // the pathname of the directory in the filesystem which forms the root of this mount.
+	MountPoint     string // the pathname of the mount point relative to the process's root directory.
+	MountOptions   string // per-mount options (see mount(2)).
+	OptionalFields string // zero or more fields of the form "tag[:value]"; see below.
+	FilesystemType string // the filesystem type in the form "type[.subtype]".
+	MountSource    string // filesystem-specific information or "none".
+	SuperOptions   string // per-superblock options (see mount(2)).
+}
+
+func (mi *MountInfo) Parse(raw string) (err error) {
+	fields := strings.Split(raw, " ")
+	for i, v := range fields {
+		switch i {
+		case 0:
+			if mi.ID, err = strconv.ParseUint(v, 10, 64); err != nil {
+				return fmt.Errorf("parse id error:[%v]", err)
+			}
+		case 1:
+			if mi.ParentID, err = strconv.ParseUint(v, 10, 64); err != nil {
+				return fmt.Errorf("parse parent id error:[%v]", err)
+			}
+		case 2:
+			if mi.DiskMajorNum, err = strconv.ParseUint(strings.Split(v, ":")[0], 10, 64); err != nil {
+				return fmt.Errorf("parse parent id error:[%v]", err)
+			}
+			if mi.DiskMinorNum, err = strconv.ParseUint(strings.Split(v, ":")[1], 10, 64); err != nil {
+				return fmt.Errorf("parse parent id error:[%v]", err)
+			}
+		case 3:
+			mi.FileSystemRoot = v
+		case 4:
+			mi.MountPoint = v
+		case 5:
+			mi.MountOptions = v
+		case 6:
+			mi.OptionalFields = v
+		case 7:
+		case 8:
+			mi.FilesystemType = v
+		case 9:
+			mi.MountSource = v
+		case 10:
+			mi.SuperOptions = v
+		}
+	}
+	return nil
+}
+
+type MountInfos []*MountInfo
+
+func NewMountInfos() MountInfos {
+	return make([]*MountInfo, 0)
+}
+
+func (mis *MountInfos) Get() error {
+	fd, err := os.Open(ProcRoot + "/self/mountinfo")
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	scanner := bufio.NewScanner(fd)
+	for scanner.Scan() {
+		if err = scanner.Err(); err != nil {
+			return err
+		}
+		mi := new(MountInfo)
+		if err = mi.Parse(scanner.Text()); err != nil {
+			fmt.Printf("mount info parse error:[%v]\n", err)
+			continue
+		}
+		*mis = append(*mis, mi)
+	}
+	return nil
+}
+
 type CPUJiffies struct {
 	User      uint64 // Time spent in user mode.
 	Nice      uint64 // Time spent in user mode with low priority (nice).
@@ -218,6 +426,7 @@ type CPUJiffies struct {
 	Total     uint64 // not specified in /proc/stat
 }
 
+// definition comes from Linux kernel /fs/proc/stat.c
 type SystemStat struct {
 	CPUTotal        *CPUJiffies
 	PageIn, PageOut uint64 // The number of pages the system paged in and the number that were paged out (from disk).
@@ -254,7 +463,7 @@ func (si *SystemInfo) Reset() {
 	si.Stat.ProcsBlocked = 0
 }
 
-func (si *SystemInfo) Get() (err error) {
+func (ss *SystemStat) Get() (err error) {
 	fd, err := os.Open(ProcRoot + "/stat")
 	if err != nil {
 		return err
@@ -268,25 +477,25 @@ func (si *SystemInfo) Get() (err error) {
 		line := scanner.Text()
 		switch {
 		case strings.Contains(line, "cpu "):
+			ss.CPUTotal = new(CPUJiffies)
 			bytesCounter, err = fmt.Sscanf(line, "cpu %d %d %d %d %d %d %d %d %d %d",
-				&si.Stat.CPUTotal.User, &si.Stat.CPUTotal.Nice, &si.Stat.CPUTotal.System, &si.Stat.CPUTotal.Idle, &si.Stat.CPUTotal.Iowait,
-				&si.Stat.CPUTotal.Irq, &si.Stat.CPUTotal.Softirq, &si.Stat.CPUTotal.Steal, &si.Stat.CPUTotal.Guest, &si.Stat.CPUTotal.GuestNice,
+				&ss.CPUTotal.User, &ss.CPUTotal.Nice, &ss.CPUTotal.System, &ss.CPUTotal.Idle, &ss.CPUTotal.Iowait,
+				&ss.CPUTotal.Irq, &ss.CPUTotal.Softirq, &ss.CPUTotal.Steal, &ss.CPUTotal.Guest, &ss.CPUTotal.GuestNice,
 			)
 			if bytesCounter < 10 {
 				return fmt.Errorf("not enough param read")
 			}
-			si.Stat.CPUTotal.Total =
-				si.Stat.CPUTotal.User + si.Stat.CPUTotal.Nice + si.Stat.CPUTotal.System + si.Stat.CPUTotal.Idle + si.Stat.CPUTotal.Iowait +
-					si.Stat.CPUTotal.Irq + si.Stat.CPUTotal.Softirq + si.Stat.CPUTotal.Steal + si.Stat.CPUTotal.Guest + si.Stat.CPUTotal.GuestNice
+			ss.CPUTotal.Total = ss.CPUTotal.User + ss.CPUTotal.Nice + ss.CPUTotal.System + ss.CPUTotal.Idle + ss.CPUTotal.Iowait +
+				ss.CPUTotal.Irq + ss.CPUTotal.Softirq + ss.CPUTotal.Steal + ss.CPUTotal.Guest + ss.CPUTotal.GuestNice
 		case strings.Contains(line, "page"):
-			if bytesCounter, err = fmt.Sscanf(line, "page %d %d", &si.Stat.PageIn, &si.Stat.PageOut); err != nil {
+			if bytesCounter, err = fmt.Sscanf(line, "page %d %d", &ss.PageIn, &ss.PageOut); err != nil {
 				return err
 			}
 			if bytesCounter < 2 {
 				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "swap"):
-			if bytesCounter, err = fmt.Sscanf(line, "swap %d %d", &si.Stat.SwapIn, &si.Stat.SwapOut); err != nil {
+			if bytesCounter, err = fmt.Sscanf(line, "swap %d %d", &ss.SwapIn, &ss.SwapOut); err != nil {
 				return err
 			}
 			if bytesCounter < 2 {
@@ -294,35 +503,35 @@ func (si *SystemInfo) Get() (err error) {
 			}
 		case strings.Contains(line, "intr"):
 		case strings.Contains(line, "ctxt"):
-			if bytesCounter, err = fmt.Sscanf(line, "ctxt %d", &si.Stat.Ctxt); err != nil {
+			if bytesCounter, err = fmt.Sscanf(line, "ctxt %d", &ss.Ctxt); err != nil {
 				return err
 			}
 			if bytesCounter < 1 {
 				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "btime"):
-			if bytesCounter, err = fmt.Sscanf(line, "btime %d", &si.Stat.Btime); err != nil {
+			if bytesCounter, err = fmt.Sscanf(line, "btime %d", &ss.Btime); err != nil {
 				return err
 			}
 			if bytesCounter < 1 {
 				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "processes"):
-			if bytesCounter, err = fmt.Sscanf(line, "processes %d", &si.Stat.Processes); err != nil {
+			if bytesCounter, err = fmt.Sscanf(line, "processes %d", &ss.Processes); err != nil {
 				return err
 			}
 			if bytesCounter < 1 {
 				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "procs_running"):
-			if bytesCounter, err = fmt.Sscanf(line, "procs_running %d", &si.Stat.ProcsRunning); err != nil {
+			if bytesCounter, err = fmt.Sscanf(line, "procs_running %d", &ss.ProcsRunning); err != nil {
 				return err
 			}
 			if bytesCounter < 1 {
 				return fmt.Errorf("not enough param read")
 			}
 		case strings.Contains(line, "procs_blocked"):
-			if bytesCounter, err = fmt.Sscanf(line, "procs_blocked %d", &si.Stat.ProcsRunning); err != nil {
+			if bytesCounter, err = fmt.Sscanf(line, "procs_blocked %d", &ss.ProcsRunning); err != nil {
 				return err
 			}
 			if bytesCounter < 1 {
@@ -333,6 +542,7 @@ func (si *SystemInfo) Get() (err error) {
 	return nil
 }
 
+// definition comes from Linux kernel /fs/proc/uptime.c
 type Uptime struct {
 	Uptime float64
 	Idle   float64
@@ -348,6 +558,56 @@ func (ut *Uptime) Get() error {
 	if err != nil {
 		return fmt.Errorf("scan error:[%v] with [%d] succeeded", err, n)
 	}
+
+	return nil
+}
+
+// definition comes from Linux kernel /fs/proc/version.c
+type KernelVersion struct {
+	Origin      string
+	UTSSysName  string
+	UTSRelease  string
+	CompileBy   string
+	CompileHost string
+	Compiler    string
+	UTSVersion  string
+
+	VersionNum int
+}
+
+func (kv *KernelVersion) Get() error {
+	raw, err := ioutil.ReadFile(ProcRoot + "/version")
+	if err != nil {
+		return err
+	}
+
+	kv.Origin = string(raw)
+	kv.UTSVersion = "#" + strings.Split(kv.Origin, "#")[1]
+
+	fields := strings.Fields(strings.Split(kv.Origin, "#")[0])
+	kv.UTSSysName = fields[0]
+	kv.UTSRelease = fields[2]
+
+	vfields := strings.Split(strings.Split(kv.UTSRelease, "-")[0], ".")
+	major, err := strconv.Atoi(vfields[0])
+	if err != nil {
+		return err
+	}
+	minor, err := strconv.Atoi(vfields[1])
+	if err != nil {
+		return err
+	}
+	revision, err := strconv.Atoi(vfields[2])
+	if err != nil {
+		return err
+	}
+	kv.VersionNum = major*1000000 + minor*1000 + revision
+
+	compile := strings.Split(fields[3], "@")
+	kv.CompileBy = strings.TrimPrefix(compile[0], "(")
+	kv.CompileHost = strings.TrimSuffix(compile[1], ")")
+
+	kv.Compiler = strings.TrimSuffix(strings.TrimPrefix(strings.Join(fields[4:], " "), "("), ")")
 
 	return nil
 }
