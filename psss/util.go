@@ -33,8 +33,8 @@ type DirentHandler struct {
 func NewDirentHandler() *DirentHandler {
 	d := new(DirentHandler)
 	d.DataChan = make(chan Dirent)
-	d.Buffer = make([]byte, pageSize)
-	d.Bufferx = make([]byte, pageSize)
+	d.Buffer = make([]byte, OSPageSize)
+	d.Bufferx = make([]byte, OSPageSize)
 	d.NameBuffer = make([]byte, 256)
 	return d
 }

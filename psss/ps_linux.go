@@ -178,10 +178,9 @@ func ScanProcFS() {
 		if procDirentHandler.ExternalDirent.IsEnd {
 			return
 		}
-		if intBuffer, err = strconv.Atoi(procDirentHandler.ExternalDirent.Name); err != nil {
+		if proc.Stat.Pid, err = strconv.Atoi(procDirentHandler.ExternalDirent.Name); err != nil {
 			continue
 		}
-		proc.Stat.Pid = intBuffer
 		if err = proc.GetStat(); err != nil {
 			continue
 		}
@@ -192,19 +191,20 @@ func ScanProcFS() {
 	}
 }
 
-func GetProcInfo() {
+func GetProcInfo() map[string]map[int]ProcInfo {
 	var ok bool
-	globalProcInfo = make(map[string]map[int]ProcInfo)
+	pi := make(map[string]map[int]ProcInfo)
 	go ScanProcFS()
 	for proc := range ProcInfoChan {
 		if proc.IsEnd {
-			return
+			return pi
 		}
-		if _, ok = globalProcInfo[proc.Stat.Name]; !ok {
-			globalProcInfo[proc.Stat.Name] = make(map[int]ProcInfo)
+		if _, ok = pi[proc.Stat.Name]; !ok {
+			pi[proc.Stat.Name] = make(map[int]ProcInfo)
 		}
-		globalProcInfo[proc.Stat.Name][proc.Stat.Pid] = proc
+		pi[proc.Stat.Name][proc.Stat.Pid] = proc
 	}
+	return pi
 }
 
 func CleanGlobalProcFds() {

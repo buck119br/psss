@@ -36,12 +36,12 @@ type DiskStat struct {
 }
 
 func (ds *DiskStat) Parse(numFields int, raw string) (err error) {
-	fields := strings.Fields(raw)
+	fields := strings.Fields(SlimSpaceRegExp.ReplaceAllString(raw, " "))
 
-	if ds.MajorNumber, err = strconv.ParseUint(strings.TrimSpace(fields[0]), 10, 64); err != nil {
+	if ds.MajorNumber, err = strconv.ParseUint(fields[0], 10, 64); err != nil {
 		return err
 	}
-	if ds.MinorNumber, err = strconv.ParseUint(strings.TrimSpace(fields[1]), 10, 64); err != nil {
+	if ds.MinorNumber, err = strconv.ParseUint(fields[1], 10, 64); err != nil {
 		return err
 	}
 	ds.Name = fields[2]
@@ -99,12 +99,6 @@ func NewDiskStats() DiskStats {
 }
 
 func (dss *DiskStats) Get() (err error) {
-	if KVer.VersionNum <= 0 {
-		if err = KVer.Get(); err != nil {
-			return err
-		}
-	}
-
 	var numFields int
 
 	switch {
@@ -139,60 +133,63 @@ func (dss *DiskStats) Get() (err error) {
 
 // definition comes from Linux kernel /fs/proc/meminfo.c
 type MemoryInfo struct {
-	MemTotal       uint64
-	MemFree        uint64
-	MemAvailable   uint64
-	Buffers        uint64
-	Cached         uint64
-	SwapCached     uint64
-	Active         uint64
-	Inactive       uint64
-	ActiveAnon     uint64
-	InactiveAnon   uint64
-	ActiveFile     uint64
-	InactiveFile   uint64
-	Unevictable    uint64
-	Mlocked        uint64
-	HighTotal      uint64
-	HighFree       uint64
-	LowTotal       uint64
-	LowFree        uint64
-	MmapCopy       uint64
-	SwapTotal      uint64
-	SwapFree       uint64
-	Dirty          uint64
-	Writeback      uint64
-	AnonPages      uint64
-	Mapped         uint64
-	Shmem          uint64
-	KReclaimable   uint64
-	Slab           uint64
-	SReclaimable   uint64
-	SUnreclaim     uint64
-	PageTables     uint64
-	Quicklists     uint64
-	NFSUnstable    uint64
-	Bounce         uint64
-	WritebackTmp   uint64
-	CommitLimit    uint64
-	CommittedAS    uint64
-	VmallocUsed    uint64
-	VmallocChunk   uint64
-	Percpu         uint64
-	AnonHugePages  uint64
-	ShmemHugePages uint64
-	ShmemPmdMapped uint64
-	CmaTotal       uint64
-	CmaFree        uint64
-	HugePagesTotal uint64
-	HugePagesFree  uint64
-	HugePagesRsvd  uint64
-	HugePagesSurp  uint64
-	Hugepagesize   uint64
-	DirectMap4k    uint64
-	DirectMap2M    uint64
-	DirectMap4M    uint64
-	DirectMap1G    uint64
+	MemTotal          uint64
+	MemFree           uint64
+	MemAvailable      uint64
+	Buffers           uint64
+	Cached            uint64
+	SwapCached        uint64
+	Active            uint64
+	Inactive          uint64
+	ActiveAnon        uint64
+	InactiveAnon      uint64
+	ActiveFile        uint64
+	InactiveFile      uint64
+	Unevictable       uint64
+	Mlocked           uint64
+	HighTotal         uint64
+	HighFree          uint64
+	LowTotal          uint64
+	LowFree           uint64
+	MmapCopy          uint64
+	SwapTotal         uint64
+	SwapFree          uint64
+	Dirty             uint64
+	Writeback         uint64
+	AnonPages         uint64
+	Mapped            uint64
+	Shmem             uint64
+	KReclaimable      uint64
+	Slab              uint64
+	SReclaimable      uint64
+	SUnreclaim        uint64
+	PageTables        uint64
+	KernelStack       uint64
+	Quicklists        uint64
+	NFSUnstable       uint64
+	Bounce            uint64
+	WritebackTmp      uint64
+	CommitLimit       uint64
+	CommittedAS       uint64
+	VmallocTotal      uint64
+	VmallocUsed       uint64
+	VmallocChunk      uint64
+	HardwareCorrupted uint64
+	Percpu            uint64
+	AnonHugePages     uint64
+	ShmemHugePages    uint64
+	ShmemPmdMapped    uint64
+	CmaTotal          uint64
+	CmaFree           uint64
+	HugePagesTotal    uint64
+	HugePagesFree     uint64
+	HugePagesRsvd     uint64
+	HugePagesSurp     uint64
+	Hugepagesize      uint64
+	DirectMap4k       uint64
+	DirectMap2M       uint64
+	DirectMap4M       uint64
+	DirectMap1G       uint64
 }
 
 func (mi *MemoryInfo) Get() error {
@@ -209,15 +206,16 @@ func (mi *MemoryInfo) Get() error {
 		if err = scanner.Err(); err != nil {
 			return err
 		}
-		fields := strings.Split(strings.Replace(scanner.Text(), "kB", "", -1), ":")
+
+		fields := strings.Split(SlimSpaceRegExp.ReplaceAllString(strings.Replace(scanner.Text(), "kB", "", -1), ""), ":")
 		if len(fields) != 2 {
-			continue
+			return fmt.Errorf("line:[%v] two short", fields)
 		}
-		if v, err = strconv.ParseUint(strings.TrimSpace(fields[1]), 10, 64); err != nil {
-			continue
+		if v, err = strconv.ParseUint(fields[1], 10, 64); err != nil {
+			return fmt.Errorf("parse field:[%s] error:[%v]", fields[1], err)
 		}
 
-		switch strings.TrimSpace(fields[0]) {
+		switch fields[0] {
 		case "MemTotal":
 			mi.MemTotal = v
 		case "MemFree":
@@ -234,13 +232,13 @@ func (mi *MemoryInfo) Get() error {
 			mi.Active = v
 		case "Inactive":
 			mi.Inactive = v
-		case "ActiveAnon":
+		case "Active(anon)":
 			mi.ActiveAnon = v
-		case "InactiveAnon":
+		case "Inactive(anon)":
 			mi.InactiveAnon = v
-		case "ActiveFile":
+		case "Active(file)":
 			mi.ActiveFile = v
-		case "InactiveFile":
+		case "Inactive(file)":
 			mi.InactiveFile = v
 		case "Unevictable":
 			mi.Unevictable = v
@@ -278,6 +276,8 @@ func (mi *MemoryInfo) Get() error {
 			mi.SReclaimable = v
 		case "SUnreclaim":
 			mi.SUnreclaim = v
+		case "KernelStack":
+			mi.KernelStack = v
 		case "PageTables":
 			mi.PageTables = v
 		case "Quicklists":
@@ -292,10 +292,14 @@ func (mi *MemoryInfo) Get() error {
 			mi.CommitLimit = v
 		case "Committed_AS":
 			mi.CommittedAS = v
+		case "VmallocTotal":
+			mi.VmallocTotal = v
 		case "VmallocUsed":
 			mi.VmallocUsed = v
 		case "VmallocChunk":
 			mi.VmallocChunk = v
+		case "HardwareCorrupted":
+			mi.HardwareCorrupted = v
 		case "Percpu":
 			mi.Percpu = v
 		case "AnonHugePages":
@@ -326,6 +330,8 @@ func (mi *MemoryInfo) Get() error {
 			mi.DirectMap4M = v
 		case "DirectMap1G":
 			mi.DirectMap1G = v
+		default:
+			return fmt.Errorf("invalid field:[%s]", fields[0])
 		}
 	}
 	return nil
@@ -347,7 +353,7 @@ type MountInfo struct {
 }
 
 func (mi *MountInfo) Parse(raw string) (err error) {
-	fields := strings.Split(raw, " ")
+	fields := strings.Fields(raw)
 	for i, v := range fields {
 		switch i {
 		case 0:
@@ -380,6 +386,8 @@ func (mi *MountInfo) Parse(raw string) (err error) {
 			mi.MountSource = v
 		case 10:
 			mi.SuperOptions = v
+		default:
+			return fmt.Errorf("invalid field:[%s]", v)
 		}
 	}
 	return nil
@@ -412,6 +420,117 @@ func (mis *MountInfos) Get() error {
 	return nil
 }
 
+type NetDev struct {
+	Interface          string
+	ReceiveBytes       uint64
+	ReceivePackets     uint64
+	ReceiveErrs        uint64
+	ReceiveDrop        uint64
+	ReceiveFifo        uint64
+	ReceiveFrame       uint64
+	ReceiveCompressed  uint64
+	ReceiveMulticast   uint64
+	TransmitBytes      uint64
+	TransmitPackets    uint64
+	TransmitErrs       uint64
+	TransmitDrop       uint64
+	TransmitFifo       uint64
+	TransmitColls      uint64
+	TransmitCarrier    uint64
+	TransmitCompressed uint64
+}
+
+func (nd *NetDev) Parse(raw string) (err error) {
+	fields := strings.Split(SlimSpaceRegExp.ReplaceAllString(raw, " "), ":")
+	nd.Interface = strings.TrimSpace(fields[0])
+
+	var fCtr int
+	var v uint64
+
+	fCtr = 0
+	for _, s := range strings.Fields(fields[1]) {
+		if len(s) == 0 {
+			continue
+		}
+		if v, err = strconv.ParseUint(s, 10, 64); err != nil {
+			return fmt.Errorf("parse field:[%s] error:[%v]", s, err)
+		}
+		switch fCtr {
+		case 0:
+			nd.ReceiveBytes = v
+		case 1:
+			nd.ReceivePackets = v
+		case 2:
+			nd.ReceiveErrs = v
+		case 3:
+			nd.ReceiveDrop = v
+		case 4:
+			nd.ReceiveFifo = v
+		case 5:
+			nd.ReceiveFrame = v
+		case 6:
+			nd.ReceiveCompressed = v
+		case 7:
+			nd.ReceiveMulticast = v
+		case 8:
+			nd.TransmitBytes = v
+		case 9:
+			nd.TransmitPackets = v
+		case 10:
+			nd.TransmitErrs = v
+		case 11:
+			nd.TransmitDrop = v
+		case 12:
+			nd.TransmitFifo = v
+		case 13:
+			nd.TransmitColls = v
+		case 14:
+			nd.TransmitCarrier = v
+		case 15:
+			nd.TransmitCompressed = v
+		default:
+			return fmt.Errorf("invalid field:[%s]", s)
+		}
+		fCtr++
+	}
+	return nil
+}
+
+type NetDevs []*NetDev
+
+func NewNetDevs() NetDevs {
+	return make([]*NetDev, 0)
+}
+
+func (nds *NetDevs) Get() error {
+	fd, err := os.Open(ProcRoot + "/self/net/dev")
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+
+	var lCtr int
+	scanner := bufio.NewScanner(fd)
+	for scanner.Scan() {
+		if err = scanner.Err(); err != nil {
+			return err
+		}
+		lCtr++
+		if lCtr < 3 {
+			continue
+		}
+
+		nd := new(NetDev)
+		if err = nd.Parse(scanner.Text()); err != nil {
+			fmt.Printf("net dev parse error:[%v]\n", err)
+			continue
+		}
+
+		*nds = append(*nds, nd)
+	}
+	return nil
+}
+
 type CPUJiffies struct {
 	User      uint64 // Time spent in user mode.
 	Nice      uint64 // Time spent in user mode with low priority (nice).
@@ -437,30 +556,6 @@ type SystemStat struct {
 	Processes       uint64 // Number of forks since boot.
 	ProcsRunning    uint64 // Number of processes in runnable state. (Linux 2.5.45 onward.)
 	ProcsBlocked    uint64 // Number of processes blocked waiting for I/O to complete. (Linux 2.5.45 onward.)
-}
-
-func (si *SystemInfo) Reset() {
-	si.Stat.CPUTotal.User = 0
-	si.Stat.CPUTotal.Nice = 0
-	si.Stat.CPUTotal.System = 0
-	si.Stat.CPUTotal.Idle = 0
-	si.Stat.CPUTotal.Iowait = 0
-	si.Stat.CPUTotal.Irq = 0
-	si.Stat.CPUTotal.Softirq = 0
-	si.Stat.CPUTotal.Steal = 0
-	si.Stat.CPUTotal.Guest = 0
-	si.Stat.CPUTotal.GuestNice = 0
-	si.Stat.CPUTotal.Total = 0
-	si.Stat.PageIn = 0
-	si.Stat.PageOut = 0
-	si.Stat.SwapIn = 0
-	si.Stat.SwapOut = 0
-	si.Stat.Intr = 0
-	si.Stat.Ctxt = 0
-	si.Stat.Btime = 0
-	si.Stat.Processes = 0
-	si.Stat.ProcsRunning = 0
-	si.Stat.ProcsBlocked = 0
 }
 
 func (ss *SystemStat) Get() (err error) {

@@ -15,6 +15,19 @@ import (
 )
 
 const (
+	ProtocalUnknown = 1 << iota
+	ProtocalDCCP
+	ProtocalNetlink
+	ProtocalPacket
+	ProtocalRAW
+	ProtocalSCTP
+	ProtocalTCP
+	ProtocalUDP
+	ProtocalUnix
+	ProtocalMax
+)
+
+const (
 	SOCK_DIAG_BY_FAMILY = 20
 
 	SizeOfUnixDiagRequest = 40
@@ -231,12 +244,12 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 		return err
 	}
 	var si = NewSocketInfo()
-	for indexBuffer = range raw {
+	for i := range raw {
 		si.Reset()
-		if raw[indexBuffer].Header.Type == unix.NLMSG_DONE {
+		if raw[i].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
-		inDiagMsg = *(*InetDiagMessage)(unsafe.Pointer(&raw[indexBuffer].Data[:SizeOfInetDiagMsg][0]))
+		inDiagMsg = *(*InetDiagMessage)(unsafe.Pointer(&raw[i].Data[:SizeOfInetDiagMsg][0]))
 		switch inDiagMsg.IdiagFamily {
 		case unix.AF_INET:
 			si.LocalAddr.Host, _ = IPv4HexToString(strings.TrimPrefix(fmt.Sprintf("%08x", inDiagMsg.ID.IdiagSrc[0]), "0x"))
@@ -268,34 +281,34 @@ func RecvInetDiagMsgMulti(skfd int) (err error) {
 		si.RefCount = int(inDiagMsg.ID.IdiagIF)
 		si.SK = uint64(inDiagMsg.ID.IdiagCookie[1])<<32 | uint64(inDiagMsg.ID.IdiagCookie[0])
 		cursor = SizeOfInetDiagMsg
-		for cursor+4 < len(raw[indexBuffer].Data) {
-			for raw[indexBuffer].Data[cursor] == byte(0) {
+		for cursor+4 < len(raw[i].Data) {
+			for raw[i].Data[cursor] == byte(0) {
 				cursor++
 			}
-			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[indexBuffer].Data[cursor : cursor+unix.SizeofNlAttr][0]))
+			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[i].Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case INET_DIAG_MEMINFO:
-				// meminfo := *(*InetDiagMeminfo)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// meminfo := *(*InetDiagMeminfo)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_INFO:
-				si.TCPInfo = (*TCPInfo)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				si.TCPInfo = (*TCPInfo)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_VEGASINFO:
-				si.VegasInfo = (*TCPVegasInfo)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				si.VegasInfo = (*TCPVegasInfo)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_CONG:
 				si.CONG = make([]byte, 0)
-				si.CONG = append(si.CONG, raw[indexBuffer].Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
+				si.CONG = append(si.CONG, raw[i].Data[cursor+unix.SizeofNlAttr:cursor+int(nlAttr.Len)]...)
 			case INET_DIAG_TOS:
-				// tos := *(*uint8)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// tos := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_TCLASS:
-				// tclass := *(*uint8)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// tclass := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case INET_DIAG_SKMEMINFO:
 				if nlAttr.Len > 4 {
 					si.Meminfo = make([]uint32, 0, 8)
 					for j := cursor + unix.SizeofNlAttr; j < cursor+int(nlAttr.Len); j = j + 4 {
-						si.Meminfo = append(si.Meminfo, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
+						si.Meminfo = append(si.Meminfo, *(*uint32)(unsafe.Pointer(&raw[i].Data[j : j+4][0])))
 					}
 				}
 			case INET_DIAG_SHUTDOWN:
-				// shutdown := *(*uint8)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// shutdown := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
 			}
 			cursor += int(nlAttr.Len)
@@ -368,7 +381,7 @@ readProc:
 		fields      []string
 		fieldsIndex int
 		stringBuff  []string
-		int64Buffer int64
+		tempInt64   int64
 	)
 	sis = make(map[uint32]SocketInfo)
 
@@ -414,10 +427,10 @@ readProc:
 		if err != nil {
 			continue
 		}
-		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		si.LocalAddr.Port = fmt.Sprintf("%d", int64Buffer)
+		si.LocalAddr.Port = fmt.Sprintf("%d", tempInt64)
 		if MaxLocalAddrLength < len(si.LocalAddr.String()) {
 			MaxLocalAddrLength = len(si.LocalAddr.String())
 		}
@@ -433,54 +446,54 @@ readProc:
 		if err != nil {
 			continue
 		}
-		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		si.RemoteAddr.Port = fmt.Sprintf("%d", int64Buffer)
+		si.RemoteAddr.Port = fmt.Sprintf("%d", tempInt64)
 		if MaxRemoteAddrLength < len(si.RemoteAddr.String()) {
 			MaxRemoteAddrLength = len(si.RemoteAddr.String())
 		}
 		fieldsIndex++
 		// Status
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		si.Status = uint8(int64Buffer)
+		si.Status = uint8(tempInt64)
 		if SsFilter&(1<<si.Status) == 0 {
 			continue
 		}
 		fieldsIndex++
 		// TxQueue:RxQueue
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if int64Buffer, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
+		if tempInt64, err = strconv.ParseInt(stringBuff[0], 16, 64); err != nil {
 			continue
 		}
-		si.TxQueue = uint32(int64Buffer)
-		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
+		si.TxQueue = uint32(tempInt64)
+		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 64); err != nil {
 			continue
 		}
-		si.RxQueue = uint32(int64Buffer)
+		si.RxQueue = uint32(tempInt64)
 		fieldsIndex++
 		// Timer:TmWhen
 		stringBuff = strings.Split(fields[fieldsIndex], ":")
-		if int64Buffer, err = strconv.ParseInt(stringBuff[0], 16, 32); err != nil {
+		if tempInt64, err = strconv.ParseInt(stringBuff[0], 16, 32); err != nil {
 			continue
 		}
-		si.Timer = int(int64Buffer)
+		si.Timer = int(tempInt64)
 		if si.Timer > 4 {
 			si.Timer = 5
 		}
-		if int64Buffer, err = strconv.ParseInt(stringBuff[1], 16, 32); err != nil {
+		if tempInt64, err = strconv.ParseInt(stringBuff[1], 16, 32); err != nil {
 			continue
 		}
-		si.Timeout = int(int64Buffer)
+		si.Timeout = int(tempInt64)
 		si.Timeout = (si.Timeout*1000 + int(SC_CLK_TCK) - 1) / int(SC_CLK_TCK)
 		fieldsIndex++
 		// Retransmit
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		si.Retransmit = int(int64Buffer)
+		si.Retransmit = int(tempInt64)
 		fieldsIndex++
 		if si.UID, err = strconv.ParseUint(fields[fieldsIndex], 10, 64); err != nil {
 			continue
@@ -490,10 +503,10 @@ readProc:
 			continue
 		}
 		fieldsIndex++
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
 			continue
 		}
-		si.Inode = uint32(int64Buffer)
+		si.Inode = uint32(tempInt64)
 		fieldsIndex++
 		if si.RefCount, err = strconv.Atoi(fields[fieldsIndex]); err != nil {
 			continue
@@ -633,26 +646,26 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 		return err
 	}
 	si := NewSocketInfo()
-	for indexBuffer = range raw {
+	for i := range raw {
 		si.Reset()
-		if raw[indexBuffer].Header.Type == unix.NLMSG_DONE {
+		if raw[i].Header.Type == unix.NLMSG_DONE {
 			return ErrorDone
 		}
-		unDiagMsg = *(*UnixDiagMessage)(unsafe.Pointer(&raw[indexBuffer].Data[:SizeOfUnixDiagMsg][0]))
+		unDiagMsg = *(*UnixDiagMessage)(unsafe.Pointer(&raw[i].Data[:SizeOfUnixDiagMsg][0]))
 		si.Inode = unDiagMsg.UdiagIno
 		si.LocalAddr.Port = fmt.Sprintf("%d", unDiagMsg.UdiagIno)
 		si.Status = unDiagMsg.UdiagState
 		si.Type = unDiagMsg.UdiagType
 		si.SK = uint64(unDiagMsg.UdiagCookie[1])<<32 | uint64(unDiagMsg.UdiagCookie[0])
 		cursor = SizeOfUnixDiagMsg
-		for cursor+4 < len(raw[indexBuffer].Data) {
-			for raw[indexBuffer].Data[cursor] == byte(0) {
+		for cursor+4 < len(raw[i].Data) {
+			for raw[i].Data[cursor] == byte(0) {
 				cursor++
 			}
-			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[indexBuffer].Data[cursor : cursor+unix.SizeofNlAttr][0]))
+			nlAttr = *(*unix.NlAttr)(unsafe.Pointer(&raw[i].Data[cursor : cursor+unix.SizeofNlAttr][0]))
 			switch nlAttr.Type {
 			case UNIX_DIAG_NAME:
-				si.LocalAddr.Host = string(raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
+				si.LocalAddr.Host = string(raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)])
 				if len(si.LocalAddr.Host) == 0 {
 					si.LocalAddr.Host = "*"
 				}
@@ -660,10 +673,10 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 					MaxLocalAddrLength = len(si.LocalAddr.String())
 				}
 			case UNIX_DIAG_VFS:
-				// vfs := *(*UnixDiagVFS)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// vfs := *(*UnixDiagVFS)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			case UNIX_DIAG_PEER:
 				si.RemoteAddr.Host = "*"
-				si.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
+				si.RemoteAddr.Port = fmt.Sprintf("%d", *(*uint32)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0])))
 				if MaxRemoteAddrLength < len(si.RemoteAddr.String()) {
 					MaxRemoteAddrLength = len(si.RemoteAddr.String())
 				}
@@ -671,22 +684,22 @@ func RecvUnixDiagMsgMulti(skfd int) (err error) {
 				// if nlAttr.Len > 4 {
 				// 	icons := make([]uint32, 0)
 				// 	for j := cursor + unix.SizeofNlAttr; j < cursor+int(nlAttr.Len); j = j + 4 {
-				// 		icons = append(icons, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
+				// 		icons = append(icons, *(*uint32)(unsafe.Pointer(&raw[i].Data[j : j+4][0])))
 				// 	}
 				// }
 			case UNIX_DIAG_RQLEN:
-				unDiagRQlen = *(*UnixDiagRQlen)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				unDiagRQlen = *(*UnixDiagRQlen)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 				si.RxQueue = unDiagRQlen.RQ
 				si.TxQueue = unDiagRQlen.WQ
 			case UNIX_DIAG_MEMINFO:
 				if nlAttr.Len > 4 {
 					si.Meminfo = make([]uint32, 0, 8)
 					for j := cursor + unix.SizeofNlAttr; j < cursor+int(nlAttr.Len); j = j + 4 {
-						si.Meminfo = append(si.Meminfo, *(*uint32)(unsafe.Pointer(&raw[indexBuffer].Data[j : j+4][0])))
+						si.Meminfo = append(si.Meminfo, *(*uint32)(unsafe.Pointer(&raw[i].Data[j : j+4][0])))
 					}
 				}
 			case UNIX_DIAG_SHUTDOWN:
-				// shutdown := *(*uint8)(unsafe.Pointer(&raw[indexBuffer].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
+				// shutdown := *(*uint8)(unsafe.Pointer(&raw[i].Data[cursor+unix.SizeofNlAttr : cursor+int(nlAttr.Len)][0]))
 			default:
 				fmt.Println("invalid NlAttr Type")
 			}
@@ -745,6 +758,7 @@ readProc:
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
+	var tempInt64 int64
 	for scanner.Scan() {
 		if err = scanner.Err(); err != nil {
 			return sis, err
@@ -781,29 +795,29 @@ readProc:
 		fieldsIndex++
 		// Type: the socket type.
 		// For SOCK_STREAM sockets, this is 0001; for SOCK_DGRAM sockets, it is 0002; and for SOCK_SEQPACKET sockets, it is 0005.
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
-		si.Type = uint8(int64Buffer)
+		si.Type = uint8(tempInt64)
 		fieldsIndex++
 		// St: the internal state of the socket.
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 16, 32); err != nil {
 			continue
 		}
 		if flag&(1<<16) != 0 {
 			si.Status = SsLISTEN
 		} else {
-			si.Status = UnixSstate[int(int64Buffer)-1]
+			si.Status = UnixSstate[int(tempInt64)-1]
 		}
 		if SsFilter&(1<<si.Status) == 0 {
 			continue
 		}
 		fieldsIndex++
 		// Inode
-		if int64Buffer, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
+		if tempInt64, err = strconv.ParseInt(fields[fieldsIndex], 10, 64); err != nil {
 			continue
 		}
-		si.Inode = uint32(int64Buffer)
+		si.Inode = uint32(tempInt64)
 		si.LocalAddr.Port = fmt.Sprintf("%d", si.Inode)
 		// Path: the bound path (if any) of the socket.
 		// Sockets in the abstract namespace are included in the list, and are shown with a Path that commences with the character '@'.
@@ -825,9 +839,9 @@ readProc:
 }
 
 func GetSocketCount(fields []string) (int, error) {
-	for indexBuffer = range fields {
-		if fields[indexBuffer] == "inuse" {
-			return strconv.Atoi(fields[indexBuffer+1])
+	for i := range fields {
+		if fields[i] == "inuse" {
+			return strconv.Atoi(fields[i+1])
 		}
 	}
 	return 0, nil

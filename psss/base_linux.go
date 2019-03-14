@@ -32,12 +32,17 @@ var (
 )
 
 func archInit() {
-	sockDiagMsgBuffer = make([]byte, pageSize)
+	sockDiagMsgBuffer = make([]byte, OSPageSize)
 	unDiagRequestBuffer = make([]byte, SizeOfUnixDiagRequest)
 	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
-	fileContentBuffer = bytes.NewBuffer(make([]byte, pageSize))
+	fileContentBuffer = bytes.NewBuffer(make([]byte, OSPageSize))
 
 	procDirentHandler = NewDirentHandler()
 	fdDirentHandler = NewDirentHandler()
 	fdStat_t = new(syscall.Stat_t)
+
+	var err error
+	if err = KVer.Get(); err != nil {
+		panic(err)
+	}
 }
