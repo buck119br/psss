@@ -122,7 +122,7 @@ func main() {
 
 	if *flagProcess {
 		psss.FlagProcess = true
-		psss.GetProcInfo()
+		psss.GetProcInfo(true)
 	}
 
 	SocketShow()

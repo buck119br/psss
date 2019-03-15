@@ -1,9 +1,6 @@
 package psss
 
-type Fd struct {
-	Name  string
-	Fresh bool
-}
+
 
 type ProcInfo struct {
 	Stat  ProcStat

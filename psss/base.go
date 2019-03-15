@@ -41,7 +41,7 @@ var (
 var (
 	// channel
 	SocketInfoChan chan SocketInfo
-	ProcInfoChan   chan ProcInfo
+	ProcInfoChan   chan *ProcInfo
 
 	GlobalProcFds map[string]map[int]map[uint32]Fd
 
@@ -56,7 +56,7 @@ func init() {
 	}
 
 	SocketInfoChan = make(chan SocketInfo)
-	ProcInfoChan = make(chan ProcInfo)
+	ProcInfoChan = make(chan *ProcInfo)
 
 	GlobalProcFds = make(map[string]map[int]map[uint32]Fd)
 

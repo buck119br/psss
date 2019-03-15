@@ -26,9 +26,9 @@ var (
 	inDiagReq   InetDiagRequest
 	inDiagMsg   InetDiagMessage
 
-	procDirentHandler *DirentHandler
-	fdDirentHandler   *DirentHandler
-	fdStat_t          *syscall.Stat_t
+	procDirentReader *DirentReader
+	fdDirentReader   *DirentReader
+	fdStat           *syscall.Stat_t
 )
 
 func archInit() {
@@ -37,9 +37,9 @@ func archInit() {
 	inDiagRequestBuffer = make([]byte, SizeOfInetDiagRequest)
 	fileContentBuffer = bytes.NewBuffer(make([]byte, OSPageSize))
 
-	procDirentHandler = NewDirentHandler()
-	fdDirentHandler = NewDirentHandler()
-	fdStat_t = new(syscall.Stat_t)
+	procDirentReader = NewDirentReader()
+	fdDirentReader = NewDirentReader()
+	fdStat = new(syscall.Stat_t)
 
 	var err error
 	if err = KVer.Get(); err != nil {

@@ -135,16 +135,16 @@ func (p *ProcInfo) GetFds() (err error) {
 		return err
 	}
 	defer file.Close()
-	go fdDirentHandler.ReadDirents(file)
+	go fdDirentReader.Scan(file)
 	var (
 		fd Fd
 		ok bool
 	)
-	for fdDirentHandler.ExternalDirent = range fdDirentHandler.DataChan {
-		if fdDirentHandler.ExternalDirent.IsEnd {
+	for fdDirentReader.ExternalDirent = range fdDirentReader.DataChan {
+		if fdDirentReader.ExternalDirent.IsEnd {
 			return
 		}
-		if err = syscall.Stat(fdPath+"/"+fdDirentHandler.ExternalDirent.Name, fdStat_t); err != nil {
+		if err = syscall.Stat(fdPath+"/"+fdDirentReader.ExternalDirent.Name, fdStat); err != nil {
 			continue
 		}
 		if _, ok = GlobalProcFds[p.Stat.Name]; !ok {
@@ -153,19 +153,17 @@ func (p *ProcInfo) GetFds() (err error) {
 		if _, ok = GlobalProcFds[p.Stat.Name][p.Stat.Pid]; !ok {
 			GlobalProcFds[p.Stat.Name][p.Stat.Pid] = make(map[uint32]Fd)
 		}
-		fd.Name = fdDirentHandler.ExternalDirent.Name
+		fd.Name = fdDirentReader.ExternalDirent.Name
 		fd.Fresh = true
 
-		GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat_t.Ino)] = fd
+		GlobalProcFds[p.Stat.Name][p.Stat.Pid][uint32(fdStat.Ino)] = fd
 	}
 	return nil
 }
 
-func ScanProcFS() {
-	proc := NewProcInfo()
+func ScanProcFS(fdFlag bool) {
 	defer func() {
-		proc.IsEnd = true
-		ProcInfoChan <- *proc
+		ProcInfoChan <- &ProcInfo{IsEnd: true}
 	}()
 	fd, err := os.Open(ProcRoot)
 	if err != nil {
@@ -173,34 +171,37 @@ func ScanProcFS() {
 	}
 	defer fd.Close()
 
-	go procDirentHandler.ReadDirents(fd)
-	for procDirentHandler.ExternalDirent = range procDirentHandler.DataChan {
-		if procDirentHandler.ExternalDirent.IsEnd {
+	go procDirentReader.Scan(fd)
+	for procDirentReader.ExternalDirent = range procDirentReader.DataChan {
+		if procDirentReader.ExternalDirent.IsEnd {
 			return
 		}
-		if proc.Stat.Pid, err = strconv.Atoi(procDirentHandler.ExternalDirent.Name); err != nil {
+		proc := NewProcInfo()
+		if proc.Stat.Pid, err = strconv.Atoi(procDirentReader.ExternalDirent.Name); err != nil {
 			continue
 		}
 		if err = proc.GetStat(); err != nil {
 			continue
 		}
-		if err = proc.GetFds(); err != nil {
-			// continue
+		if fdFlag {
+			if err = proc.GetFds(); err != nil {
+				fmt.Printf("get fds error:[%v]\n", err)
+			}
 		}
-		ProcInfoChan <- *proc
+		ProcInfoChan <- proc
 	}
 }
 
-func GetProcInfo() map[string]map[int]ProcInfo {
+func GetProcInfo(fdFlag bool) map[string]map[int]*ProcInfo {
 	var ok bool
-	pi := make(map[string]map[int]ProcInfo)
-	go ScanProcFS()
+	pi := make(map[string]map[int]*ProcInfo)
+	go ScanProcFS(fdFlag)
 	for proc := range ProcInfoChan {
 		if proc.IsEnd {
 			return pi
 		}
 		if _, ok = pi[proc.Stat.Name]; !ok {
-			pi[proc.Stat.Name] = make(map[int]ProcInfo)
+			pi[proc.Stat.Name] = make(map[int]*ProcInfo)
 		}
 		pi[proc.Stat.Name][proc.Stat.Pid] = proc
 	}
