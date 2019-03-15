@@ -8,19 +8,7 @@ import "C"
 import (
 	"fmt"
 	"os"
-)
-
-const (
-	ProtocalUnknown = 1 << iota
-	ProtocalDCCP
-	ProtocalNetlink
-	ProtocalPacket
-	ProtocalRAW
-	ProtocalSCTP
-	ProtocalTCP
-	ProtocalUDP
-	ProtocalUnix
-	ProtocalMax
+	"regexp"
 )
 
 var (
@@ -37,7 +25,7 @@ var (
 )
 
 var (
-	pageSize = os.Getpagesize()
+	OSPageSize = os.Getpagesize()
 
 	SC_CLK_TCK = uint64(C.sysconf(C._SC_CLK_TCK))
 )
@@ -47,21 +35,26 @@ var (
 )
 
 var (
+	SlimSpaceRegExp *regexp.Regexp
+)
+
+var (
 	// channel
 	SocketInfoChan chan SocketInfo
 	ProcInfoChan   chan ProcInfo
 
-	globalProcInfo map[string]map[int]ProcInfo
-
 	GlobalProcFds map[string]map[int]map[uint32]Fd
 
-	int64Buffer  int64
-	intBuffer    int
-	indexBuffer  int
 	bytesCounter int
 )
 
 func init() {
+	var err error
+
+	if SlimSpaceRegExp, err = regexp.Compile(`[\s]+`); err != nil {
+		panic(err)
+	}
+
 	SocketInfoChan = make(chan SocketInfo)
 	ProcInfoChan = make(chan ProcInfo)
 

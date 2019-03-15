@@ -117,31 +117,32 @@ func IPv4HexToString(ipHex string) (ip string, err error) {
 	if len(ipHex) != 8 {
 		return ip, fmt.Errorf("invalid input:[%s]", ipHex)
 	}
-	for indexBuffer = 3; indexBuffer > 0; indexBuffer-- {
-		if int64Buffer, err = strconv.ParseInt(ipHex[indexBuffer*2:(indexBuffer+1)*2], 16, 64); err != nil {
+	var tempInt64 int64
+	for i := 3; i > 0; i-- {
+		if tempInt64, err = strconv.ParseInt(ipHex[i*2:(i+1)*2], 16, 64); err != nil {
 			return "", err
 		}
-		ip += fmt.Sprintf("%d", int64Buffer) + "."
+		ip += fmt.Sprintf("%d", tempInt64) + "."
 	}
-	if int64Buffer, err = strconv.ParseInt(ipHex[0:2], 16, 64); err != nil {
+	if tempInt64, err = strconv.ParseInt(ipHex[0:2], 16, 64); err != nil {
 		return "", err
 	}
-	ip += fmt.Sprintf("%d", int64Buffer)
+	ip += fmt.Sprintf("%d", tempInt64)
 	return ip, nil
 }
 
 func IPv6HexToString(ipHex string) (ip string, err error) {
 	prefix := ipHex[:24]
 	suffix := ipHex[24:]
-	for indexBuffer = 0; indexBuffer < 6; indexBuffer++ {
-		if prefix[indexBuffer:indexBuffer+4] == "0000" {
+	for i := 0; i < 6; i++ {
+		if prefix[i:i+4] == "0000" {
 			ip += ":"
 			continue
 		}
-		ip += prefix[indexBuffer:indexBuffer+4] + ":"
+		ip += prefix[i:i+4] + ":"
 	}
-	for indexBuffer = range Colons {
-		ip = strings.Replace(ip, Colons[indexBuffer], "::", -1)
+	for i := range Colons {
+		ip = strings.Replace(ip, Colons[i], "::", -1)
 	}
 	if suffix, err = IPv4HexToString(suffix); err != nil {
 		return "", err

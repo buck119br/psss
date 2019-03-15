@@ -16,8 +16,8 @@ var (
 	pageSize   uint64
 	localAddrs []string
 
-	SysInfoNew     *psss.SystemInfo
-	SysInfoOld     *psss.SystemInfo
+	SysStatNew     *psss.SystemStat
+	SysStatOld     *psss.SystemStat
 	GlobalTopology *Topology
 
 	MsgpBuffer *bytes.Buffer
@@ -50,8 +50,8 @@ func init() {
 	numCPU = uint64(runtime.NumCPU())
 	pageSize = uint64(os.Getpagesize())
 
-	SysInfoNew = psss.NewSystemInfo()
-	SysInfoOld = psss.NewSystemInfo()
+	SysStatNew = new(psss.SystemStat)
+	SysStatOld = new(psss.SystemStat)
 	GlobalTopology = NewTopology()
 
 	MsgpBuffer = bytes.NewBuffer(make([]byte, 0, 512*1024))
