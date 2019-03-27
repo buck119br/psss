@@ -1,0 +1,34 @@
+SamplingFrequency   =   12
+TransmitInterval    =   60
+
+[Items]
+    [Items.IO]
+        [Items.IO.NIC]
+            Switch  =   true
+    [Items.FileSystem]
+        [Items.FileSystem.MountInfo]
+            Switch      =   true
+            MountPoints =   [
+                "/",
+            ]
+        [Items.FileSystem.FileInfo]
+            Switch      =   true
+            FilePath    =   [
+                "/home/clay",
+                "/home/clay/workspace/temp/git.tingyun.com/",
+            ]
+    [Items.Process]
+        Switch      =   true
+        ProcName    =   [
+            "firefox",
+            "stress",
+        ]
+    [Items.Watchdog]
+        Switch  =   true
+        [[Items.Watchdog.Ports]]
+            Name        =   "lantern"
+            Protocol    =   "http"
+            Addr        =   "127.0.0.1"
+            Ports       =   "39959"
+    [Items.Camera]
+        Switch  =   true

@@ -1,3 +1,5 @@
+// +build linux
+
 package psss
 
 import (
@@ -231,7 +233,7 @@ func (nds *NetDevs) Get() error {
 			fmt.Printf("net dev parse error:[%v]\n", err)
 			continue
 		}
-		if nd.Interface == "lo" || nd.ReceiveBytes <= 0 {
+		if nd.Interface == "lo" {
 			continue
 		}
 		(*nds)[nd.Interface] = nd

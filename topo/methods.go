@@ -111,7 +111,8 @@ func (t *Topology) GetProcInfo() (err error) {
 		return err
 	}
 
-	go psss.ScanProcFS()
+	var serviceInfo *ServiceInfo
+	go psss.ScanProcFS(true)
 	for originProcInfo = range psss.ProcInfoChan {
 		if originProcInfo.IsEnd {
 			return nil
@@ -149,8 +150,9 @@ func (t *Topology) GetProcInfo() (err error) {
 
 func (t *Topology) cleanAll() {
 	var (
-		name string
-		pid  int
+		name        string
+		serviceInfo *ServiceInfo
+		pid         int
 	)
 	for name, serviceInfo = range t.Services {
 		for pid, procStat = range serviceInfo.ProcsStat {
@@ -191,6 +193,8 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 		return err
 	}
 	defer unix.Close(skfd)
+
+	var serviceInfo *ServiceInfo
 	go psss.RecvInetDiagMsgAll(skfd)
 	for si := range psss.SocketInfoChan {
 		if si.IsEnd {
@@ -262,6 +266,7 @@ func (t *Topology) getSockInfo(af uint8, ssFilter uint32) (err error) {
 
 func (t *Topology) findUser() {
 	var name string
+	var serviceInfo *ServiceInfo
 	for _, serviceInfo = range t.Services {
 		if serviceInfo.addrs == nil {
 			continue

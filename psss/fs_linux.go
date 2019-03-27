@@ -1,9 +1,12 @@
+// +build linux
+
 package psss
 
 import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -95,6 +98,37 @@ func (d *DirentReader) Scan(fd *os.File) {
 		d.InternalDirent.IsEnd = false
 		d.DataChan <- d.InternalDirent
 	}
+}
+
+type FileInfo struct {
+	Path      string
+	DiskUsage uint64
+	NumFile   uint64
+	NumDir    uint64
+}
+
+func GetFileInfo(path string) (*FileInfo, error) {
+	fi := new(FileInfo)
+	fi.Path = path
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		fi.DiskUsage += uint64(info.Size())
+		if info.IsDir() {
+			fi.NumDir++
+		} else {
+			fi.NumFile++
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if fi.NumDir > 0 {
+		fi.NumDir--
+	}
+	return fi, nil
 }
 
 // definition comes from http://man7.org/linux/man-pages/man5/proc.5.html

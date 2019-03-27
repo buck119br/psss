@@ -192,13 +192,18 @@ func ScanProcFS(fdFlag bool) {
 	}
 }
 
-func GetProcInfo(fdFlag bool) map[string]map[int]*ProcInfo {
+func GetProcInfo(nameSet map[string]bool, fdFlag bool) map[string]map[int]*ProcInfo {
 	var ok bool
 	pi := make(map[string]map[int]*ProcInfo)
 	go ScanProcFS(fdFlag)
 	for proc := range ProcInfoChan {
 		if proc.IsEnd {
 			return pi
+		}
+		if nameSet != nil && len(nameSet) > 0 {
+			if _, ok = nameSet[proc.Stat.Name]; !ok {
+				continue
+			}
 		}
 		if _, ok = pi[proc.Stat.Name]; !ok {
 			pi[proc.Stat.Name] = make(map[int]*ProcInfo)

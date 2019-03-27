@@ -26,8 +26,7 @@ var (
 	procsInfoReserve map[string]map[int]*ProcInfoReserve
 	localPortToName  map[string]string
 
-	originProcInfo  psss.ProcInfo
-	serviceInfo     *ServiceInfo
+	originProcInfo  *psss.ProcInfo
 	procInfoReserve *ProcInfoReserve
 	procStat        ProcStat
 
