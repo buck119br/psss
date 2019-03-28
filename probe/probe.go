@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"fmt"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -9,20 +10,21 @@ import (
 var GProbe Probe = newProbe()
 
 type Probe interface {
-	Init(configPath string) error
+	Init(config *ProbeConfig) error
+	GetContext() (*ProbeContext, error)
 }
 
 type probe struct {
 	mutex sync.Mutex
 
-	keeperChan chan int
+	kChan chan int
 
-	ctxFitted *ProbeContext
+	ctx *ProbeContext
 }
 
 func newProbe() *probe {
 	p := new(probe)
-	p.keeperChan = make(chan int)
+	p.kChan = make(chan int)
 	return p
 }
 
@@ -34,18 +36,16 @@ func (p *probe) keeper() {
 		}
 	}()
 	logger.Info("started")
-	for sig := range p.keeperChan {
+	for sig := range p.kChan {
 		switch sig {
 		case 1:
 			go p.samplingTimer()
-		case 2:
-			go p.transmitTimer()
 		}
 	}
 }
 
 func (p *probe) samplingTimer() {
-	interval := time.Duration(GConfig.TransmitInterval/GConfig.SamplingFrequency) * time.Second
+	interval := time.Duration(GConfig.SamplingInterval) * time.Second
 	now := time.Now()
 	timer := time.NewTimer(now.Truncate(interval).Add(interval).Sub(time.Now()))
 
@@ -55,7 +55,7 @@ func (p *probe) samplingTimer() {
 			debug.PrintStack()
 		}
 		timer.Stop()
-		p.keeperChan <- 1
+		p.kChan <- 1
 	}()
 	logger.Info("started")
 
@@ -73,8 +73,7 @@ func (p *probe) samplingTimer() {
 			}
 
 			p.mutex.Lock()
-			p.ctxFitted.Fit(newCtx)
-			logger.WithField("ctx", p.ctxFitted).Infof("haha")
+			p.ctx.Fit(newCtx)
 			p.mutex.Unlock()
 
 			logger.WithField("time_cost", time.Since(now).Seconds()).Infof("finished")
@@ -82,57 +81,35 @@ func (p *probe) samplingTimer() {
 	}
 }
 
-func (p *probe) transmitTimer() {
-	interval := time.Duration(GConfig.TransmitInterval) * time.Second
-	now := time.Now()
-	timer := time.NewTimer(now.Truncate(interval).Add(interval).Sub(time.Now()))
-
-	defer func() {
-		if rcvErr := recover(); rcvErr != nil {
-			logger.Errorf("recovered from panic error:[%v]", rcvErr)
-			debug.PrintStack()
-		}
-		p.keeperChan <- 2
-	}()
-	logger.Info("started")
-
-	var tmpCtx *ProbeContext
-	for {
-		timer.Reset(now.Truncate(interval).Add(interval).Sub(time.Now()))
-		select {
-		case now = <-timer.C:
-			now = now.Truncate(time.Second)
-
-			p.mutex.Lock()
-			tmpCtx = p.ctxFitted
-			p.ctxFitted = NewProbeContext()
-			p.mutex.Unlock()
-
-			if tmpCtx.samplingCounter == 0 {
-				logger.Warnf("too few samples")
-				continue
-			}
-		}
-	}
-}
-
-func (p *probe) Init(configPath string) error {
-	GConfig = new(ProbeConfig)
-	err := GConfig.Load(configPath)
+func (p *probe) Init(config *ProbeConfig) error {
+	GConfig = config
+	err := GConfig.Check()
 	if err != nil {
 		return err
 	}
-	if err = GConfig.Check(); err != nil {
-		return err
-	}
 
-	p.ctxFitted = NewProbeContext()
+	p.ctx = NewProbeContext()
 
 	go p.keeper()
 	go p.samplingTimer()
-	go p.transmitTimer()
 
 	logger.WithField("config", GConfig).Info("finished")
 
 	return nil
+}
+
+func (p *probe) GetContext() (*ProbeContext, error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	ctx := p.ctx
+	p.ctx = NewProbeContext()
+
+	if ctx.SamplingCounter < 1 {
+		return nil, fmt.Errorf("too few sample")
+	}
+
+	ctx.Average()
+
+	return ctx, nil
 }

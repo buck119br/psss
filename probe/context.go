@@ -19,7 +19,7 @@ type extMountInfo struct {
 }
 
 type ProbeContext struct {
-	samplingCounter uint64
+	SamplingCounter uint64
 
 	Uptime     *psss.Uptime
 	SystemStat *psss.SystemStat
@@ -70,7 +70,7 @@ func (pc *ProbeContext) GetMountInfo() error {
 	var ok bool
 	var raw []byte
 	for _, mi := range mis {
-		if _, ok = GConfig.Items.FileSystem.MountInfo.MountPointSet[mi.MountPoint]; !ok {
+		if _, ok = GConfig.FileSystem.MountInfo.MountPointSet[mi.MountPoint]; !ok {
 			continue
 		}
 		emi := new(extMountInfo)
@@ -100,10 +100,10 @@ func (pc *ProbeContext) GetMountInfo() error {
 }
 
 func (pc *ProbeContext) GetFileInfo() error {
-	pc.FileInfo = make([]*psss.FileInfo, 0, len(GConfig.Items.FileSystem.FileInfo.FilePath))
+	pc.FileInfo = make([]*psss.FileInfo, 0, len(GConfig.FileSystem.FileInfo.FilePath))
 	var fi *psss.FileInfo
 	var err error
-	for _, v := range GConfig.Items.FileSystem.FileInfo.FilePath {
+	for _, v := range GConfig.FileSystem.FileInfo.FilePath {
 		if fi, err = psss.GetFileInfo(v); err != nil {
 			logger.WithField("path", v).Errorf("error:[%v]", err)
 			continue
@@ -122,15 +122,15 @@ func (pc *ProbeContext) Sample() error {
 	if err != nil {
 		return err
 	}
-	if GConfig.Items.Process.Switch {
-		prev.ProcInfo = psss.GetProcInfo(GConfig.Items.Process.ProcNameSet, false)
+	if GConfig.Process.Switch {
+		prev.ProcInfo = psss.GetProcInfo(GConfig.Process.ProcNameSet, false)
 	}
-	if GConfig.Items.IO.NIC.Switch {
+	if GConfig.IO.NIC.Switch {
 		if err = prev.GetNetDevs(); err != nil {
 			return err
 		}
 	}
-	if GConfig.Items.FileSystem.MountInfo.Switch {
+	if GConfig.FileSystem.MountInfo.Switch {
 		if err = prev.GetMountInfo(); err != nil {
 			return err
 		}
@@ -147,22 +147,22 @@ func (pc *ProbeContext) Sample() error {
 		if err = pc.GetMemInfo(); err != nil {
 			return err
 		}
-		if GConfig.Items.IO.NIC.Switch {
+		if GConfig.IO.NIC.Switch {
 			if err = pc.GetNetDevs(); err != nil {
 				return err
 			}
 		}
-		if GConfig.Items.FileSystem.MountInfo.Switch {
+		if GConfig.FileSystem.MountInfo.Switch {
 			if err = pc.GetMountInfo(); err != nil {
 				return err
 			}
 		}
-		if GConfig.Items.Process.Switch {
-			pc.ProcInfo = psss.GetProcInfo(GConfig.Items.Process.ProcNameSet, false)
+		if GConfig.Process.Switch {
+			pc.ProcInfo = psss.GetProcInfo(GConfig.Process.ProcNameSet, false)
 		}
 
 		// the following modules are costly
-		if GConfig.Items.FileSystem.FileInfo.Switch {
+		if GConfig.FileSystem.FileInfo.Switch {
 			if err = pc.GetFileInfo(); err != nil {
 				return err
 			}
@@ -181,7 +181,7 @@ func (pc *ProbeContext) Sample() error {
 	pc.SystemStat.CPUTotal.GuestNice -= prev.SystemStat.CPUTotal.GuestNice
 	pc.SystemStat.CPUTotal.Total -= prev.SystemStat.CPUTotal.Total
 
-	if GConfig.Items.IO.NIC.Switch {
+	if GConfig.IO.NIC.Switch {
 		for _, nic := range pc.NetDevs {
 			prevnic, ok := prev.NetDevs[nic.Interface]
 			if !ok {
@@ -206,7 +206,7 @@ func (pc *ProbeContext) Sample() error {
 		}
 	}
 
-	if GConfig.Items.FileSystem.MountInfo.Switch {
+	if GConfig.FileSystem.MountInfo.Switch {
 		for _, emi := range pc.MountInfo {
 			if emi.DiskStat == nil {
 				continue
@@ -233,7 +233,7 @@ func (pc *ProbeContext) Sample() error {
 		}
 	}
 
-	if GConfig.Items.Process.Switch {
+	if GConfig.Process.Switch {
 		for name, procs := range pc.ProcInfo {
 			prevprocs, ok := prev.ProcInfo[name]
 			if !ok {
@@ -257,10 +257,10 @@ func (pc *ProbeContext) Sample() error {
 
 func (pc *ProbeContext) Fit(new *ProbeContext) {
 	defer func() {
-		pc.samplingCounter++
+		pc.SamplingCounter++
 	}()
 
-	if pc.samplingCounter == 0 {
+	if pc.SamplingCounter == 0 {
 		pc.Uptime = new.Uptime
 		pc.SystemStat = new.SystemStat
 		pc.MemoryInfo = new.MemoryInfo
@@ -344,7 +344,7 @@ func (pc *ProbeContext) Fit(new *ProbeContext) {
 	pc.MemoryInfo.DirectMap4M += new.MemoryInfo.DirectMap4M
 	pc.MemoryInfo.DirectMap1G += new.MemoryInfo.DirectMap1G
 
-	if GConfig.Items.IO.NIC.Switch {
+	if GConfig.IO.NIC.Switch {
 		for _, newnic := range new.NetDevs {
 			nic, ok := pc.NetDevs[newnic.Interface]
 			if !ok {
@@ -369,7 +369,7 @@ func (pc *ProbeContext) Fit(new *ProbeContext) {
 		}
 	}
 
-	if GConfig.Items.FileSystem.MountInfo.Switch {
+	if GConfig.FileSystem.MountInfo.Switch {
 		for _, newemi := range new.MountInfo {
 			if newemi.DiskStat == nil {
 				continue
@@ -396,11 +396,11 @@ func (pc *ProbeContext) Fit(new *ProbeContext) {
 		}
 	}
 
-	if GConfig.Items.FileSystem.FileInfo.Switch {
+	if GConfig.FileSystem.FileInfo.Switch {
 		pc.FileInfo = new.FileInfo
 	}
 
-	if GConfig.Items.Process.Switch {
+	if GConfig.Process.Switch {
 		for name, newprocs := range new.ProcInfo {
 			procs, ok := pc.ProcInfo[name]
 			if !ok {
@@ -415,6 +415,137 @@ func (pc *ProbeContext) Fit(new *ProbeContext) {
 				pi.Stat.Stime += newpi.Stat.Stime
 				pi.Stat.Cutime += newpi.Stat.Cutime
 				pi.Stat.Cstime += newpi.Stat.Cstime
+			}
+		}
+	}
+}
+
+func (pc *ProbeContext) Average() {
+	if pc.SamplingCounter < 1 {
+		return
+	}
+
+	pc.SystemStat.CPUTotal.User /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.Nice /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.System /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.Idle /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.Iowait /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.Irq /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.Softirq /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.Steal /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.Guest /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.GuestNice /= pc.SamplingCounter
+	pc.SystemStat.CPUTotal.Total /= pc.SamplingCounter
+
+	pc.MemoryInfo.MemTotal /= pc.SamplingCounter
+	pc.MemoryInfo.MemFree /= pc.SamplingCounter
+	pc.MemoryInfo.MemAvailable /= pc.SamplingCounter
+	pc.MemoryInfo.Buffers /= pc.SamplingCounter
+	pc.MemoryInfo.Cached /= pc.SamplingCounter
+	pc.MemoryInfo.SwapCached /= pc.SamplingCounter
+	pc.MemoryInfo.Active /= pc.SamplingCounter
+	pc.MemoryInfo.Inactive /= pc.SamplingCounter
+	pc.MemoryInfo.ActiveAnon /= pc.SamplingCounter
+	pc.MemoryInfo.InactiveAnon /= pc.SamplingCounter
+	pc.MemoryInfo.ActiveFile /= pc.SamplingCounter
+	pc.MemoryInfo.InactiveFile /= pc.SamplingCounter
+	pc.MemoryInfo.Unevictable /= pc.SamplingCounter
+	pc.MemoryInfo.Mlocked /= pc.SamplingCounter
+	pc.MemoryInfo.HighTotal /= pc.SamplingCounter
+	pc.MemoryInfo.HighFree /= pc.SamplingCounter
+	pc.MemoryInfo.LowTotal /= pc.SamplingCounter
+	pc.MemoryInfo.LowFree /= pc.SamplingCounter
+	pc.MemoryInfo.MmapCopy /= pc.SamplingCounter
+	pc.MemoryInfo.SwapTotal /= pc.SamplingCounter
+	pc.MemoryInfo.SwapFree /= pc.SamplingCounter
+	pc.MemoryInfo.Dirty /= pc.SamplingCounter
+	pc.MemoryInfo.Writeback /= pc.SamplingCounter
+	pc.MemoryInfo.AnonPages /= pc.SamplingCounter
+	pc.MemoryInfo.Mapped /= pc.SamplingCounter
+	pc.MemoryInfo.Shmem /= pc.SamplingCounter
+	pc.MemoryInfo.KReclaimable /= pc.SamplingCounter
+	pc.MemoryInfo.Slab /= pc.SamplingCounter
+	pc.MemoryInfo.SReclaimable /= pc.SamplingCounter
+	pc.MemoryInfo.SUnreclaim /= pc.SamplingCounter
+	pc.MemoryInfo.KernelStack /= pc.SamplingCounter
+	pc.MemoryInfo.PageTables /= pc.SamplingCounter
+	pc.MemoryInfo.Quicklists /= pc.SamplingCounter
+	pc.MemoryInfo.NFSUnstable /= pc.SamplingCounter
+	pc.MemoryInfo.Bounce /= pc.SamplingCounter
+	pc.MemoryInfo.WritebackTmp /= pc.SamplingCounter
+	pc.MemoryInfo.CommitLimit /= pc.SamplingCounter
+	pc.MemoryInfo.CommittedAS /= pc.SamplingCounter
+	pc.MemoryInfo.VmallocTotal /= pc.SamplingCounter
+	pc.MemoryInfo.VmallocUsed /= pc.SamplingCounter
+	pc.MemoryInfo.VmallocChunk /= pc.SamplingCounter
+	pc.MemoryInfo.Percpu /= pc.SamplingCounter
+	pc.MemoryInfo.HardwareCorrupted /= pc.SamplingCounter
+	pc.MemoryInfo.AnonHugePages /= pc.SamplingCounter
+	pc.MemoryInfo.ShmemHugePages /= pc.SamplingCounter
+	pc.MemoryInfo.ShmemPmdMapped /= pc.SamplingCounter
+	pc.MemoryInfo.CmaTotal /= pc.SamplingCounter
+	pc.MemoryInfo.CmaFree /= pc.SamplingCounter
+	pc.MemoryInfo.HugePagesTotal /= pc.SamplingCounter
+	pc.MemoryInfo.HugePagesFree /= pc.SamplingCounter
+	pc.MemoryInfo.HugePagesRsvd /= pc.SamplingCounter
+	pc.MemoryInfo.HugePagesSurp /= pc.SamplingCounter
+	pc.MemoryInfo.Hugepagesize /= pc.SamplingCounter
+	pc.MemoryInfo.DirectMap4k /= pc.SamplingCounter
+	pc.MemoryInfo.DirectMap2M /= pc.SamplingCounter
+	pc.MemoryInfo.DirectMap4M /= pc.SamplingCounter
+	pc.MemoryInfo.DirectMap1G /= pc.SamplingCounter
+
+	if GConfig.IO.NIC.Switch {
+		for _, nic := range pc.NetDevs {
+			nic.ReceiveBytes /= pc.SamplingCounter
+			nic.ReceivePackets /= pc.SamplingCounter
+			nic.ReceiveErrs /= pc.SamplingCounter
+			nic.ReceiveDrop /= pc.SamplingCounter
+			nic.ReceiveFifo /= pc.SamplingCounter
+			nic.ReceiveFrame /= pc.SamplingCounter
+			nic.ReceiveCompressed /= pc.SamplingCounter
+			nic.ReceiveMulticast /= pc.SamplingCounter
+			nic.TransmitBytes /= pc.SamplingCounter
+			nic.TransmitPackets /= pc.SamplingCounter
+			nic.TransmitErrs /= pc.SamplingCounter
+			nic.TransmitDrop /= pc.SamplingCounter
+			nic.TransmitFifo /= pc.SamplingCounter
+			nic.TransmitColls /= pc.SamplingCounter
+			nic.TransmitCarrier /= pc.SamplingCounter
+			nic.TransmitCompressed /= pc.SamplingCounter
+		}
+	}
+
+	if GConfig.FileSystem.MountInfo.Switch {
+		for _, emi := range pc.MountInfo {
+			if emi.DiskStat == nil {
+				continue
+			}
+			emi.DiskStat.ReadCompleted /= pc.SamplingCounter
+			emi.DiskStat.ReadMerged /= pc.SamplingCounter
+			emi.DiskStat.SectorsRead /= pc.SamplingCounter
+			emi.DiskStat.ReadingSpent /= pc.SamplingCounter
+			emi.DiskStat.WriteCompleted /= pc.SamplingCounter
+			emi.DiskStat.WriteMerged /= pc.SamplingCounter
+			emi.DiskStat.SectorsWritten /= pc.SamplingCounter
+			emi.DiskStat.WritingSpent /= pc.SamplingCounter
+			emi.DiskStat.IOProgressing /= pc.SamplingCounter
+			emi.DiskStat.IOSpent /= pc.SamplingCounter
+			emi.DiskStat.WeightedIOSpent /= pc.SamplingCounter
+			emi.DiskStat.DiscardCompleted /= pc.SamplingCounter
+			emi.DiskStat.DiscardMerged /= pc.SamplingCounter
+			emi.DiskStat.SectorDiscarded /= pc.SamplingCounter
+			emi.DiskStat.DiscardSpending /= pc.SamplingCounter
+		}
+	}
+
+	if GConfig.Process.Switch {
+		for _, procs := range pc.ProcInfo {
+			for _, pi := range procs {
+				pi.Stat.Utime /= pc.SamplingCounter
+				pi.Stat.Stime /= pc.SamplingCounter
+				pi.Stat.Cutime /= pc.SamplingCounter
+				pi.Stat.Cstime /= pc.SamplingCounter
 			}
 		}
 	}
