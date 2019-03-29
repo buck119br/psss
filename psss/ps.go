@@ -1,10 +1,9 @@
 package psss
 
-
-
 type ProcInfo struct {
-	Stat  ProcStat
-	IsEnd bool
+	Cmdline []string
+	Stat    ProcStat
+	IsEnd   bool
 }
 
 func NewProcInfo() *ProcInfo {

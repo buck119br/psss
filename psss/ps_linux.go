@@ -4,6 +4,7 @@ package psss
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -77,6 +78,15 @@ type ProcStat struct {
 	EnvStart            uint64 // Address above which program environment is placed.
 	EnvEnd              uint64 // Address below which program environment is placed.
 	ExitCode            int    // The thread's exit status.
+}
+
+func (p *ProcInfo) GetCmdline() error {
+	raw, err := ioutil.ReadFile(ProcRoot + fmt.Sprintf("/%d/cmdline", p.Stat.Pid))
+	if err != nil {
+		return err
+	}
+	p.Cmdline = strings.Split(strings.Replace(string(raw), "\n", "", -1), string(byte(0)))
+	return nil
 }
 
 func (p *ProcInfo) GetStat() (err error) {
@@ -180,6 +190,9 @@ func ScanProcFS(fdFlag bool) {
 		if proc.Stat.Pid, err = strconv.Atoi(procDirentReader.ExternalDirent.Name); err != nil {
 			continue
 		}
+		if err = proc.GetCmdline(); err != nil {
+			continue
+		}
 		if err = proc.GetStat(); err != nil {
 			continue
 		}
@@ -194,17 +207,30 @@ func ScanProcFS(fdFlag bool) {
 
 func GetProcInfo(nameSet map[string]bool, fdFlag bool) map[string]map[int]*ProcInfo {
 	var ok bool
+	var rProcName string
 	pi := make(map[string]map[int]*ProcInfo)
 	go ScanProcFS(fdFlag)
 	for proc := range ProcInfoChan {
 		if proc.IsEnd {
 			return pi
 		}
-		if nameSet != nil && len(nameSet) > 0 {
-			if _, ok = nameSet[proc.Stat.Name]; !ok {
-				continue
-			}
+		// filter
+		if nameSet == nil || len(nameSet) == 0 {
+			goto assign
 		}
+		if _, ok = nameSet[proc.Stat.Name]; ok {
+			goto assign
+		}
+		if len(proc.Cmdline) == 0 {
+			continue
+		}
+		rProcName = strings.TrimPrefix(proc.Cmdline[0], "./")
+		if _, ok = nameSet[rProcName]; !ok {
+			continue
+		}
+		proc.Stat.Name = rProcName
+
+	assign:
 		if _, ok = pi[proc.Stat.Name]; !ok {
 			pi[proc.Stat.Name] = make(map[int]*ProcInfo)
 		}

@@ -16,10 +16,8 @@ type Probe interface {
 
 type probe struct {
 	mutex sync.Mutex
-
 	kChan chan int
-
-	ctx *ProbeContext
+	ctx   *ProbeContext
 }
 
 func newProbe() *probe {
@@ -82,6 +80,9 @@ func (p *probe) samplingTimer() {
 }
 
 func (p *probe) Init(config *ProbeConfig) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	GConfig = config
 	err := GConfig.Check()
 	if err != nil {
