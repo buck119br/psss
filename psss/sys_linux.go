@@ -364,7 +364,7 @@ func (kv *KernelVersion) Get() error {
 		return err
 	}
 
-	kv.Origin = string(raw)
+	kv.Origin = strings.Replace(string(raw), "\n", "", -1)
 	kv.UTSVersion = "#" + strings.Split(kv.Origin, "#")[1]
 
 	fields := strings.Fields(strings.Split(kv.Origin, "#")[0])
