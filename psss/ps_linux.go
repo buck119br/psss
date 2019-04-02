@@ -206,6 +206,8 @@ func ScanProcFS(fdFlag bool) {
 }
 
 func GetProcInfo(nameSet map[string]bool, fdFlag bool) map[string]map[int]*ProcInfo {
+	defer recover()
+
 	var ok bool
 	var rProcName string
 	pi := make(map[string]map[int]*ProcInfo)

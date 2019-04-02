@@ -3,6 +3,7 @@ package probe
 import (
 	"fmt"
 	"io/ioutil"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"syscall"
@@ -36,26 +37,61 @@ func NewProbeContext() *ProbeContext {
 }
 
 func (pc *ProbeContext) GetSystemUptime() error {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
 	pc.Uptime = new(psss.Uptime)
 	return pc.Uptime.Get()
 }
 
 func (pc *ProbeContext) GetSystemStat() error {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
 	pc.SystemStat = new(psss.SystemStat)
 	return pc.SystemStat.Get()
 }
 
-func (pc *ProbeContext) GetMemInfo() error {
+func (pc *ProbeContext) GetMemoryInfo() error {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
 	pc.MemoryInfo = new(psss.MemoryInfo)
 	return pc.MemoryInfo.Get()
 }
 
 func (pc *ProbeContext) GetNetDevs() error {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
 	pc.NetDevs = psss.NewNetDevs()
 	return pc.NetDevs.Get()
 }
 
 func (pc *ProbeContext) GetMountInfo() error {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
 	mis := psss.NewMountInfos()
 	err := mis.Get()
 	if err != nil {
@@ -100,6 +136,13 @@ func (pc *ProbeContext) GetMountInfo() error {
 }
 
 func (pc *ProbeContext) GetFileInfo() error {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
 	pc.FileInfo = make([]*psss.FileInfo, 0, len(GConfig.FileSystem.FileInfo.FilePath))
 	var fi *psss.FileInfo
 	var err error
@@ -115,46 +158,52 @@ func (pc *ProbeContext) GetFileInfo() error {
 
 func (pc *ProbeContext) Sample() error {
 	tick := time.NewTicker(time.Second)
-	defer tick.Stop()
+	defer func() {
+		tick.Stop()
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
 
 	prev := NewProbeContext()
 	err := prev.GetSystemStat()
 	if err != nil {
-		return err
+		logger.Errorf("get system stat error:[%v]", err)
 	}
 	if GConfig.Process.Switch {
 		prev.ProcInfo = psss.GetProcInfo(GConfig.Process.ProcNameSet, false)
 	}
 	if GConfig.IO.NIC.Switch {
 		if err = prev.GetNetDevs(); err != nil {
-			return err
+			logger.Errorf("get net devs error:[%v]", err)
 		}
 	}
 	if GConfig.FileSystem.MountInfo.Switch {
 		if err = prev.GetMountInfo(); err != nil {
-			return err
+			logger.Errorf("get mount info error:[%v]", err)
 		}
 	}
 
 	select {
 	case <-tick.C:
 		if err = pc.GetSystemUptime(); err != nil {
-			return err
+			logger.Errorf("get system uptime error:[%v]", err)
 		}
 		if err = pc.GetSystemStat(); err != nil {
-			return err
+			logger.Errorf("get system stat error:[%v]", err)
 		}
-		if err = pc.GetMemInfo(); err != nil {
-			return err
+		if err = pc.GetMemoryInfo(); err != nil {
+			logger.Errorf("get memory info error:[%v]", err)
 		}
 		if GConfig.IO.NIC.Switch {
 			if err = pc.GetNetDevs(); err != nil {
-				return err
+				logger.Errorf("get net devs error:[%v]", err)
 			}
 		}
 		if GConfig.FileSystem.MountInfo.Switch {
 			if err = pc.GetMountInfo(); err != nil {
-				return err
+				logger.Errorf("get mount info error:[%v]", err)
 			}
 		}
 		if GConfig.Process.Switch {
@@ -164,7 +213,7 @@ func (pc *ProbeContext) Sample() error {
 		// the following modules are costly
 		if GConfig.FileSystem.FileInfo.Switch {
 			if err = pc.GetFileInfo(); err != nil {
-				return err
+				logger.Errorf("get file info error:[%v]", err)
 			}
 		}
 	}
@@ -255,23 +304,13 @@ func (pc *ProbeContext) Sample() error {
 	return nil
 }
 
-func (pc *ProbeContext) Fit(new *ProbeContext) {
+func (pc *ProbeContext) FitSystemStat(new *ProbeContext) {
 	defer func() {
-		pc.SamplingCounter++
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
 	}()
-
-	if pc.SamplingCounter == 0 {
-		pc.Uptime = new.Uptime
-		pc.SystemStat = new.SystemStat
-		pc.MemoryInfo = new.MemoryInfo
-		pc.NetDevs = new.NetDevs
-		pc.MountInfo = new.MountInfo
-		pc.FileInfo = new.FileInfo
-		pc.ProcInfo = new.ProcInfo
-		return
-	}
-
-	pc.Uptime = new.Uptime
 
 	pc.SystemStat.CPUTotal.User += new.SystemStat.CPUTotal.User
 	pc.SystemStat.CPUTotal.Nice += new.SystemStat.CPUTotal.Nice
@@ -285,6 +324,15 @@ func (pc *ProbeContext) Fit(new *ProbeContext) {
 	pc.SystemStat.CPUTotal.GuestNice += new.SystemStat.CPUTotal.GuestNice
 	pc.SystemStat.CPUTotal.Total += new.SystemStat.CPUTotal.Total
 	pc.SystemStat.Btime = new.SystemStat.Btime
+}
+
+func (pc *ProbeContext) FitMemoryInfo(new *ProbeContext) {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
 
 	pc.MemoryInfo.MemTotal += new.MemoryInfo.MemTotal
 	pc.MemoryInfo.MemFree += new.MemoryInfo.MemFree
@@ -343,57 +391,130 @@ func (pc *ProbeContext) Fit(new *ProbeContext) {
 	pc.MemoryInfo.DirectMap2M += new.MemoryInfo.DirectMap2M
 	pc.MemoryInfo.DirectMap4M += new.MemoryInfo.DirectMap4M
 	pc.MemoryInfo.DirectMap1G += new.MemoryInfo.DirectMap1G
+}
 
-	if GConfig.IO.NIC.Switch {
-		for _, newnic := range new.NetDevs {
-			nic, ok := pc.NetDevs[newnic.Interface]
+func (pc *ProbeContext) FitNetDevs(new *ProbeContext) {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
+	for _, newnic := range new.NetDevs {
+		nic, ok := pc.NetDevs[newnic.Interface]
+		if !ok {
+			continue
+		}
+		nic.ReceiveBytes += newnic.ReceiveBytes
+		nic.ReceivePackets += newnic.ReceivePackets
+		nic.ReceiveErrs += newnic.ReceiveErrs
+		nic.ReceiveDrop += newnic.ReceiveDrop
+		nic.ReceiveFifo += newnic.ReceiveFifo
+		nic.ReceiveFrame += newnic.ReceiveFrame
+		nic.ReceiveCompressed += newnic.ReceiveCompressed
+		nic.ReceiveMulticast += newnic.ReceiveMulticast
+		nic.TransmitBytes += newnic.TransmitBytes
+		nic.TransmitPackets += newnic.TransmitPackets
+		nic.TransmitErrs += newnic.TransmitErrs
+		nic.TransmitDrop += newnic.TransmitDrop
+		nic.TransmitFifo += newnic.TransmitFifo
+		nic.TransmitColls += newnic.TransmitColls
+		nic.TransmitCarrier += newnic.TransmitCarrier
+		nic.TransmitCompressed += newnic.TransmitCompressed
+	}
+}
+
+func (pc *ProbeContext) FitDiskStat(new *ProbeContext) {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
+	for _, newemi := range new.MountInfo {
+		if newemi.DiskStat == nil {
+			continue
+		}
+		emi, ok := pc.MountInfo[newemi.MountInfo.MountPoint]
+		if !ok {
+			continue
+		}
+		emi.DiskStat.ReadCompleted += newemi.DiskStat.ReadCompleted
+		emi.DiskStat.ReadMerged += newemi.DiskStat.ReadMerged
+		emi.DiskStat.SectorsRead += newemi.DiskStat.SectorsRead
+		emi.DiskStat.ReadingSpent += newemi.DiskStat.ReadingSpent
+		emi.DiskStat.WriteCompleted += newemi.DiskStat.WriteCompleted
+		emi.DiskStat.WriteMerged += newemi.DiskStat.WriteMerged
+		emi.DiskStat.SectorsWritten += newemi.DiskStat.SectorsWritten
+		emi.DiskStat.WritingSpent += newemi.DiskStat.WritingSpent
+		emi.DiskStat.IOProgressing += newemi.DiskStat.IOProgressing
+		emi.DiskStat.IOSpent += newemi.DiskStat.IOSpent
+		emi.DiskStat.WeightedIOSpent += newemi.DiskStat.WeightedIOSpent
+		emi.DiskStat.DiscardCompleted += newemi.DiskStat.DiscardCompleted
+		emi.DiskStat.DiscardMerged += newemi.DiskStat.DiscardMerged
+		emi.DiskStat.SectorDiscarded += newemi.DiskStat.SectorDiscarded
+		emi.DiskStat.DiscardSpending += newemi.DiskStat.DiscardSpending
+	}
+}
+
+func (pc *ProbeContext) FitProcInfo(new *ProbeContext) {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+	}()
+
+	for name, newprocs := range new.ProcInfo {
+		procs, ok := pc.ProcInfo[name]
+		if !ok {
+			continue
+		}
+		for pid, newpi := range newprocs {
+			pi, ok := procs[pid]
 			if !ok {
 				continue
 			}
-			nic.ReceiveBytes += newnic.ReceiveBytes
-			nic.ReceivePackets += newnic.ReceivePackets
-			nic.ReceiveErrs += newnic.ReceiveErrs
-			nic.ReceiveDrop += newnic.ReceiveDrop
-			nic.ReceiveFifo += newnic.ReceiveFifo
-			nic.ReceiveFrame += newnic.ReceiveFrame
-			nic.ReceiveCompressed += newnic.ReceiveCompressed
-			nic.ReceiveMulticast += newnic.ReceiveMulticast
-			nic.TransmitBytes += newnic.TransmitBytes
-			nic.TransmitPackets += newnic.TransmitPackets
-			nic.TransmitErrs += newnic.TransmitErrs
-			nic.TransmitDrop += newnic.TransmitDrop
-			nic.TransmitFifo += newnic.TransmitFifo
-			nic.TransmitColls += newnic.TransmitColls
-			nic.TransmitCarrier += newnic.TransmitCarrier
-			nic.TransmitCompressed += newnic.TransmitCompressed
+			pi.Stat.Utime += newpi.Stat.Utime
+			pi.Stat.Stime += newpi.Stat.Stime
+			pi.Stat.Cutime += newpi.Stat.Cutime
+			pi.Stat.Cstime += newpi.Stat.Cstime
 		}
+	}
+}
+
+func (pc *ProbeContext) Fit(new *ProbeContext) {
+	defer func() {
+		if rcvErr := recover(); rcvErr != nil {
+			logger.Errorf("recovered from panic with error:[%v]", rcvErr)
+			debug.PrintStack()
+		}
+		pc.SamplingCounter++
+	}()
+
+	if pc.SamplingCounter == 0 {
+		pc.Uptime = new.Uptime
+		pc.SystemStat = new.SystemStat
+		pc.MemoryInfo = new.MemoryInfo
+		pc.NetDevs = new.NetDevs
+		pc.MountInfo = new.MountInfo
+		pc.FileInfo = new.FileInfo
+		pc.ProcInfo = new.ProcInfo
+		return
+	}
+
+	pc.Uptime = new.Uptime
+	pc.FitSystemStat(new)
+	pc.FitMemoryInfo(new)
+
+	if GConfig.IO.NIC.Switch {
+		pc.FitNetDevs(new)
 	}
 
 	if GConfig.FileSystem.MountInfo.Switch {
-		for _, newemi := range new.MountInfo {
-			if newemi.DiskStat == nil {
-				continue
-			}
-			emi, ok := pc.MountInfo[newemi.MountInfo.MountPoint]
-			if !ok {
-				continue
-			}
-			emi.DiskStat.ReadCompleted += newemi.DiskStat.ReadCompleted
-			emi.DiskStat.ReadMerged += newemi.DiskStat.ReadMerged
-			emi.DiskStat.SectorsRead += newemi.DiskStat.SectorsRead
-			emi.DiskStat.ReadingSpent += newemi.DiskStat.ReadingSpent
-			emi.DiskStat.WriteCompleted += newemi.DiskStat.WriteCompleted
-			emi.DiskStat.WriteMerged += newemi.DiskStat.WriteMerged
-			emi.DiskStat.SectorsWritten += newemi.DiskStat.SectorsWritten
-			emi.DiskStat.WritingSpent += newemi.DiskStat.WritingSpent
-			emi.DiskStat.IOProgressing += newemi.DiskStat.IOProgressing
-			emi.DiskStat.IOSpent += newemi.DiskStat.IOSpent
-			emi.DiskStat.WeightedIOSpent += newemi.DiskStat.WeightedIOSpent
-			emi.DiskStat.DiscardCompleted += newemi.DiskStat.DiscardCompleted
-			emi.DiskStat.DiscardMerged += newemi.DiskStat.DiscardMerged
-			emi.DiskStat.SectorDiscarded += newemi.DiskStat.SectorDiscarded
-			emi.DiskStat.DiscardSpending += newemi.DiskStat.DiscardSpending
-		}
+		pc.FitDiskStat(new)
 	}
 
 	if GConfig.FileSystem.FileInfo.Switch {
@@ -401,22 +522,7 @@ func (pc *ProbeContext) Fit(new *ProbeContext) {
 	}
 
 	if GConfig.Process.Switch {
-		for name, newprocs := range new.ProcInfo {
-			procs, ok := pc.ProcInfo[name]
-			if !ok {
-				continue
-			}
-			for pid, newpi := range newprocs {
-				pi, ok := procs[pid]
-				if !ok {
-					continue
-				}
-				pi.Stat.Utime += newpi.Stat.Utime
-				pi.Stat.Stime += newpi.Stat.Stime
-				pi.Stat.Cutime += newpi.Stat.Cutime
-				pi.Stat.Cstime += newpi.Stat.Cstime
-			}
-		}
+		pc.FitProcInfo(new)
 	}
 }
 
