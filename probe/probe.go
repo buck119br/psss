@@ -26,6 +26,12 @@ func newProbe() *probe {
 	return p
 }
 
+func (p *probe) contextFit(newCtx *ProbeContext) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.ctx.Fit(newCtx)
+}
+
 func (p *probe) keeper() {
 	defer func() {
 		if rcvErr := recover(); rcvErr != nil {
@@ -69,10 +75,7 @@ func (p *probe) samplingTimer() {
 				logger.Errorf("sample error:[%v]", err)
 				continue
 			}
-
-			p.mutex.Lock()
-			p.ctx.Fit(newCtx)
-			p.mutex.Unlock()
+			p.contextFit(newCtx)
 
 			logger.WithField("time_cost", time.Since(now).Seconds()).Infof("finished")
 		}
