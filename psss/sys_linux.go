@@ -213,7 +213,7 @@ func (mi *MemoryInfo) Get() error {
 		case "DirectMap1G":
 			mi.DirectMap1G = v
 		default:
-			return fmt.Errorf("invalid field:[%s]", fields[0])
+			fmt.Printf("invalid field:[%s] with value:[%s]\n", fields[0], fields[1])
 		}
 	}
 	return nil

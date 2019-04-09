@@ -32,7 +32,7 @@ type DiskStat struct {
 	DiscardSpending  uint64 // milliseconds spent discarding
 }
 
-func (ds *DiskStat) Parse(numFields int, raw string) (err error) {
+func (ds *DiskStat) Parse(raw string) (err error) {
 	fields := strings.Fields(SlimSpaceRegExp.ReplaceAllString(raw, " "))
 
 	if ds.MajorNumber, err = strconv.ParseUint(fields[0], 10, 64); err != nil {
@@ -46,8 +46,8 @@ func (ds *DiskStat) Parse(numFields int, raw string) (err error) {
 	fields = fields[3:]
 
 	var v uint64
-	for i := 0; i < numFields; i++ {
-		if v, err = strconv.ParseUint(fields[i], 10, 64); err != nil {
+	for i, s := range fields {
+		if v, err = strconv.ParseUint(s, 10, 64); err != nil {
 			return err
 		}
 		switch i {
@@ -82,7 +82,7 @@ func (ds *DiskStat) Parse(numFields int, raw string) (err error) {
 		case 14:
 			ds.DiscardSpending = v
 		default:
-			return fmt.Errorf("unknown field index:[%d]", i)
+			fmt.Printf("invalid field:[%s] with index:[%d]\n", s, i)
 		}
 	}
 
@@ -96,17 +96,6 @@ func NewDiskStats() DiskStats {
 }
 
 func (dss *DiskStats) Get() (err error) {
-	var numFields int
-
-	switch {
-	case KVer.VersionNum < 2006000:
-		return fmt.Errorf("kernel version:[%s] not support", KVer.UTSRelease)
-	case KVer.VersionNum >= 2006000 && KVer.VersionNum < 4018000:
-		numFields = 11
-	case KVer.VersionNum >= 4018000:
-		numFields = 15
-	}
-
 	fd, err := os.Open(ProcRoot + "/diskstats")
 	if err != nil {
 		return err
@@ -118,7 +107,7 @@ func (dss *DiskStats) Get() (err error) {
 			return err
 		}
 		ds := new(DiskStat)
-		if err = ds.Parse(numFields, scanner.Text()); err != nil {
+		if err = ds.Parse(scanner.Text()); err != nil {
 			fmt.Printf("disk stat parse error:[%v]\n", err)
 			continue
 		}
@@ -156,7 +145,7 @@ func (nd *NetDev) Parse(raw string) (err error) {
 	var v uint64
 
 	fCtr = 0
-	for _, s := range strings.Fields(fields[1]) {
+	for i, s := range strings.Fields(fields[1]) {
 		if len(s) == 0 {
 			continue
 		}
@@ -197,7 +186,7 @@ func (nd *NetDev) Parse(raw string) (err error) {
 		case 15:
 			nd.TransmitCompressed = v
 		default:
-			return fmt.Errorf("invalid field:[%s]", s)
+			fmt.Printf("invalid field:[%s] with index:[%d]\n", s, i)
 		}
 		fCtr++
 	}

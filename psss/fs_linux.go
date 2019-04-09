@@ -181,7 +181,7 @@ func (mi *MountInfo) Parse(raw string) (err error) {
 		case 10:
 			mi.SuperOptions = v
 		default:
-			return fmt.Errorf("invalid field:[%s]", v)
+			fmt.Printf("invalid field:[%s] with index:[%d]\n", v, i)
 		}
 	}
 	return nil
