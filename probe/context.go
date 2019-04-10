@@ -272,7 +272,6 @@ func (pc *ProbeContext) Sample() error {
 			emi.DiskStat.WriteMerged -= prevemi.DiskStat.WriteMerged
 			emi.DiskStat.SectorsWritten -= prevemi.DiskStat.SectorsWritten
 			emi.DiskStat.WritingSpent -= prevemi.DiskStat.WritingSpent
-			emi.DiskStat.IOProgressing -= prevemi.DiskStat.IOProgressing
 			emi.DiskStat.IOSpent -= prevemi.DiskStat.IOSpent
 			emi.DiskStat.WeightedIOSpent -= prevemi.DiskStat.WeightedIOSpent
 			emi.DiskStat.DiscardCompleted -= prevemi.DiskStat.DiscardCompleted
