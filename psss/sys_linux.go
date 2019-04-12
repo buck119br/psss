@@ -354,8 +354,6 @@ type KernelVersion struct {
 	CompileHost string
 	Compiler    string
 	UTSVersion  string
-
-	VersionNum int
 }
 
 func (kv *KernelVersion) Get() error {
@@ -370,22 +368,6 @@ func (kv *KernelVersion) Get() error {
 	fields := strings.Fields(strings.Split(kv.Origin, "#")[0])
 	kv.UTSSysName = fields[0]
 	kv.UTSRelease = fields[2]
-
-	vfields := strings.Split(strings.Split(kv.UTSRelease, "-")[0], ".")
-	major, err := strconv.Atoi(vfields[0])
-	if err != nil {
-		return err
-	}
-	minor, err := strconv.Atoi(vfields[1])
-	if err != nil {
-		return err
-	}
-	revision, err := strconv.Atoi(vfields[2])
-	if err != nil {
-		return err
-	}
-	kv.VersionNum = major*1000000 + minor*1000 + revision
-
 	compile := strings.Split(fields[3], "@")
 	kv.CompileBy = strings.TrimPrefix(compile[0], "(")
 	kv.CompileHost = strings.TrimSuffix(compile[1], ")")
