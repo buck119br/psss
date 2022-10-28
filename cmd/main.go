@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/buck119br/psss/probe"
 	"github.com/buck119br/psss/psss"
 	"golang.org/x/sys/unix"
 )
@@ -122,7 +123,7 @@ func main() {
 
 	if *flagProcess {
 		psss.FlagProcess = true
-		psss.GetProcInfo(true)
+		psss.GetProcInfo(probe.GConfig.Process.ProcNameSet, false)
 	}
 
 	SocketShow()
